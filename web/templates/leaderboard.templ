@@ -1,0 +1,419 @@
+package templates
+
+import (
+	"github.com/demostanis/42evaluators/internal/models"
+	"time"
+	"fmt"
+	"strconv"
+	"strings"
+	"net/url"
+)
+
+type Promo struct {
+	Name   string
+	Active bool
+}
+
+type Field struct {
+	Name       string
+	PrettyName string
+	Checked    bool
+	Sortable   bool
+}
+
+var (
+	ToggleableFields = []Field{
+		{Name: "display_name", PrettyName: "Full name", Sortable: true},
+		{Name: "level", PrettyName: "Level", Sortable: true},
+		{Name: "weekly_logtime", PrettyName: "Weekly logtime", Sortable: true},
+		{Name: "correction_points", PrettyName: "Correction points", Sortable: true},
+		{Name: "wallets", PrettyName: "Wallets", Sortable: true},
+		{Name: "campus", PrettyName: "Campus", Sortable: false},
+		{Name: "coalition", PrettyName: "Coalition", Sortable: false},
+		{Name: "blackholed", PrettyName: "Blackholed", Sortable: false},
+	}
+)
+
+func getIsActiveClass(isActive bool) string {
+	var isActiveClass string
+	if isActive {
+		isActiveClass = "btn-active"
+	}
+	return isActiveClass
+}
+
+func urlWithPage(url *url.URL, page int) templ.SafeURL {
+	params := url.Query()
+	params.Del("page")
+	params.Del("me")
+	if page != 1 {
+		params.Add("page", strconv.Itoa(page))
+	}
+	newURL := *url
+	newURL.RawQuery = params.Encode()
+	return templ.SafeURL(newURL.String())
+}
+
+const (
+	Enabled  = false
+	Disabled = true
+)
+const (
+	Inactive = false
+	Active   = true
+)
+
+templ pageButton(
+	url *url.URL,
+	page int,
+	text string,
+	isActive bool,
+	isDisabled bool,
+) {
+	<a
+		if !isDisabled {
+			href={ urlWithPage(url, page) }
+		}
+	>
+		<button
+			if isDisabled {
+				disabled
+			}
+			class={ "join-item", "btn", "btn-md", getIsActiveClass(isActive) }
+		>{ text }</button>
+	</a>
+}
+
+func isDisabled(targetedPage int, totalPage int) bool {
+	return targetedPage < 1 || targetedPage > totalPage
+}
+
+templ pagination(url *url.URL, page int, totalPages int, gotoMyPositionShown bool) {
+	<div class="join justify-center !flex pt-3">
+		@pageButton(url, 1, "<<", Inactive, page == 1)
+		@pageButton(url,
+			page-1, "<", Inactive,
+			isDisabled(page-1, totalPages))
+		if page > 4 {
+			@pageButton(url, 0, "...", Inactive, Disabled)
+		}
+		for i := max(1, page - 3); i <= min(page + 3, totalPages); i++ {
+			@pageButton(url, i, strconv.Itoa(i), i == page, Enabled)
+		}
+		if page < totalPages - 3 {
+			@pageButton(url, 0, "...", Inactive, Disabled)
+		}
+		@pageButton(url,
+			page+1, ">", Inactive,
+			isDisabled(page+1, totalPages))
+		@pageButton(url, totalPages, ">>", Inactive, page == totalPages)
+		if gotoMyPositionShown {
+			<a class="btn btn-md join-item text-center" href={ urlForMe(url) }>Go to my position...</a>
+		}
+	</div>
+}
+
+func getProfileURL(user models.User) templ.SafeURL {
+	return templ.SafeURL("https://profile.intra.42.fr/users/" + user.Login)
+}
+
+func getBgURL(user models.User, currentUserID int) string {
+	// TODO: stick the coalition cover somewhere prettier
+	//if user.Coalition.CoverURL == "" {
+	//	return "bg-[url(https://profile.intra.42.fr/assets/background_login-a4e0666f73c02f025f590b474b394fd86e1cae20e95261a6e4862c2d0faa1b04.jpg)] bg-cover bg-center"
+	//} else {
+	//	return "bg-[url(" + user.Coalition.CoverURL + ")] bg-cover bg-center"
+	//}
+	if user.ID == currentUserID {
+		return "bg-blue-900 me"
+	}
+	return ""
+}
+
+func urlWithSorting(myURL *url.URL, sort string) templ.SafeURL {
+	params := myURL.Query()
+	params.Del("sort")
+	params.Del("me")
+	if sort != "level" { // since that's the default
+		params.Add("sort", sort)
+	}
+	newURL := *myURL
+	newURL.RawQuery = params.Encode()
+	return templ.SafeURL(newURL.String())
+}
+
+func urlForMe(myURL *url.URL) templ.SafeURL {
+	params := myURL.Query()
+	params.Del("me")
+	params.Add("me", "1")
+	newURL := *myURL
+	newURL.RawQuery = params.Encode()
+	return templ.SafeURL(newURL.String())
+}
+
+script jumpToMe() {
+	if (new URLSearchParams(window.location.search).get("me")) {
+		document.querySelector(".me").scrollIntoView({
+			behavior: "smooth",
+			block: "center",
+		})
+	}
+}
+
+script updateLeaderboardWhenNeeded(campusIDs []int) {
+	function updatePromo(e) {
+		const params = new URLSearchParams(window.location.search);
+		const selected = e.target.selectedOptions[0];
+
+		params.delete("page");
+		params.delete("me");
+		if (selected.textContent != "Any promo") {
+			params.delete("promo");
+			params.append("promo", selected.textContent.replace(/promo in /, ""));
+		} else
+			params.delete("promo");
+		window.location.search = params;
+	}
+	function updateCampus(e) {
+		const params = new URLSearchParams(window.location.search);
+		const selected = e.target.selectedOptions[0];
+
+		params.delete("page");
+		params.delete("me");
+		params.delete("promo");
+		if (selected.textContent != "Any campus") {
+			params.delete("campus");
+			params.append("campus", campusIDs[e.target.selectedIndex - 1]);
+		} else
+			params.delete("campus");
+		window.location.search = params;
+	}
+	function updateSearch(e) {
+		e.preventDefault();
+		const params = new URLSearchParams(window.location.search);
+		const search = document.querySelector("#search-form input");
+
+		params.delete("page");
+		params.delete("me");
+		if (search.value != "") {
+			params.delete("search");
+			params.append("search", search.value);
+		} else
+			params.delete("search");
+		window.location.search = params;
+	}
+
+	document.querySelector(".promo-selector")
+		.addEventListener("change", updatePromo)
+	document.querySelector(".campus-selector")
+		.addEventListener("change", updateCampus)
+	document.querySelector("#search-form")
+		.addEventListener("submit", updateSearch)
+}
+
+script fieldsSettingsHandler() {
+	function handle(e) {
+		e.preventDefault();
+
+		const fields = [];
+		[].__proto__.slice.call(
+			document.querySelectorAll("#fields-settings-form input")).
+			filter(field => field.checked).
+			forEach(field => fields.push(field.id));
+
+		const params = new URLSearchParams(window.location.search);
+		params.delete("fields");
+		params.delete("me");
+		if (fields.length) {
+			params.append("fields", fields);
+		}
+		window.location.search = params;
+	}
+
+	document.querySelector("#fields-settings-form>label")
+		.addEventListener("click", handle);
+}
+
+func getCampusIDs(campuses []models.Campus) []int {
+	ids := make([]int, 0)
+	for _, campus := range campuses {
+		ids = append(ids, campus.ID)
+	}
+	return ids
+}
+
+func getDisplayName(user models.User) string {
+	if user.Title.Name == "" {
+		return user.Login
+	}
+	return strings.Replace(user.Title.Name, "%login", user.Login, -1)
+}
+
+func sort(shownFields map[string]Field) []Field {
+	sortedFields := make([]Field, 0)
+	for _, field := range ToggleableFields {
+		sortedFields = append(sortedFields, shownFields[field.Name])
+	}
+	return sortedFields
+}
+
+templ Leaderboard(users []models.User,
+	promos []Promo, campuses []models.Campus, activeCampus int,
+	url *url.URL, page int, totalPages int, shownFields map[string]Field,
+	currentUserID int, offset int, gotoMyPositionShown bool,
+	search string) {
+	@header()
+	<div id="main" class="mt-[17px]">
+		<div class="flex justify-center items-center space-x-4">
+			<span>Filter by: </span>
+			<select class="select select-bordered promo-selector">
+				<option>Any promo</option>
+				for _, promo := range promos {
+					<option
+						if promo.Active {
+							selected
+						}
+					>promo in { promo.Name }</option>
+				}
+			</select>
+			<span>of</span>
+			<select class="select select-bordered campus-selector">
+				<option>Any campus</option>
+				for _, campus := range campuses {
+					<option
+						if activeCampus == campus.ID {
+							selected
+						}
+					>{ campus.Name } campus</option>
+				}
+			</select>
+			<label for="fields-settings" class="btn">Show fields...</label>
+		</div>
+		<div class="justify-center flex">
+			<form id="search-form" class="space-x-4">
+				<input
+					placeholder="Search..."
+					value={ search }
+					class="input mt-3 input-bordered"
+				/><button class="btn">Go</button>
+			</form>
+		</div>
+		if len(users) == 0 && page == 1 {
+			<div class="text-center pt-3">No users found...</div>
+		} else {
+			@pagination(url, page, totalPages, gotoMyPositionShown)
+			<table class={ "table", "mt-4" }>
+				<thead class="sticky top-0 bg-base-200 z-10">
+					<tr class="text-2xl">
+						<th>Position</th>
+						<th>Profile picture</th>
+						<th>
+							<a href={ urlWithSorting(url, "login") }>
+								User
+							</a>
+						</th>
+						for _, field := range sort(shownFields) {
+							if field.Checked {
+								<th>
+									if field.Sortable {
+										<a href={ urlWithSorting(url, field.Name) }>
+											{ field.PrettyName }
+										</a>
+									} else {
+										{ field.PrettyName }
+									}
+								</th>
+							}
+						}
+					</tr>
+				</thead>
+				<tbody>
+					for i, user := range users {
+						<tr
+							class={ "text-xl", getBgURL(user, currentUserID) }
+						>
+							<td>{ strconv.Itoa(i + offset + 1) }.</td>
+							<td class="flex">
+								<div class="avatar placeholder w-24 h-24 object-contain">
+									<img class="rounded-full" src={ user.ImageLink }/>
+								</div>
+							</td>
+							<td>
+								<a href={ getProfileURL(user) }>
+									{ getDisplayName(user) }
+								</a>
+							</td>
+							if shownFields["display_name"].Checked {
+								<td>{ user.DisplayName }</td>
+							}
+							if shownFields["level"].Checked {
+								<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
+							}
+							if shownFields["weekly_logtime"].Checked {
+								<td>
+									{ fmt.Sprintf("%02dh%02d",
+										int(user.WeeklyLogtime.Hours()),
+										int(user.WeeklyLogtime.Seconds()/60)%60) }
+								</td>
+							}
+							if shownFields["correction_points"].Checked {
+								<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>
+							}
+							if shownFields["wallets"].Checked {
+								<td>{ fmt.Sprintf("%d", user.Wallets) }</td>
+							}
+							if shownFields["campus"].Checked {
+								<td>{ user.Campus.Name }</td>
+							}
+							if shownFields["coalition"].Checked {
+								<td>{ user.Coalition.Name }</td>
+							}
+							if shownFields["blackholed"].Checked {
+								<td>
+									if !user.BlackholedAt.IsZero() &&
+								   user.BlackholedAt.Compare(time.Now()) < 0 {
+										Yes
+									} else {
+										No
+									}
+								</td>
+							}
+						</tr>
+					}
+				</tbody>
+			</table>
+			@pagination(url, page, totalPages, gotoMyPositionShown)
+			<div class="pt-3"></div>
+		}
+	</div>
+	<input type="checkbox" id="fields-settings" class="modal-toggle"/>
+	<div class="modal" role="dialog">
+		<div class="modal-box">
+			<h1 class="text-center font-black">Fields to show:</h1>
+			<form id="fields-settings-form" class="modal-action flex flex-col">
+				<div></div>
+				for _, field := range sort(shownFields) {
+					<div class="flex align-center grow py-1 whitespace-nowrap">
+						<label for={ field.Name }>{ field.PrettyName }</label>
+						<span class="w-full"></span>
+						<input
+							id={ field.Name }
+							type="checkbox"
+							autocomplete="off"
+							class="checkbox"
+							if field.Checked {
+								checked
+							}
+						/>
+					</div>
+				}
+				<label for="fields-settings" class="btn mt-4">Save</label>
+			</form>
+		</div>
+		<label class="modal-backdrop" for="fields-settings"></label>
+	</div>
+	@updateLeaderboardWhenNeeded(getCampusIDs(campuses))
+	@fieldsSettingsHandler()
+	@jumpToMe()
+	@footer()
+}

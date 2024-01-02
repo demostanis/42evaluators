@@ -1,0 +1,11 @@
+Model Information:
+* title:	Blackhole
+* source:	https://sketchfab.com/3d-models/blackhole-32f978d0e7354af293fa498f2998b14c
+* author:	shikoooooooo (https://sketchfab.com/shikoooooooo)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Blackhole" (https://sketchfab.com/3d-models/blackhole-32f978d0e7354af293fa498f2998b14c) by shikoooooooo (https://sketchfab.com/shikoooooooo) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

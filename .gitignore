@@ -1,0 +1,13 @@
+.env
+*_templ.go
+db/42evaluators-dev.sqlite3
+db/42evaluators-dev.sqlite3-journal
+.*.swp
+
+# Devenv
+.devenv*
+devenv.local.nix
+# direnv
+.direnv
+# pre-commit
+.pre-commit-config.yaml

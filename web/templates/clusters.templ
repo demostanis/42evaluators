@@ -1,0 +1,53 @@
+package templates
+
+import (
+	"strconv"
+	"github.com/demostanis/42evaluators/internal/clusters"
+)
+
+script cropToContent(campusID int) {
+	if ((campusID < 161 || campusID > 163) && campusID != 198) {
+		const s = document.querySelector("svg");
+		const r = s.getBBox({ stroke: true });
+		const navbarHeight = document.querySelector(".navbar").getBoundingClientRect().height;
+		s.setAttribute("viewBox", `${r.x} ${r.y} ${r.width} ${r.height}`);
+	}
+}
+
+script selectHandler() {
+	function handle(e) {
+		const search = new URLSearchParams(window.location.search);
+		const newCluster = e.target.selectedOptions[0].value;
+		if (search.get("cluster") != newCluster) {
+			search.delete("cluster");
+			search.append("cluster", newCluster);
+			window.location.search = search;
+		}
+	}
+
+	document.querySelector("#cluster")
+		.addEventListener("change", handle);
+}
+
+templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Cluster) {
+	@header()
+	<style>body{overflow:hidden}</style>
+	<script src="../static/clusters.js"></script>
+	<div id="main" class="flex place-content-center w-full h-full mt-1">
+		@templ.Raw(selectedCluster.Svg)
+		<select class="select select-bordered ml-5 mt-4 absolute left-0" id="cluster">
+			for _, cluster := range allClusters {
+				<option
+					if selectedCluster.ID == cluster.ID {
+						disabled
+						selected
+					}
+					value={ strconv.Itoa(cluster.ID) }
+				>{ cluster.DisplayName }</option>
+			}
+		</select>
+		@cropToContent(selectedCluster.ID)
+		@selectHandler()
+	</div>
+	@footer()
+}
