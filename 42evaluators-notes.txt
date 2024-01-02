@@ -1,0 +1,25 @@
+-----------
+once:
+/v2/users - filter out 3b3 & staff?  if dev filter by campus_id=62
+  /v2/users/:user_id/groups_users - filter out test accounts
+every day:
+same as above, but filter by range[created_at]=<yesterday>,<now>
+-----------
+--> get ids
+
+-----------------------
+/v2/titles_users, (cached) /v2/titles/:title_id - get titles
+/v2/cursus_users&filter[cursus_id]=21 - get levels
+-----------------------
+--> update models in db
+
+expose in graphql:
+{
+	users(page: 42, sortBy: level) {
+		activeTitle
+		displayName
+		level
+		login
+		id
+	}
+}
