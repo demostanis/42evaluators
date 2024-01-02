@@ -1,0 +1,95 @@
+package templates
+
+import (
+	"fmt"
+	"net/url"
+	"encoding/json"
+)
+
+type MeRaw struct {
+	ID          int    `json:"id"`
+	DisplayName string `json:"usual_full_name"`
+	Campuses    []struct {
+		ID        int  `json:"campus_id"`
+		IsPrimary bool `json:"is_primary"`
+	} `json:"campus_users"`
+}
+
+type Me struct {
+	ID          int
+	DisplayName string
+	CampusID    int
+}
+
+func (me *Me) UnmarshalJSON(data []byte) error {
+	var meRaw MeRaw
+
+	err := json.Unmarshal(data, &meRaw)
+	if err != nil {
+		return err
+	}
+
+	me.ID = meRaw.ID
+	me.DisplayName = meRaw.DisplayName
+
+	for _, campus := range meRaw.Campuses {
+		if campus.IsPrimary {
+			me.CampusID = campus.ID
+			break
+		}
+	}
+	return nil
+}
+
+func getOauthURL(clientID string, redirectURI string) templ.SafeURL {
+	return templ.SafeURL(fmt.Sprintf(
+		"https://api.intra.42.fr/oauth/authorize?client_id=%s&redirect_uri=%s&scope=public&response_type=code",
+		clientID, url.QueryEscape(redirectURI),
+	))
+}
+
+script removeUselessParams() {
+	const location = new URL(window.location.href);
+	location.searchParams.delete("code");
+	location.searchParams.delete("needslogin");
+	history.replaceState(null, "", location.href);
+}
+
+templ LoggedOutIndex(clientID string, redirectURI string, needsLogin bool) {
+	@header()
+	if needsLogin {
+		<meta http-equiv="refresh" content={ fmt.Sprintf("0; %s", getOauthURL(clientID, redirectURI)) } />
+		<div class="bg-base-300 w-full h-12 flex items-center justify-center">
+			<span>You need to be logged-in to access this page.</span>
+		</div>
+	}
+	<div class="grid place-items-center h-[85%]">
+		<span>
+			<a class="text-4xl lg:text-7xl inline" href={ getOauthURL(clientID, redirectURI) }>
+				Login with <img class="w-28 inline" src="https://meta.intra.42.fr/assets/42_logo-7dfc9110a5319a308863b96bda33cea995046d1731cebb735e41b16255106c12.svg"/>
+			</a>
+		</span>
+	</div>
+	@removeUselessParams()
+}
+
+templ LoggedInIndex(them *Me, err error) {
+	@header()
+	<div class="m-5 text-4xl lg:text-7xl grid place-items-center h-[80%]">
+		if err != nil {
+			<span>An error occurred: { fmt.Sprintf("%v", err) }</span>
+		} else {
+			<span>Welcome back, { them.DisplayName }!</span>
+			//<div class="flex w-full h-full gap-5">
+			//	<div class="w-1/2 shadow text-center bg-base-300 rounded-3xl">
+			//		<p class="text-3xl my-5 font-bold">Changelog</p>
+			//		<ul class="text-lg list-disc ml-10 mr-4">
+			//			<li>42evaluators has been fully rewritten in Go by students from Le Havre. It is also now open source on <a class="underline" href="https://github.com/demostanis/42evaluators">GitHub!</a></li>
+			//		</ul>
+			//	</div>
+			//</div>
+		}
+	</div>
+	@removeUselessParams()
+	@footer()
+}

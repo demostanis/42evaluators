@@ -1,0 +1,405 @@
+[
+  {
+    "id": 620,
+    "lvl": 0,
+    "xp": 0,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 590,
+    "lvl": 1,
+    "xp": 462,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 591,
+    "lvl": 2,
+    "xp": 2688,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 592,
+    "lvl": 3,
+    "xp": 5885,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 593,
+    "lvl": 4,
+    "xp": 11777,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 594,
+    "lvl": 5,
+    "xp": 29217,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 595,
+    "lvl": 6,
+    "xp": 46255,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 596,
+    "lvl": 7,
+    "xp": 63559,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 597,
+    "lvl": 8,
+    "xp": 74340,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 598,
+    "lvl": 9,
+    "xp": 85483,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 599,
+    "lvl": 10,
+    "xp": 95000,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 600,
+    "lvl": 11,
+    "xp": 105630,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 601,
+    "lvl": 12,
+    "xp": 124446,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 602,
+    "lvl": 13,
+    "xp": 145782,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 603,
+    "lvl": 14,
+    "xp": 169932,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 604,
+    "lvl": 15,
+    "xp": 197316,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 605,
+    "lvl": 16,
+    "xp": 228354,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 606,
+    "lvl": 17,
+    "xp": 263508,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 607,
+    "lvl": 18,
+    "xp": 303366,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 608,
+    "lvl": 19,
+    "xp": 348516,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 609,
+    "lvl": 20,
+    "xp": 399672,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 610,
+    "lvl": 21,
+    "xp": 457632,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 611,
+    "lvl": 22,
+    "xp": 523320,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 612,
+    "lvl": 23,
+    "xp": 597786,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 613,
+    "lvl": 24,
+    "xp": 682164,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 614,
+    "lvl": 25,
+    "xp": 777756,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 615,
+    "lvl": 26,
+    "xp": 886074,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 616,
+    "lvl": 27,
+    "xp": 1008798,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 617,
+    "lvl": 28,
+    "xp": 1147902,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 618,
+    "lvl": 29,
+    "xp": 1305486,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  },
+  {
+    "id": 619,
+    "lvl": 30,
+    "xp": 1484070,
+    "cursus_id": 21,
+    "created_at": "2019-07-29T08:45:11.000Z",
+    "cursus": {
+      "id": 21,
+      "created_at": "2019-07-29T08:45:17.896Z",
+      "name": "42cursus",
+      "slug": "42cursus"
+    }
+  }
+]

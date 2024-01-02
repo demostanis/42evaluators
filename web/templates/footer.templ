@@ -1,0 +1,13 @@
+package templates
+
+import "github.com/demostanis/42evaluators/internal/models"
+
+script fallbackImages(src string) {
+	// TODO: this doesn't work on my phone...
+	[].__proto__.slice.call(document.querySelectorAll("img")).forEach(img =>
+		(img.onerror = () => img.src = src));
+}
+
+templ footer() {
+	@fallbackImages(models.DefaultImageLink)
+}

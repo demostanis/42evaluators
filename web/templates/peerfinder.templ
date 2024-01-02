@@ -1,0 +1,220 @@
+package templates
+
+import (
+	"fmt"
+	"strconv"
+	"github.com/demostanis/42evaluators/internal/models"
+)
+
+func urlForProject(project models.Project) templ.SafeURL {
+	return templ.SafeURL(fmt.Sprintf("https://projects.intra.42.fr/projects/%s/projects_users/%d",
+		project.Subject.Slug, project.ID))
+}
+
+templ Project(project models.Project) {
+	<a href={ urlForProject(project) }>
+		<div class="flex items-center w-32 flex-col">
+			<div class="avatar-group -space-x-6">
+				for _, teamUser := range project.Teams[project.ActiveTeam].Users {
+					<div class="avatar">
+						<div class="w-16 rounded-full">
+							<img src={ teamUser.User.ImageLink }/>
+						</div>
+					</div>
+				}
+			</div>
+			<p class="text-center">
+				{ project.Teams[project.ActiveTeam].Name }
+				if len(project.Teams) > 1 {
+					({ strconv.Itoa(len(project.Teams) - 1) }
+				}
+				if len(project.Teams) > 2 {
+					retries)
+				} else if len(project.Teams) == 2 {
+					retry)
+				}
+			</p>
+		</div>
+	</a>
+}
+
+func calcGap(projects []models.Project) string {
+	maxUsers := 1
+	for _, project := range projects {
+		if len(project.Teams[0].Users) > maxUsers {
+			maxUsers = len(project.Teams[0].Users)
+		}
+	}
+	return fmt.Sprintf("gap-y-[1rem] gap-x-[%drem]", maxUsers*2)
+}
+
+script projectsSettingsHandler() {
+	function handle(e) {
+		e.preventDefault();
+
+		const fields = [];
+		[].__proto__.slice.call(
+			document.querySelectorAll("#projects-settings-form input")).
+			filter(field => field.checked).
+			forEach(field => fields.push(field.id));
+
+		const params = new URLSearchParams(window.location.search);
+		params.delete("subjects");
+		params.delete("me");
+		if (fields.length) {
+			params.append("subjects", fields);
+		}
+		window.location.search = params;
+	}
+
+	document.querySelector("#projects-settings-form label")
+		.addEventListener("click", handle);
+}
+
+script deselectAllHandler() {
+	let active = true;
+	const elem = document.querySelector("#deselect-all")
+	elem.indeterminate = true;
+	elem.addEventListener("click", () => {
+		active = !active;
+		elem.checked = active;
+		elem.indeterminate = active;
+		document.querySelectorAll("#projects-settings-form input").
+			forEach(elem => elem.checked = active);
+	});
+}
+
+script statusSelectHandler() {
+	const statusSelect = document.querySelector("#status-select");
+
+	function handle(e) {
+		e.preventDefault();
+
+		const status = statusSelect.selectedOptions[0].value;
+		const params = new URLSearchParams(window.location.search);
+		params.delete("status");
+		params.append("status", status);
+		window.location.search = params;
+	}
+
+	statusSelect.addEventListener("change", handle);
+}
+
+script campusSelectHandler() {
+	function updateCampus(e) {
+		const params = new URLSearchParams(window.location.search);
+		const selected = e.target.selectedOptions[0];
+
+		params.delete("campus");
+		params.append("campus", selected.value);
+		window.location.search = params;
+	}
+
+	document.querySelector(".campus-selector")
+		.addEventListener("change", updateCampus)
+}
+
+templ PeerFinder(
+	subjects []models.Subject,
+	projects map[int][]models.Project,
+	checkedSubjects map[string]bool,
+	currentStatus string,
+	campuses []models.Campus,
+	activeCampus int,
+) {
+	@header()
+	<style>html,body{overflow-x:hidden;}</style>
+	<div class="flex items-center gap-2 justify-center mt-5">
+		<p>Show teams</p>
+		<select id="status-select" class="select select-bordered">
+			// ugly
+			<option value="active"
+				if currentStatus == "active" {
+					selected
+				}
+			>which are active</option>
+			<option value="finished"
+				if currentStatus == "finished" {
+					selected
+				}
+			>which finished a project</option>
+			<option value="in_progress"
+				if currentStatus == "in_progress" {
+					selected
+				}
+			>working on a project</option>
+			<option value="creating_group"
+				if currentStatus == "creating_group" {
+					selected
+				}
+			>that are not locked</option>
+			<option value="waiting_for_correction"
+				if currentStatus == "waiting_for_correction" {
+					selected
+				}
+			>waiting for corrections</option>
+		</select>
+		<p>in</p>
+		<select class="select select-bordered campus-selector">
+			<option
+				if activeCampus == -1 {
+					selected
+				}
+				value="any"
+			>Any campus</option>
+			for _, campus := range campuses {
+				<option
+					if activeCampus == campus.ID {
+						selected
+					}
+					value={ strconv.Itoa(campus.ID) }
+				>{ campus.Name } campus</option>
+			}
+		</select>
+		<label for="projects-settings" class="btn">Show projects...</label>
+	</div>
+	<div class="flex items-center flex-col m-5">
+		for _, subject := range subjects {
+			if len(projects[subject.ID]) > 0 {
+				<p class="text-8xl m-8 text-center">{ subject.Name }</p>
+				<div class={ "flex flex-wrap justify-evenly w-[90%]", calcGap(projects[subject.ID]) }>
+					for _, project := range projects[subject.ID] {
+						@Project(project)
+					}
+				</div>
+			}
+		}
+	</div>
+	<input type="checkbox" id="projects-settings" class="modal-toggle"/>
+	<div class="modal" id="projects-settings-form" role="dialog">
+		<form class="modal-box">
+			<div class="flex">
+				<h1 class="text-center font-black grow">Projects to show:</h1>
+				<input class="checkbox" id="deselect-all" type="checkbox"/>
+			</div>
+			<div class="py-3"></div>
+			for _, subject := range subjects {
+				<div class="flex align-center py-1">
+					<p class="grow">{ subject.Name }</p>
+					<input
+						id={ subject.Name }
+						type="checkbox"
+						autocomplete="off"
+						class="checkbox"
+						if checkedSubjects[subject.Name] {
+							checked
+						}
+					/>
+				</div>
+			}
+			<label for="projects-settings" class="btn mt-4 !flex">Save</label>
+		</form>
+		<label class="modal-backdrop" for="projects-settings"></label>
+	</div>
+
+	@campusSelectHandler()
+	@statusSelectHandler()
+	@projectsSettingsHandler()
+	@deselectAllHandler()
+	@footer()
+}

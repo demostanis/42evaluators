@@ -1,0 +1,22 @@
+package templates
+
+script changeTheme() {
+	const search = new URLSearchParams(location.search);
+	if (search.has("theme"))
+		document.body.parentNode.dataset.theme = search.get("theme");
+}
+
+templ header() {
+	<!DOCTYPE html>
+	<html data-theme="night"></html>
+	<head>
+		<title>42evaluators</title>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=0.5"/>
+		<link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css"/>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<style>html,body{width:100%;height:100%;}</style>
+	</head>
+	@changeTheme()
+	@navbar()
+}

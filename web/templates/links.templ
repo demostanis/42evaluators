@@ -1,0 +1,72 @@
+package templates
+
+templ Section(name string) {
+	<p class="text-4xl font-bold my-2">
+		{ name }
+	</p>
+}
+
+type UsefulLinkData struct {
+	Name        string
+	Description string
+	Link        string
+}
+
+templ UsefulLink(data UsefulLinkData) {
+	<li class="ml-5">
+		<a class="text-xl" href={ templ.SafeURL(data.Link) }>
+			{ data.Name } — { data.Description }
+		</a>
+	</li>
+}
+
+templ Links() {
+	@header()
+
+	<div class="m-8 flex flex-col  justify-center items-center h-[68vh]">
+		<p class="text-center text-8xl">Useful links</p>
+		@Section("Official links")
+		@UsefulLink(UsefulLinkData{
+			Name: "Github pack",
+			Description: "Get the Github Student Pack for free",
+			Link: "https://github-portal.42.fr",
+		})
+		@UsefulLink(UsefulLinkData{
+			Name: "Discord server",
+			Description: "Official 42 Paris Discord server",
+			Link: "https://discord.com/invite/42",
+		})
+
+		@Section("Tools")
+		@UsefulLink(UsefulLinkData{
+			Name: "Friends42",
+			Description: "Cluster maps with the ability of adding friends",
+			Link: "https://friends42.fr",
+		})
+		@UsefulLink(UsefulLinkData{
+			Name: "Codam's Peerfinder",
+			Description: "Like 42evaluators' peer finder, but prettier",
+			Link: "https://find-peers.codam.nl",
+		})
+		@UsefulLink(UsefulLinkData{
+			Name: "s42",
+			Description: "Formerly students42, 42evaluators-like website mostly under construction",
+			Link: "https://s42.app",
+		})
+		@UsefulLink(UsefulLinkData{
+			Name: "RNCP",
+			Description: "Check your progress on RNCP certificates",
+			Link: "https://rncp.hacku.org",
+		})
+
+		@Section("Do not use")
+		@UsefulLink(UsefulLinkData{
+			Name: "42Evals",
+			Description: "Get evaluation scales for common core projects",
+			Link: "https://42evals.com",
+		})
+	</div>
+	<p class="text-center bottom-8 absolute left-0 right-0">
+		To add a link to this list, open a pull request to the <a href="https://github.com/demostanis/42evaluators/pulls" class="underline">GitHub repository</a>
+	</p>
+}

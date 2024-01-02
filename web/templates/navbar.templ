@@ -1,0 +1,62 @@
+package templates
+
+type ctxKey string
+
+const UrlCtxKey ctxKey = "url"
+
+func getActive(ctx context.Context, url string) string {
+	if ctx.Value(UrlCtxKey).(string) == url {
+		return "active"
+	}
+	return ""
+}
+
+templ Link(url string, name string) {
+	<li>
+		<a href={ templ.SafeURL(url) } class={ "!text-4xl lg:!text-xl",
+				getActive(ctx, url) }>
+			{ name }
+		</a>
+	</li>
+}
+
+templ links() {
+	@Link("/leaderboard/", "Leaderboard")
+	@Link("/peerfinder/", "Peer finder")
+	@Link("/blackhole/", "Blackhole map")
+	@Link("/clusters/", "Clusters map")
+	@Link("/calculator/", "XP calculator")
+	@Link("/useful-links/", "Useful links")
+}
+
+templ navbar() {
+	<div class="navbar bg-base-200">
+		<div class="navbar-start">
+			<div class="dropdown z-50">
+				<div tabindex="0" role="button" class="btn btn-ghost lg:!hidden">
+					☰
+				</div>
+				<ul tabindex="0" class="menu menu-sm dropdown-content bg-base-200 rounded-box shadow-xl w-72">
+					@links()
+				</ul>
+			</div>
+			<a href="/" class="m-3 text-2xl font-bold">
+				42evaluators
+			</a>
+		</div>
+		<div class="navbar-center hidden lg:flex">
+			<ul class="menu menu-horizontal space-x-4">
+				@links()
+			</ul>
+		</div>
+		<div class="navbar-end">
+			<a class="btn" href="https://github.com/demostanis/42evaluators">
+				<img
+					class="mr-1 contrast-0"
+					src="https://cdn-icons-png.flaticon.com/512/25/25231.png"
+					width="16" />
+				Star on GitHub
+			</a>
+		</div>
+	</div>
+}

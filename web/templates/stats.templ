@@ -1,0 +1,47 @@
+package templates
+
+import (
+	"github.com/demostanis/42evaluators/internal/api"
+	"strconv"
+)
+
+script realtimeStats() {
+	const secure = window.location.protocol == "https:";
+	const ws = new WebSocket((secure ? "wss://" : "ws://")
+		+ window.location.host
+		+ window.location.pathname.substr(0, window.location.pathname.length-1) // remove trailing /
+		+ ".live");
+
+	ws.onmessage = message => {
+		const data = JSON.parse(message.data);
+
+		const value = `${data.requestsSoFar}/${data.totalRequests} requests`;
+		document.querySelector(".stat-value").textContent = value;
+		const progress = data.requestsSoFar/data.totalRequests*100;
+		document.querySelector("progress").value = parseInt(progress);
+	}
+}
+
+templ Stats(stats *api.Stats) {
+	@header()
+
+	<div class="stats !flex flex-col justify-center items-center w-full h-[80%]">
+		<div class="stat !w-1/5">
+			<div class="stat-title">
+				Fetching API data...
+			</div>
+			<div class="stat-value">
+				{ stats.String() }
+			</div>
+			<div class="stat-desc">
+				<progress class="progress"
+					value={ strconv.Itoa(stats.Percent()) }
+					max="100"
+				></progress>
+			</div>
+		</div>
+	</div>
+
+	@realtimeStats()
+	@footer()
+}
