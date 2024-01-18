@@ -1,9 +1,9 @@
 package api
 
 import (
-	"net/http"
-	"io/ioutil"
 	"encoding/json"
+	"io"
+	"net/http"
 )
 
 const API_URL = "https://api.intra.42.fr"
@@ -47,13 +47,13 @@ func ApiRequest[T any](
 	defer resp.Body.Close()
 	debugResponse(resp)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	var result T
-	err = json.Unmarshal([]byte(body), &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
 	}

@@ -2,9 +2,14 @@ package main
 
 import (
 	"fmt"
+	"github.com/demostanis/42evaluators2.0/bot"
 	"github.com/demostanis/42evaluators2.0/internal/api"
+	"github.com/demostanis/42evaluators2.0/internal/database/config"
 	"github.com/demostanis/42evaluators2.0/internal/oauth"
 	"github.com/demostanis/42evaluators2.0/internal/secrets"
+	"github.com/joho/godotenv"
+	"github.com/spf13/cobra"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -83,7 +88,78 @@ type App struct {
 	RateLimit string `json:"rate_limit"`
 }
 
+var rootCmd = &cobra.Command{Use: "42evaluators"}
+
+var keyCount int
+var keygenCmd = &cobra.Command{
+	Use:   "keygen",
+	Short: "Launches a software to generate API keys",
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := godotenv.Load(); err != nil {
+			log.Fatal(err)
+		}
+
+		psqlUsername, ok := os.LookupEnv("PSQL_USERNAME")
+		if !ok {
+			log.Fatal("error no PSQL_USERNAME found in .env")
+		}
+
+		psqlPassword, ok := os.LookupEnv("PSQL_PASSWORD")
+		if !ok {
+			log.Fatal("error no PSQL_PASSWORD found in .env")
+		}
+
+		psqlPort, ok := os.LookupEnv("PSQL_PORT")
+		if !ok {
+			log.Fatal("error no PSQL_PORT found in .env")
+		}
+
+		psqlDbName, ok := os.LookupEnv("PSQL_DB_NAME")
+		if !ok {
+			log.Fatal("error no PSQL_DB_NAME found in .env")
+		}
+
+		dbConn, err := config.New(fmt.Sprintf("postgres://%s:%s@localhost:%s/%s",
+			psqlUsername,
+			psqlPassword,
+			psqlPort,
+			psqlDbName,
+		))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err = bot.Run(keyCount, dbConn); err != nil {
+			log.Fatal(err)
+		}
+	},
+}
+
+var prodCmd = &cobra.Command{
+	Use:   "prod",
+	Short: "Run in production mode",
+	Run:   func(cmd *cobra.Command, args []string) {},
+}
+
+// todo à remplir
+var testCmd = &cobra.Command{}
+
 func main() {
+	rootCmd.AddCommand(keygenCmd)
+	rootCmd.AddCommand(prodCmd)
+	rootCmd.AddCommand(testCmd)
+
+	keygenCmd.Flags().IntVarP(&keyCount, "count", "c", 1, "Number of API keys to generate")
+
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatalf("error running command: %v", err)
+	}
+}
+
+// tmp func by chayanne
+// refactor le code ds une autre func ds un autre dir pr réduire la longueur du main
+func tmp() {
+
 	secrets, err := secrets.GetSecrets()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
