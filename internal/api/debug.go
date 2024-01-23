@@ -1,15 +1,15 @@
 package api
 
 import (
-	"os"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
+	"os"
 )
 
 const DEBUG_VAR = "httpdebug"
 
-func debugRequest(req *http.Request) {
+func DebugRequest(req *http.Request) {
 	if os.Getenv(DEBUG_VAR) != "" {
 		output, err := httputil.DumpRequestOut(req, true)
 		if err == nil {
@@ -20,7 +20,7 @@ func debugRequest(req *http.Request) {
 	}
 }
 
-func debugResponse(res *http.Response) {
+func DebugResponse(res *http.Response) {
 	if os.Getenv(DEBUG_VAR) != "" {
 		output, err := httputil.DumpResponse(res, true)
 		if err == nil {

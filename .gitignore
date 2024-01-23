@@ -1,1 +1,4 @@
 .env
+*_templ.go
+42evaluators-dev.sqlite3
+.*.swp

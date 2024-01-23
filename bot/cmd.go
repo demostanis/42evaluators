@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,9 +29,9 @@ var (
 	DefaultSleepDelay  = 2 * time.Second
 	DefaultRedirectURI = "http://localhost:8000"
 
-	ErrNoAuthenticityToken = errors.New("error: no AUTHENTICITY_TOKEN found in .env file")
-	ErrNoIntraSession      = errors.New("error: no INTRA_SESSION_TOKEN found in .env file")
-	ErrNoUserIdToken       = errors.New("error: no USER_ID_TOKEN found in .env file")
+	ErrNoAuthenticityToken = errors.New("no AUTHENTICITY_TOKEN found in .env file")
+	ErrNoIntraSession      = errors.New("no INTRA_SESSION_TOKEN found in .env file")
+	ErrNoUserIdToken       = errors.New("no USER_ID_TOKEN found in .env file")
 )
 
 type Session struct {
@@ -45,7 +46,6 @@ type Session struct {
 
 type APIResult struct {
 	Name   string
-	Key    string
 	AppID  string
 	UID    string
 	Secret string
@@ -65,7 +65,7 @@ func Run(x int, db *config.DB) error {
 		return err
 	}
 
-	s, err := newSession(db)
+	s, err := NewSession(db)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func Run(x int, db *config.DB) error {
 
 // newSession creates an instance of Session & looks up for
 // authentication tokens in your .env file.
-func newSession(db *config.DB) (*Session, error) {
+func NewSession(db *config.DB) (*Session, error) {
 	authToken, ok := os.LookupEnv("AUTHENTICITY_TOKEN")
 	if !ok {
 		return nil, ErrNoAuthenticityToken
@@ -100,6 +100,54 @@ func newSession(db *config.DB) (*Session, error) {
 		client:       &http.Client{Timeout: 30 * time.Second},
 		logger:       zerolog.New(os.Stdout).With().Timestamp().Str("service", "42api-gen").Logger(),
 	}, nil
+}
+
+func (s *Session) DeleteAllApplications() error {
+	keys, err := s.repo.GetAllApiKeys()
+	if err != nil {
+		return err
+	}
+
+	for _, key := range keys {
+		_ = s.DeleteApplication(key.AppID)
+	}
+	s.repo.DeleteAllApiKeys()
+	return nil
+}
+
+func (s *Session) DeleteApplication(id int) error {
+	req := &http.Request{
+		Method: http.MethodPost,
+		URL: &url.URL{
+			Scheme: "https", Host: host,
+			Path: fmt.Sprintf("/oauth/applications/%d", id),
+		},
+		Host: host,
+		Body: io.NopCloser(
+			bytes.NewReader(
+				[]byte("_method=delete&authenticity_token=" +
+					url.QueryEscape(s.authToken)))),
+		Header: http.Header{
+			"authority":    {"profile.intra.42.fr"},
+			"cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},
+			"origin":       {"https://profile.intra.42.fr"},
+			"referer":      {fmt.Sprintf("https://profile.intra.42.fr/oauth/applications/%d", id)},
+			"User-Agent":   {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
+			"accept":       {"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
+			"content-type": {"application/x-www-form-urlencoded"},
+		},
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("DeleteApplication client error: %w", err)
+	}
+
+	fmt.Println(resp.StatusCode)
+	if resp.StatusCode != 302 && resp.StatusCode != 200 {
+		return fmt.Errorf("unexpected response status, got %s", resp.Status)
+	}
+	return nil
 }
 
 // createApiKeys creates x amount of 42 API keys.
@@ -146,10 +194,15 @@ func (s *Session) createApiKeys(x int) error {
 		}
 
 		api := &models.ApiKeyModel{Name: appName}
-		api.AppID = strings.Split(doc.Find("a[href^='/oauth/applications/']").AttrOr("href", ""), "/")[3]
-		if api.AppID == "" {
+		appIDraw := strings.Split(doc.Find("a[href^='/oauth/applications/']").AttrOr("href", ""), "/")[3]
+		if appIDraw == "" {
 			return errors.New("error could not find the application ID in html body")
 		}
+		appID, err := strconv.Atoi(appIDraw)
+		if err != nil {
+			return err
+		}
+		api.AppID = appID
 
 		if err = s.fetchApiData(api); err != nil {
 			return err
@@ -171,7 +224,7 @@ func (s *Session) createApiKeys(x int) error {
 func (s *Session) fetchApiData(api *models.ApiKeyModel) error {
 	req := &http.Request{
 		Method: http.MethodGet,
-		URL:    &url.URL{Scheme: "https", Host: host, Path: "/oauth/applications/" + api.AppID},
+		URL:    &url.URL{Scheme: "https", Host: host, Path: fmt.Sprintf("/oauth/applications/%d", api.AppID)},
 		Header: http.Header{
 			"authority":  {"profile.intra.42.fr"},
 			"cookie":     {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},

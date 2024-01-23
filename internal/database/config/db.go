@@ -2,8 +2,6 @@ package config
 
 import (
 	"github.com/demostanis/42evaluators2.0/internal/database/models"
-	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -15,27 +13,23 @@ type DB struct {
 	DB *gorm.DB
 }
 
-func New(dsn string) (*DB, error) {
-	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+func New(dialector gorm.Dialector) (*DB, error) {
+	conn, err := gorm.Open(dialector, &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
+	phyDb, _ := conn.DB()
+	phyDb.SetMaxOpenConns(1)
 
 	if err = conn.AutoMigrate(models.ApiKeyModel{}); err != nil {
+		return nil, err
+	}
+	if err = conn.AutoMigrate(models.User{}); err != nil {
 		return nil, err
 	}
 	//	mitigateErrors(AutoMigrateModel[any](conn, models.ApiKeyModel))
 
 	return &DB{DB: conn}, nil
-}
-
-func NewTestEnv(dbPath string) (*DB, error) {
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
-	if err != nil {
-		return nil, err
-	}
-
-	return &DB{DB: db}, nil
 }
 
 //laisser les func en bas je vais voir si y'a vraiment une utilité ou non, ça dépendra du nombre de tables

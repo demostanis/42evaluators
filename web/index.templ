@@ -1,0 +1,22 @@
+package web
+
+import (
+	"github.com/demostanis/42evaluators2.0/internal/database/models"
+	"fmt"
+	"strings"
+)
+
+templ index(users []models.User) {
+	@header()
+	<table class="table-auto">
+		<tbody>
+		for _, user := range users {
+			<tr>
+				<td><img width="100" src={ user.ImageLink } /></td>
+				<td class="px-5">{ strings.Replace(user.Title, "%login", user.Login, -1) }</td>
+				<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
