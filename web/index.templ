@@ -7,7 +7,6 @@ import (
 )
 
 func getBgUrl(user models.User) string {
-	fmt.Println(user.Coalition.Name)
 	return "bg-[url(" + user.Coalition.CoverUrl + ")]"
 }
 
@@ -27,7 +26,7 @@ templ index(users []models.User) {
 				<td><div class="avatar placeholder w-24 h-24 object-contain">
 					<img class="rounded-full" src={ user.ImageLink } />
 				</div></td>
-				<td>{ strings.Replace(user.Title, "%login", user.Login, -1) }</td>
+				<td>{ strings.Replace(user.Title.Name, "%login", user.Login, -1) }</td>
 				<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
 			</tr>
 		}

@@ -34,6 +34,9 @@ func New(dialector gorm.Dialector) (*DB, error) {
 	if err = conn.AutoMigrate(models.Coalition{}); err != nil {
 		return nil, err
 	}
+	if err = conn.AutoMigrate(models.Title{}); err != nil {
+		return nil, err
+	}
 	//	mitigateErrors(AutoMigrateModel[any](conn, models.ApiKeyModel))
 
 	return &DB{DB: conn}, nil

@@ -21,6 +21,17 @@ type ApiKeyModel struct {
 	Secret string
 }
 
+type Title struct {
+	gorm.Model
+	ID int `json:"id"`
+	Name string `json:"name"`
+}
+
+var DefaultTitle = Title{
+	ID: -1,
+	Name: "%login",
+}
+
 type User struct {
 	gorm.Model
 	ID           int       `json:"id"`
@@ -33,10 +44,10 @@ type User struct {
 	} `json:"image" gorm:"-"`
 
 	ImageLink string
-	Title     string
 	IsTest    bool
 	Level     float64
 	Coalition Coalition `gorm:"foreignKey:ID"`
+	Title     Title     `gorm:"foreignKey:ID"`
 }
 
 type CursusUser struct {
@@ -77,7 +88,7 @@ func (user *User) UnmarshalJSON(data []byte) error {
 	}
 
 	// Default title, just displays the login
-	user.Title = "%login"
+	user.Title = DefaultTitle
 
 	return nil
 }

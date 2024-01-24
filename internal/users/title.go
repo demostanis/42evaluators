@@ -12,32 +12,37 @@ type TitleId struct {
 	Selected bool `json:"selected"`
 }
 
-type Title struct {
-	Name string `json:"name"`
-}
-
-func getTitle(user models.User) string {
+func getTitle(user models.User, db *gorm.DB) models.Title {
 	titles, err := api.Do[[]TitleId](
 		api.NewRequest(fmt.Sprintf("/v2/users/%d/titles_users", user.ID)).
 			Authenticated())
 	if err == nil {
 		for _, title := range *titles {
 			if title.Selected {
-				actualTitle, err := api.Do[Title](
-					api.NewRequest(fmt.Sprintf("/v2/titles/%d", title.Id)).
-						Authenticated())
-				if err == nil {
-					return (*actualTitle).Name
-				} else {
-					break
+				var cachedTitle models.Title
+				err := db.
+					Where("id = ?", title.Id).
+					First(&cachedTitle)
+
+				if err.Error == gorm.ErrRecordNotFound {
+					actualTitle, err := api.Do[models.Title](
+						api.NewRequest(fmt.Sprintf("/v2/titles/%d", title.Id)).
+							Authenticated())
+					if err == nil {
+						db.Save(&actualTitle)
+						return *actualTitle
+					} else {
+						break
+					}
 				}
+				return cachedTitle
 			}
 		}
 	}
-	return "%login"
+	return models.DefaultTitle
 }
 
 func setTitle(user models.User, db *gorm.DB) {
-	user.Title = getTitle(user)
+	user.Title = getTitle(user, db)
 	db.Save(&user)
 }

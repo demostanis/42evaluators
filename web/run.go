@@ -16,6 +16,7 @@ func Run(db *gorm.DB) {
 		var users []models.User
 		db.
 			Preload("Coalition").
+			Preload("Title").
 			Limit(UsersPerPage).
 			Order("level DESC").
 			Where("is_staff = false AND is_test = false").
