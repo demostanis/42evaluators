@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/demostanis/42evaluators2.0/internal/database/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type DBConfig interface {
@@ -14,7 +15,10 @@ type DB struct {
 }
 
 func New(dialector gorm.Dialector) (*DB, error) {
-	conn, err := gorm.Open(dialector, &gorm.Config{})
+	conn, err := gorm.Open(dialector, &gorm.Config{
+		// TODO: remove
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -25,6 +29,9 @@ func New(dialector gorm.Dialector) (*DB, error) {
 		return nil, err
 	}
 	if err = conn.AutoMigrate(models.User{}); err != nil {
+		return nil, err
+	}
+	if err = conn.AutoMigrate(models.Coalition{}); err != nil {
 		return nil, err
 	}
 	//	mitigateErrors(AutoMigrateModel[any](conn, models.ApiKeyModel))

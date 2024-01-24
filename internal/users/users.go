@@ -52,6 +52,7 @@ func fetchOnePage(page int, db *gorm.DB) {
 	for _, user := range *users {
 		go setIsTest(user, db)
 		go setTitle(user, db)
+		go setCoalition(user, db)
 		go func(user models.User) {
 			db.Save(&user)
 		}(user)

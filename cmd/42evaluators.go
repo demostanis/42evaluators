@@ -6,7 +6,7 @@ import (
 	"github.com/demostanis/42evaluators2.0/internal/api"
 	"github.com/demostanis/42evaluators2.0/internal/database/config"
 	"github.com/demostanis/42evaluators2.0/internal/database/repositories"
-	//"github.com/demostanis/42evaluators2.0/internal/users"
+	"github.com/demostanis/42evaluators2.0/internal/users"
 	"github.com/demostanis/42evaluators2.0/web"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
@@ -83,7 +83,7 @@ func tmp() {
 		log.Fatal(err)
 	}
 
-	//users.GetUsers(db.DB)
+	users.GetUsers(db.DB)
 
 	web.Run(db.DB)
 }

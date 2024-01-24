@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+type Coalition struct {
+	ID int `json:"id"`
+	Name string `json:"name"`
+	CoverUrl string `json:"cover_url"`
+}
+
 type ApiKeyModel struct {
 	gorm.Model
 	Name   string
@@ -30,6 +36,7 @@ type User struct {
 	Title     string
 	IsTest    bool
 	Level     float64
+	Coalition Coalition `gorm:"foreignKey:ID"`
 }
 
 type CursusUser struct {

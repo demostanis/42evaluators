@@ -15,8 +15,6 @@ require (
 )
 
 require (
-	github.com/a-h/templ v0.2.513 // indirect
-	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
@@ -28,7 +26,12 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
+)
+
+require (
+	github.com/a-h/templ v0.2.513
+	github.com/andybalholm/cascadia v1.3.2 // indirect
+	golang.org/x/net v0.20.0 // indirect
 )

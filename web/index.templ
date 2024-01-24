@@ -6,6 +6,11 @@ import (
 	"strings"
 )
 
+func getBgUrl(user models.User) string {
+	fmt.Println(user.Coalition.Name)
+	return "bg-[url(" + user.Coalition.CoverUrl + ")]"
+}
+
 templ index(users []models.User) {
 	@header()
 	<table class="table">
@@ -18,7 +23,7 @@ templ index(users []models.User) {
 		</thead>
 		<tbody>
 		for _, user := range users {
-			<tr class="text-xl">
+			<tr class={ "text-xl", getBgUrl(user) }>
 				<td><div class="avatar placeholder w-24 h-24 object-contain">
 					<img class="rounded-full" src={ user.ImageLink } />
 				</div></td>

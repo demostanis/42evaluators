@@ -15,6 +15,7 @@ func Run(db *gorm.DB) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		var users []models.User
 		db.
+			Preload("Coalition").
 			Limit(UsersPerPage).
 			Order("level DESC").
 			Where("is_staff = false AND is_test = false").
