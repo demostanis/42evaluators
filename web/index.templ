@@ -8,18 +8,20 @@ import (
 
 templ index(users []models.User) {
 	@header()
-	<table class="table-auto w-full">
+	<table class="table">
 		<thead>
-			<tr class="text-4xl">
-				<th class="text-left">Profile picture</th>
-				<th class="text-left">User</th>
-				<th class="text-left">Level</th>
+			<tr class="text-2xl">
+				<th>Profile picture</th>
+				<th>User</th>
+				<th>Level</th>
 			</tr>
 		</thead>
 		<tbody>
 		for _, user := range users {
-			<tr class="text-2xl px-5 border-b">
-				<td><img width="100" src={ user.ImageLink } /></td>
+			<tr class="text-xl">
+				<td><div class="avatar placeholder w-24 h-24 object-contain">
+					<img class="rounded-full" src={ user.ImageLink } />
+				</div></td>
 				<td>{ strings.Replace(user.Title, "%login", user.Login, -1) }</td>
 				<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
 			</tr>
