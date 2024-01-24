@@ -40,6 +40,7 @@ type User struct {
 	IsStaff      bool      `json:"staff?"`
 	BlackholedAt time.Time `json:"blackholed_at"`
 	Image        struct {
+		// TODO: use small image
 		Link string `json:"link"`
 	} `json:"image" gorm:"-"`
 

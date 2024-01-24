@@ -3,6 +3,7 @@ package web
 import (
 	"github.com/demostanis/42evaluators2.0/internal/database/models"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -10,26 +11,63 @@ func getBgUrl(user models.User) string {
 	return "bg-[url(" + user.Coalition.CoverUrl + ")]"
 }
 
-templ index(users []models.User) {
+func getIsActiveClass(isActive bool) string {
+	var isActiveClass string
+	if isActive {
+		isActiveClass = "btn-active"
+	}
+	return isActiveClass
+}
+
+func getLinkForPage(page int) string {
+	if page == 1 {
+		return "/"
+	}
+	return fmt.Sprintf("/?page=%d", page)
+}
+
+templ pageButton(page int, isActive bool) {
+	<button
+		class={ "join-item", "btn", "btn-md", getIsActiveClass(isActive) }
+		hx-post={ getLinkForPage(page) } hx-target="#main"
+		hx-swap="outerHTML" hx-replace-url="true"
+	>{ strconv.Itoa(page) }</button>
+}
+
+func getProfileUrl(user models.User) templ.SafeURL {
+	return templ.SafeURL(fmt.Sprintf("https://profile.intra.42.fr/users/%s", user.Login))
+}
+
+templ index(users []models.User, page int, totalPages int64) {
 	@header()
-	<table class="table">
-		<thead>
-			<tr class="text-2xl">
-				<th>Profile picture</th>
-				<th>User</th>
-				<th>Level</th>
-			</tr>
-		</thead>
-		<tbody>
-		for _, user := range users {
-			<tr class={ "text-xl", getBgUrl(user) }>
-				<td><div class="avatar placeholder w-24 h-24 object-contain">
-					<img class="rounded-full" src={ user.ImageLink } />
-				</div></td>
-				<td>{ strings.Replace(user.Title.Name, "%login", user.Login, -1) }</td>
-				<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
-			</tr>
-		}
-		</tbody>
-	</table>
+
+	<div id="main">
+		<div class="join justify-center flex">
+			for i := 1; i <= int(totalPages + 1); i++ {
+				@pageButton(i, i == page)
+			}
+		</div>
+		<table class="table">
+			<thead>
+				<tr class="text-2xl">
+					<th>Profile picture</th>
+					<th>User</th>
+					<th>Level</th>
+				</tr>
+			</thead>
+			<tbody>
+			for _, user := range users {
+				<tr class={ "text-xl", getBgUrl(user) }>
+					<td><div class="avatar placeholder w-24 h-24 object-contain">
+						<img class="rounded-full" src={ user.ImageLink } />
+					</div></td>
+					<td><a href={ getProfileUrl(user) }>
+						{ strings.Replace(user.Title.Name, "%login", user.Login, -1) }
+					</a></td>
+					<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
+				</tr>
+			}
+			</tbody>
+		</table>
+	</div>
 }

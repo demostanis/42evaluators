@@ -59,7 +59,7 @@ func openDb(databaseType DatabaseType) (*config.DB, error) {
 			psqlDbName,
 		)))
 	} else {
-		return config.New(sqlite.Open("42evaluators-dev.sqlite3"))
+		return config.New(sqlite.Open("db/42evaluators-dev.sqlite3"))
 	}
 }
 
