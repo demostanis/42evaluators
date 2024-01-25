@@ -26,16 +26,19 @@ func Run(db *gorm.DB) {
 			Count(&totalPages)
 
 		var users []models.User
+		offset := (page - 1) * UsersPerPage
 		db.
 			Preload("Coalition").
 			Preload("Title").
-			Offset((page - 1) * UsersPerPage).
+			Offset(offset).
 			Limit(UsersPerPage).
 			Order("level DESC").
 			Where("is_staff = false AND is_test = false").
 			Find(&users)
 
-		index(users, page, totalPages / UsersPerPage).Render(r.Context(), w)
+		index(users,
+			page, totalPages / UsersPerPage,
+			offset).Render(r.Context(), w)
 	})
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
