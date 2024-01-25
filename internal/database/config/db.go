@@ -1,65 +1,81 @@
 package config
 
 import (
-	"github.com/demostanis/42evaluators/internal/database/models"
+	"os"
+	"fmt"
+	"errors"
+	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 )
 
-type DBConfig interface {
-	GetDB() *gorm.DB
-}
+type DatabaseType int
 
-type DB struct {
-	DB *gorm.DB
-}
+const (
+	Production DatabaseType = iota
+	Development
+)
 
-func New(dialector gorm.Dialector) (*DB, error) {
-	conn, err := gorm.Open(dialector, &gorm.Config{
+func newDb(dialector gorm.Dialector) (*gorm.DB, error) {
+	db, err := gorm.Open(dialector, &gorm.Config{
 		// TODO: remove
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		return nil, err
 	}
-	phyDb, _ := conn.DB()
+
+	// Used to mitigate "database is locked" errors
+	phyDb, _ := db.DB()
 	phyDb.SetMaxOpenConns(1)
 
-	if err = conn.AutoMigrate(models.ApiKeyModel{}); err != nil {
+	if err = db.AutoMigrate(models.ApiKey{}); err != nil {
 		return nil, err
 	}
-	if err = conn.AutoMigrate(models.User{}); err != nil {
+	if err = db.AutoMigrate(models.User{}); err != nil {
 		return nil, err
 	}
-	if err = conn.AutoMigrate(models.Coalition{}); err != nil {
+	if err = db.AutoMigrate(models.Coalition{}); err != nil {
 		return nil, err
 	}
-	if err = conn.AutoMigrate(models.Title{}); err != nil {
+	if err = db.AutoMigrate(models.Title{}); err != nil {
 		return nil, err
 	}
-	//	mitigateErrors(AutoMigrateModel[any](conn, models.ApiKeyModel))
 
-	return &DB{DB: conn}, nil
+	return db, nil
 }
 
-//laisser les func en bas je vais voir si y'a vraiment une utilité ou non, ça dépendra du nombre de tables
-
-// AutoMigrateModel checks if a table is present in a database and creates it if not.
-func AutoMigrateModel[T any](db *gorm.DB, models []T) []error {
-	errors := make([]error, len(models))
-	for _, model := range models {
-		if err := db.AutoMigrate(model); err != nil {
-			errors = append(errors, err)
+func OpenDb(databaseType DatabaseType) (*gorm.DB, error) {
+	if databaseType == Production {
+		psqlUsername, ok := os.LookupEnv("PSQL_USERNAME")
+		if !ok {
+			return nil, errors.New("no PSQL_USERNAME found in .env")
 		}
-	}
-	return errors
-}
 
-func mitigateErrors(errors []error) bool {
-	for _, err := range errors {
-		if err != nil {
-			return true
+		psqlPassword, ok := os.LookupEnv("PSQL_PASSWORD")
+		if !ok {
+			return nil, errors.New("no PSQL_PASSWORD found in .env")
 		}
+
+		psqlPort, ok := os.LookupEnv("PSQL_PORT")
+		if !ok {
+			return nil, errors.New("no PSQL_PORT found in .env")
+		}
+
+		psqlDbName, ok := os.LookupEnv("PSQL_DB_NAME")
+		if !ok {
+			return nil, errors.New("no PSQL_DB_NAME found in .env")
+		}
+
+		return newDb(postgres.Open(fmt.Sprintf("postgres://%s:%s@localhost:%s/%s",
+			psqlUsername,
+			psqlPassword,
+			psqlPort,
+			psqlDbName,
+		)))
+	} else {
+		return newDb(sqlite.Open("db/42evaluators-dev.sqlite3"))
 	}
-	return false
 }

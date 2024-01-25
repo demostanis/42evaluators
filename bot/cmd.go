@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/demostanis/42evaluators/internal/database/config"
-	"github.com/demostanis/42evaluators/internal/database/models"
+	"github.com/demostanis/42evaluators/internal/models"
 	"github.com/demostanis/42evaluators/internal/database/repositories"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
+	"gorm.io/gorm"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -60,7 +60,7 @@ type APIResult struct {
 // Run creates a new session and generates API keys, then saves them to out/api_keys.csv.
 // The x parameter is the amount of API keys you wish to create & redirectURI is the
 // URL you wish to have as redirection after an user authenticates through 42.
-func Run(x int, db *config.DB) error {
+func Run(x int, db *gorm.DB) error {
 	if err := godotenv.Load(); err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func Run(x int, db *config.DB) error {
 
 // newSession creates an instance of Session & looks up for
 // authentication tokens in your .env file.
-func NewSession(db *config.DB) (*Session, error) {
+func NewSession(db *gorm.DB) (*Session, error) {
 	authToken, ok := os.LookupEnv("AUTHENTICITY_TOKEN")
 	if !ok {
 		return nil, ErrNoAuthenticityToken
@@ -92,7 +92,7 @@ func NewSession(db *config.DB) (*Session, error) {
 	}
 
 	return &Session{
-		repo:         repositories.NewApiKeysRepository(db.DB),
+		repo:         repositories.NewApiKeysRepository(db),
 		redirectURI:  DefaultRedirectURI,
 		authToken:    authToken,
 		intraSession: intraSession,
@@ -193,7 +193,7 @@ func (s *Session) createApiKeys(x int) error {
 			return err
 		}
 
-		api := &models.ApiKeyModel{Name: appName}
+		api := &models.ApiKey{Name: appName}
 		appIDraw := strings.Split(doc.Find("a[href^='/oauth/applications/']").AttrOr("href", ""), "/")[3]
 		if appIDraw == "" {
 			return errors.New("error could not find the application ID in html body")
@@ -221,7 +221,7 @@ func (s *Session) createApiKeys(x int) error {
 }
 
 // fetchApiData fetches the API Key from the html page.
-func (s *Session) fetchApiData(api *models.ApiKeyModel) error {
+func (s *Session) fetchApiData(api *models.ApiKey) error {
 	req := &http.Request{
 		Method: http.MethodGet,
 		URL:    &url.URL{Scheme: "https", Host: host, Path: fmt.Sprintf("/oauth/applications/%d", api.AppID)},

@@ -3,11 +3,11 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	//"fmt"
 	"io"
 	"maps"
 	"net/http"
-	"time"
+	//"time"
 )
 
 const ApiUrl = "https://api.intra.42.fr"
@@ -66,7 +66,7 @@ func Do[T any](apiReq *ApiRequest) (*T, error) {
 		if len(clients) == 0 {
 			return nil, errors.New("no clients available")
 		}
-		fmt.Printf("trying to find non rate limited client at %d for %s\n", time.Now().UnixNano(), apiReq.endpoint)
+		//fmt.Printf("trying to find non rate limited client at %d for %s\n", time.Now().UnixNano(), apiReq.endpoint)
 		client = findNonRateLimitedClient()
 	} else {
 		client = RateLimitedClient("")

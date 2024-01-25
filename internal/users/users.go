@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/demostanis/42evaluators/internal/api"
-	"github.com/demostanis/42evaluators/internal/database/models"
+	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/gorm"
 	"maps"
 	"net/http"
@@ -29,6 +29,9 @@ func getPageCount() (int, error) {
 			WithParams(DefaultParams).
 			OutputHeadersIn(&headers))
 
+	if headers == nil {
+		return 0, errors.New("request did not contain any headers")
+	}
 	_, after, _ := strings.Cut(headers.Get("link"), "page=")
 	pageCountRaw, _, _ := strings.Cut(after, "&")
 	pageCount, err := strconv.Atoi(pageCountRaw)

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/demostanis/42evaluators/internal/api"
-	"github.com/demostanis/42evaluators/internal/database/models"
+	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/gorm"
 )
 

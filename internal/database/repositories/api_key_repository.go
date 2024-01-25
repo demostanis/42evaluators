@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"github.com/demostanis/42evaluators/internal/database/models"
+	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -14,13 +14,13 @@ func NewApiKeysRepository(db *gorm.DB) *ApiKeysRepository {
 }
 
 // CreateApiKey inserts an API key in the database.
-func (r *ApiKeysRepository) CreateApiKey(apiKey *models.ApiKeyModel) error {
+func (r *ApiKeysRepository) CreateApiKey(apiKey *models.ApiKey) error {
 	return r.db.Create(apiKey).Error
 }
 
 // GetApiKeyByID retrieves an API key by its ID from the database.
-func (r *ApiKeysRepository) GetApiKeyByID(id uint) (*models.ApiKeyModel, error) {
-	var apiKey models.ApiKeyModel
+func (r *ApiKeysRepository) GetApiKeyByID(id uint) (*models.ApiKey, error) {
+	var apiKey models.ApiKey
 	err := r.db.First(&apiKey, id).Error
 	if err != nil {
 		return nil, err
@@ -29,13 +29,13 @@ func (r *ApiKeysRepository) GetApiKeyByID(id uint) (*models.ApiKeyModel, error) 
 }
 
 // UpdateApiKey updates an existing API key in the database.
-func (r *ApiKeysRepository) UpdateApiKey(apiKey *models.ApiKeyModel) error {
+func (r *ApiKeysRepository) UpdateApiKey(apiKey *models.ApiKey) error {
 	return r.db.Save(apiKey).Error
 }
 
 // DeleteApiKeyByID deletes an API key by its ID from the database.
 func (r *ApiKeysRepository) DeleteApiKeyByID(id uint) error {
-	return r.db.Delete(&models.ApiKeyModel{}, id).Error
+	return r.db.Delete(&models.ApiKey{}, id).Error
 }
 
 // DeleteAllApiKeys deletes all API keys from the database.
@@ -44,8 +44,8 @@ func (r *ApiKeysRepository) DeleteAllApiKeys() error {
 }
 
 // GetAllApiKeys retrieves all API keys from the database.
-func (r *ApiKeysRepository) GetAllApiKeys() ([]models.ApiKeyModel, error) {
-	var apiKeys []models.ApiKeyModel
+func (r *ApiKeysRepository) GetAllApiKeys() ([]models.ApiKey, error) {
+	var apiKeys []models.ApiKey
 	err := r.db.Find(&apiKeys).Error
 	if err != nil {
 		return nil, err

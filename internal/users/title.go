@@ -3,7 +3,7 @@ package users
 import (
 	"fmt"
 	"github.com/demostanis/42evaluators/internal/api"
-	"github.com/demostanis/42evaluators/internal/database/models"
+	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -45,4 +45,6 @@ func getTitle(user models.User, db *gorm.DB) models.Title {
 func setTitle(user models.User, db *gorm.DB) {
 	user.Title = getTitle(user, db)
 	db.Save(&user)
+	// Why the fuck do I need to save the title here?
+	db.Save(&user.Title)
 }
