@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/demostanis/42evaluators2.0/bot"
-	"github.com/demostanis/42evaluators2.0/internal/api"
-	"github.com/demostanis/42evaluators2.0/internal/database/config"
-	"github.com/demostanis/42evaluators2.0/internal/database/repositories"
-	"github.com/demostanis/42evaluators2.0/internal/users"
-	"github.com/demostanis/42evaluators2.0/web"
+	"github.com/demostanis/42evaluators/bot"
+	"github.com/demostanis/42evaluators/internal/api"
+	"github.com/demostanis/42evaluators/internal/database/config"
+	"github.com/demostanis/42evaluators/internal/database/repositories"
+	"github.com/demostanis/42evaluators/internal/users"
+	"github.com/demostanis/42evaluators/web"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"gorm.io/driver/postgres"

@@ -2,8 +2,8 @@ package users
 
 import (
 	"fmt"
-	"github.com/demostanis/42evaluators2.0/internal/api"
-	"github.com/demostanis/42evaluators2.0/internal/database/models"
+	"github.com/demostanis/42evaluators/internal/api"
+	"github.com/demostanis/42evaluators/internal/database/models"
 	"gorm.io/gorm"
 )
 

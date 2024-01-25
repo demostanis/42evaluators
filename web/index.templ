@@ -1,15 +1,11 @@
 package web
 
 import (
-	"github.com/demostanis/42evaluators2.0/internal/database/models"
+	"github.com/demostanis/42evaluators/internal/database/models"
 	"fmt"
 	"strconv"
 	"strings"
 )
-
-func getBgUrl(user models.User) string {
-	return "bg-[url(" + user.Coalition.CoverUrl + ")]"
-}
 
 func getIsActiveClass(isActive bool) string {
 	var isActiveClass string
@@ -36,6 +32,10 @@ templ pageButton(page int, isActive bool) {
 
 func getProfileUrl(user models.User) templ.SafeURL {
 	return templ.SafeURL(fmt.Sprintf("https://profile.intra.42.fr/users/%s", user.Login))
+}
+
+func getBgUrl(user models.User) string {
+	return "bg-[url(" + user.Coalition.CoverUrl + ")]"
 }
 
 templ index(users []models.User, page int, totalPages int64) {

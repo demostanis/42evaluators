@@ -1,4 +1,4 @@
-module github.com/demostanis/42evaluators2.0
+module github.com/demostanis/42evaluators
 
 go 1.21.3
 

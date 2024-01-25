@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"github.com/demostanis/42evaluators2.0/internal/database/models"
+	"github.com/demostanis/42evaluators/internal/database/models"
 	"gorm.io/gorm"
 )
 

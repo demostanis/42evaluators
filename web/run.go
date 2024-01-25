@@ -2,7 +2,7 @@ package web
 
 import (
 	"net/http"
-	"github.com/demostanis/42evaluators2.0/internal/database/models"
+	"github.com/demostanis/42evaluators/internal/database/models"
 	"log"
 	"strconv"
 	"gorm.io/gorm"
