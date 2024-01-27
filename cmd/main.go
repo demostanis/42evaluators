@@ -2,11 +2,13 @@ package main
 
 import (
 	"github.com/demostanis/42evaluators/internal/api"
-	"github.com/demostanis/42evaluators/internal/database/repositories"
 	"github.com/demostanis/42evaluators/internal/database/config"
-	"github.com/demostanis/42evaluators/internal/users"
-	"github.com/demostanis/42evaluators/web"
+	"github.com/demostanis/42evaluators/internal/database/repositories"
+
+	//"github.com/demostanis/42evaluators/internal/users"
 	"log"
+
+	"github.com/demostanis/42evaluators/web"
 )
 
 func main() {
@@ -26,7 +28,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	users.GetUsers(db)
+	//users.GetUsers(db)
 
 	web.Run(db)
 }

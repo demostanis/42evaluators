@@ -1,10 +1,10 @@
 package web
 
 import (
-	"net/http"
-	"github.com/demostanis/42evaluators/internal/models"
 	"log"
-	"strconv"
+	"net/http"
+
+	"github.com/a-h/templ"
 	"gorm.io/gorm"
 )
 
@@ -13,32 +13,11 @@ const (
 )
 
 func Run(db *gorm.DB) {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		page, err := strconv.Atoi(r.URL.Query().Get("page"))
-		if err != nil || page <= 0 {
-			page = 1
-		}
+	http.Handle("/leaderboard", handleLeaderboard(db))
+	http.Handle("/blackhole", templ.Handler(blackhole()))
+	http.Handle("/blackhole.json", blackholeMap(db))
 
-		var totalPages int64
-		db.
-			Model(&models.User{}).
-			Where("is_staff = false AND is_test = false").
-			Count(&totalPages)
+	http.Handle("/static/", handleStatic())
 
-		var users []models.User
-		offset := (page - 1) * UsersPerPage
-		db.
-			Preload("Coalition").
-			Preload("Title").
-			Offset(offset).
-			Limit(UsersPerPage).
-			Order("level DESC").
-			Where("is_staff = false AND is_test = false").
-			Find(&users)
-
-		index(users,
-			page, totalPages / UsersPerPage,
-			offset).Render(r.Context(), w)
-	})
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

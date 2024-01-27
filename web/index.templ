@@ -31,7 +31,7 @@ templ pageButton(page int, isActive bool) {
 }
 
 func getProfileUrl(user models.User) templ.SafeURL {
-	return templ.SafeURL(fmt.Sprintf("https://profile.intra.42.fr/users/%s", user.Login))
+	return templ.SafeURL("https://profile.intra.42.fr/users/" + user.Login)
 }
 
 func getBgUrl(user models.User) string {
