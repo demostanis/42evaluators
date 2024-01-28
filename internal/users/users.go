@@ -3,13 +3,14 @@ package users
 import (
 	"errors"
 	"fmt"
-	"github.com/demostanis/42evaluators/internal/api"
-	"github.com/demostanis/42evaluators/internal/models"
-	"gorm.io/gorm"
 	"maps"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/demostanis/42evaluators/internal/api"
+	"github.com/demostanis/42evaluators/internal/models"
+	"gorm.io/gorm"
 )
 
 var (
@@ -54,10 +55,10 @@ func fetchOnePage(page int, db *gorm.DB) {
 
 	for _, user := range *users {
 		go setIsTest(user, db)
-		go setTitle(user, db)
-		go setCoalition(user, db)
+		go setTitle(user, db.Omit("is_test"))
+		go setCoalition(user, db.Omit("is_test"))
 		go func(user models.User) {
-			db.Save(&user)
+			db.Omit("is_test").Save(&user)
 		}(user)
 	}
 }
