@@ -163,6 +163,7 @@ function renderBlackholeMap(blackholeMap) {
 		const [target] = raycaster.intersectObjects(circles);
 		if (target) {
 			const stage = parseInt(scrollY / 114) / 3 + 1;
+			if (stage < 1) return;
 			target.object.scale.set(stage, stage, stage);
 			target.object.renderOrder = 1;
 			previousTarget = target;
