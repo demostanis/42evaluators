@@ -16,6 +16,8 @@ func Run(db *gorm.DB) {
 	http.Handle("/leaderboard", handleLeaderboard(db))
 	http.Handle("/blackhole", templ.Handler(blackhole()))
 	http.Handle("/blackhole.json", blackholeMap(db))
+	http.Handle("/clusters", handleClusters())
+	http.Handle("/clusters.live", clustersWs(db))
 
 	http.Handle("/static/", handleStatic())
 

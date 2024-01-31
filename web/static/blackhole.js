@@ -162,11 +162,6 @@ function renderBlackholeMap(blackholeMap) {
 
 		const [target] = raycaster.intersectObjects(circles);
 		if (target) {
-			const stage = parseInt(scrollY / 114) / 3 + 1;
-			if (stage < 1) return;
-			target.object.scale.set(stage, stage, stage);
-			target.object.renderOrder = 1;
-			previousTarget = target;
 			if (event.buttons == 4) {
 				const a = document.createElement("a");
 				a.href = "https://profile.intra.42.fr/users/"
@@ -177,6 +172,11 @@ function renderBlackholeMap(blackholeMap) {
 				window.location.href = "https://profile.intra.42.fr/users/"
 					+ target.object.user.login;
 			}
+			const stage = parseInt(scrollY / 114) / 3 + 1;
+			if (stage < 1) return;
+			target.object.scale.set(stage, stage, stage);
+			target.object.renderOrder = 1;
+			previousTarget = target;
 		}
 	}
 	renderer.domElement.addEventListener("mousemove", handleMouse);

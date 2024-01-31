@@ -19,6 +19,8 @@ func blackholeMap(db *gorm.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		result := make([]Blackhole, 0)
 
+		// TODO: only query the database every few minutes
+		// and cache the result
 		var users []models.User
 		db.
 			Where("is_staff = false AND is_test = false").

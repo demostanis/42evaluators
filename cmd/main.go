@@ -2,16 +2,23 @@ package main
 
 import (
 	"github.com/demostanis/42evaluators/internal/api"
+	"github.com/demostanis/42evaluators/internal/cable"
 	"github.com/demostanis/42evaluators/internal/database/config"
 	"github.com/demostanis/42evaluators/internal/database/repositories"
+	"github.com/joho/godotenv"
+
+	"log"
 
 	//"github.com/demostanis/42evaluators/internal/users"
-	"log"
 
 	"github.com/demostanis/42evaluators/web"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal(err)
+	}
+
 	db, err := config.OpenDb(config.Development)
 	if err != nil {
 		log.Fatal(err)
@@ -29,6 +36,7 @@ func main() {
 	}
 
 	//users.GetUsers(db)
+	go cable.ConnectToCable()
 
 	web.Run(db)
 }

@@ -17,9 +17,9 @@ func getIsActiveClass(isActive bool) string {
 
 func getLinkForPage(page int) string {
 	if page == 1 {
-		return "/"
+		return "/leaderboard"
 	}
-	return fmt.Sprintf("/?page=%d", page)
+	return fmt.Sprintf("/leaderboard?page=%d", page)
 }
 
 templ pageButton(page int, isActive bool) {

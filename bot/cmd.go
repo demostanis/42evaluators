@@ -4,13 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/demostanis/42evaluators/internal/models"
-	"github.com/demostanis/42evaluators/internal/database/repositories"
-	"github.com/google/uuid"
-	"github.com/joho/godotenv"
-	"github.com/rs/zerolog"
-	"gorm.io/gorm"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -19,6 +12,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/demostanis/42evaluators/internal/database/repositories"
+	"github.com/demostanis/42evaluators/internal/models"
+	"github.com/google/uuid"
+	"github.com/joho/godotenv"
+	"github.com/rs/zerolog"
+	"gorm.io/gorm"
 )
 
 const (
