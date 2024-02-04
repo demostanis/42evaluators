@@ -22,14 +22,6 @@ func getLinkForPage(page int) string {
 	return fmt.Sprintf("/leaderboard?page=%d", page)
 }
 
-templ pageButton(page int, isActive bool) {
-	<button
-		class={ "join-item", "btn", "btn-md", getIsActiveClass(isActive) }
-		hx-post={ getLinkForPage(page) } hx-target="#main"
-		hx-swap="outerHTML" hx-replace-url="true"
-	>{ strconv.Itoa(page) }</button>
-}
-
 func getProfileUrl(user models.User) templ.SafeURL {
 	return templ.SafeURL("https://profile.intra.42.fr/users/" + user.Login)
 }
@@ -38,15 +30,40 @@ func getBgUrl(user models.User) string {
 	return "bg-[url(" + user.Coalition.CoverUrl + ")]"
 }
 
+templ pageButton(page int, text string, isActive bool, isLock bool) {
+	<button
+		if isLock {
+			disabled
+		}
+		class={ "join-item", "btn", "btn-md", getIsActiveClass(isActive) }
+		hx-post={ getLinkForPage(page) }
+		hx-target="#main"
+		hx-swap="outerHTML"
+		hx-replace-url="true"
+	>{ text }</button>
+}
+
+func isDisabled(targetedPage int, totalPage int) bool {
+	if targetedPage < 1 || targetedPage > totalPage {
+		return true
+	}
+	return false
+}
+
+templ pagination(page int, totalPages int) {
+	<div class="join justify-center flex py-4">
+		@pageButton(page - 1, "«", false, isDisabled(page-1, totalPages + 1))
+		for i := 1; i <= totalPages + 1; i++ {
+			@pageButton(i, strconv.Itoa(i), i == page, false)
+		}
+		@pageButton(page + 1, "»", false, isDisabled(page+1, totalPages + 1))
+	</div>
+}
+
 templ index(users []models.User, page int, totalPages int64, offset int) {
 	@header()
-
 	<div id="main">
-		<div class="join justify-center flex">
-			for i := 1; i <= int(totalPages + 1); i++ {
-				@pageButton(i, i == page)
-			}
-		</div>
+		@pagination(page, int(totalPages))
 		<table class="table">
 			<thead>
 				<tr class="text-2xl">
@@ -57,19 +74,24 @@ templ index(users []models.User, page int, totalPages int64, offset int) {
 				</tr>
 			</thead>
 			<tbody>
-			for i, user := range users {
-				<tr class={ "text-xl", getBgUrl(user) }>
-					<td>{ strconv.Itoa(i + offset + 1) }.</td>
-					<td><div class="avatar placeholder w-24 h-24 object-contain">
-						<img class="rounded-full" src={ user.ImageLink } />
-					</div></td>
-					<td><a href={ getProfileUrl(user) }>
-						{ strings.Replace(user.Title.Name, "%login", user.Login, -1) }
-					</a></td>
-					<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
-				</tr>
-			}
+				for i, user := range users {
+					<tr class={ "text-xl", getBgUrl(user) }>
+						<td>{ strconv.Itoa(i + offset + 1) }.</td>
+						<td>
+							<div class="avatar placeholder w-24 h-24 object-contain">
+								<img class="rounded-full" src={ user.ImageLink }/>
+							</div>
+						</td>
+						<td>
+							<a href={ getProfileUrl(user) }>
+								{ strings.Replace(user.Title.Name, "%login", user.Login, -1) }
+							</a>
+						</td>
+						<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
+					</tr>
+				}
 			</tbody>
 		</table>
+		@pagination(page, int(totalPages))
 	</div>
 }
