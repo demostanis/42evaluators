@@ -36,7 +36,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Where("is_staff = false AND is_test = false").
 			Find(&users)
 
-		index(users,
+		leaderboard(users,
 			page, totalPages/UsersPerPage,
 			offset).Render(r.Context(), w)
 	})

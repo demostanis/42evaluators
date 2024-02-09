@@ -60,7 +60,7 @@ templ pagination(page int, totalPages int) {
 	</div>
 }
 
-templ index(users []models.User, page int, totalPages int64, offset int) {
+templ leaderboard(users []models.User, page int, totalPages int64, offset int) {
 	@header()
 	<div id="main">
 		@pagination(page, int(totalPages))
