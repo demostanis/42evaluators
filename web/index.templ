@@ -71,6 +71,7 @@ templ index(users []models.User, page int, totalPages int64, offset int) {
 					<th>Profile picture</th>
 					<th>User</th>
 					<th>Level</th>
+					<th>Correction points</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -88,6 +89,7 @@ templ index(users []models.User, page int, totalPages int64, offset int) {
 							</a>
 						</td>
 						<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
+						<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>
 					</tr>
 				}
 			</tbody>

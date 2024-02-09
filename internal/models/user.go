@@ -29,6 +29,7 @@ type CursusUser struct {
 				Small string `json:"small"`
 			} `json:"versions"`
 		} `json:"image"`
+		CorrectionPoints int `json:"correction_point"`
 	} `json:"user"`
 	Level        float64 `json:"level"`
 	BlackholedAt string  `json:"blackholed_at"`
@@ -36,11 +37,12 @@ type CursusUser struct {
 
 type User struct {
 	gorm.Model
-	ID           int
-	Login        string
-	DisplayName  string
-	IsStaff      bool
-	BlackholedAt time.Time
+	ID               int
+	Login            string
+	DisplayName      string
+	IsStaff          bool
+	BlackholedAt     time.Time
+	CorrectionPoints int
 
 	ImageLink      string
 	ImageLinkSmall string
@@ -62,6 +64,7 @@ func (user *User) UnmarshalJSON(data []byte) error {
 	user.DisplayName = cursusUser.User.DisplayName
 	user.IsStaff = cursusUser.User.IsStaff
 	user.BlackholedAt, _ = time.Parse(BlackholeFormat, cursusUser.BlackholedAt)
+	user.CorrectionPoints = cursusUser.User.CorrectionPoints
 
 	user.ImageLinkSmall = cursusUser.User.Image.Versions.Small
 	if user.ImageLinkSmall == "" {
