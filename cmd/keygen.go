@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/demostanis/42evaluators/bot"
-	"github.com/demostanis/42evaluators/internal/database/config"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/demostanis/42evaluators/internal/api"
+	"github.com/demostanis/42evaluators/internal/database/config"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -20,14 +21,14 @@ func main() {
 	}
 
 	if len(os.Args) != 2 {
-		log.Fatalf("usage: %s key_count\n", os.Args[0]);
+		log.Fatalf("usage: %s key_count\n", os.Args[0])
 	}
-	i, err := strconv.Atoi(os.Args[1]);
+	i, err := strconv.Atoi(os.Args[1])
 	if err != nil {
-		log.Fatal("invalid key_count");
+		log.Fatal("invalid key_count")
 	}
 
-	if err = bot.Run(i, db); err != nil {
+	if err = api.GetKeys(i, db); err != nil {
 		log.Fatal(err)
 	}
 }

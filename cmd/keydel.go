@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/demostanis/42evaluators/bot"
+	"log"
+
+	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/database/config"
 	"github.com/joho/godotenv"
-	"log"
 )
 
 func main() {
@@ -17,7 +18,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	session, err := bot.NewSession(db)
+	session, err := api.NewSession(db)
 	if err != nil {
 		log.Fatal(err)
 	}

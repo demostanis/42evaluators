@@ -1,4 +1,4 @@
-package bot
+package api
 
 import (
 	"bytes"
@@ -58,10 +58,9 @@ type APIResult struct {
 // INTRA_SESSION_TOKEN
 // USER_ID_TOKEN
 
-// Run creates a new session and generates API keys, then saves them to out/api_keys.csv.
 // The x parameter is the amount of API keys you wish to create & redirectURI is the
 // URL you wish to have as redirection after an user authenticates through 42.
-func Run(x int, db *gorm.DB) error {
+func GetKeys(x int, db *gorm.DB) error {
 	if err := godotenv.Load(); err != nil {
 		return err
 	}
