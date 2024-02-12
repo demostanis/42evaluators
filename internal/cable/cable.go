@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/demostanis/42evaluators/internal/models"
 	"github.com/gorilla/websocket"
 )
 
@@ -13,23 +14,14 @@ const (
 	LocationChannelMessage = "{\"command\":\"subscribe\",\"identifier\":\"{\\\"channel\\\":\\\"LocationChannel\\\",\\\"user_id\\\":160447}\"}"
 )
 
-type Location struct {
-	UserId   int     `json:"user_id"`
-	Login    string  `json:"login"`
-	Host     string  `json:"host"`
-	CampusId int     `json:"campus_id"`
-	EndAt    *string `json:"end_at"`
-	Image    string
-}
-
 type Answer struct {
 	Message struct {
-		Location Location `json:"location"`
+		Location models.Location `json:"location"`
 	} `json:"message"`
 }
 
 var (
-	LocationChannel = make(chan Location)
+	LocationChannel = make(chan models.Location)
 )
 
 func ConnectToCable() {

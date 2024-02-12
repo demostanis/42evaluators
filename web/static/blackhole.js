@@ -1,7 +1,7 @@
 import * as three from 'three';
-import { Line2 } from 'three/addons/lines/Line2.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { Line2 } from 'three/addons/Line2.js';
+import { LineMaterial } from 'three/addons/LineMaterial.js';
+import { LineGeometry } from 'three/addons/LineGeometry.js';
 
 const pointsCount = 1000;
 const lucky = Math.random() > 0.995;

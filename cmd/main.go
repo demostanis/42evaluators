@@ -3,13 +3,13 @@ package main
 import (
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/cable"
+	"github.com/demostanis/42evaluators/internal/clusters"
 	"github.com/demostanis/42evaluators/internal/database/config"
 	"github.com/demostanis/42evaluators/internal/database/repositories"
+	"github.com/demostanis/42evaluators/internal/users"
 	"github.com/joho/godotenv"
 
 	"log"
-
-	//"github.com/demostanis/42evaluators/internal/users"
 
 	"github.com/demostanis/42evaluators/web"
 )
@@ -35,7 +35,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//users.GetUsers(db)
+	users.GetUsers(db)
+	clusters.GetLocations(db)
 	go cable.ConnectToCable()
 
 	web.Run(db)

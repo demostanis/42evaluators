@@ -1,7 +1,6 @@
 package web
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -17,7 +16,7 @@ script cropToContent() {
 	c();
 }
 
-templ clusters(allClusters []Cluster, selectedCluster Cluster) {
+templ clustersMap(allClusters []Cluster, selectedCluster Cluster) {
 	@header()
 
 	<script src="static/clusters.js"></script>
@@ -32,7 +31,7 @@ templ clusters(allClusters []Cluster, selectedCluster Cluster) {
 						disabled selected
 					}
 					value={ strconv.Itoa(cluster.Id) }
-				>{ fmt.Sprintf("%s - %s", cluster.Campus.Name, cluster.Name) }</option>
+				>{ cluster.DisplayName }</option>
 			}
 		</select>
 		@templ.Raw(selectedCluster.Svg)

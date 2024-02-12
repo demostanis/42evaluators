@@ -1,14 +1,15 @@
 package config
 
 import (
-	"os"
-	"fmt"
 	"errors"
+	"fmt"
+	"os"
+
 	"github.com/demostanis/42evaluators/internal/models"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type DatabaseType int
@@ -41,6 +42,9 @@ func newDb(dialector gorm.Dialector) (*gorm.DB, error) {
 		return nil, err
 	}
 	if err = db.AutoMigrate(models.Title{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(models.Location{}); err != nil {
 		return nil, err
 	}
 

@@ -43,15 +43,16 @@ func getPageCount() (int, error) {
 }
 
 func fetchOnePage(page int, db *gorm.DB) {
-	fmt.Printf("fetching page %d...\n", page)
-
 	params := maps.Clone(DefaultParams)
 	params["page"] = strconv.Itoa(page)
 
-	users, _ := api.Do[[]models.User](
+	users, err := api.Do[[]models.User](
 		api.NewRequest("/v2/cursus_users").
 			Authenticated().
 			WithParams(params))
+	if err != nil {
+		return
+	}
 
 	for _, user := range *users {
 		go setIsTest(user, db)
@@ -61,12 +62,14 @@ func fetchOnePage(page int, db *gorm.DB) {
 			db.Omit("is_test").Save(&user)
 		}(user)
 	}
+
+	fmt.Printf("fetched page %d...\n", page)
 }
 
 func GetUsers(db *gorm.DB) {
 	pageCount, _ := getPageCount()
 
-	fmt.Printf("fetching %d pages...\n", pageCount)
+	fmt.Printf("fetching %d user pages...\n", pageCount)
 
 	for page := 1; page <= pageCount; page++ {
 		go fetchOnePage(page, db)

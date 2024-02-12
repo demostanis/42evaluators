@@ -32,7 +32,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Preload("Title").
 			Offset(offset).
 			Limit(UsersPerPage).
-			Order("level DESC").
+			Order("correction_points DESC").
 			Where("is_staff = false AND is_test = false").
 			Find(&users)
 

@@ -8,6 +8,7 @@ ws.onopen = () => {
 	ws.send(JSON.stringify({
 		cluster: parseInt(new URLSearchParams(window.location.search).get("cluster")),
 	}));
+	handleNewImages();
 }
 htmx.on("htmx:afterRequest", ws.onopen);
 
@@ -20,7 +21,10 @@ ws.onerror = () => {
 const clusterMap = {};
 ws.onmessage = message => {
 	const data = JSON.parse(message.data);
-	const elem = document.querySelector("image#" + data.host);
+	// We cannot use getElementById since we need the second element
+	// and we cannot use querySelector since IDs might start with a number
+	// (I hate those SVGs)
+	const elem = document.all[data.host]?.[1];
 	if (elem) {
 		clusterMap[data.host] = data.login;
 
@@ -35,7 +39,7 @@ ws.onmessage = message => {
 }
 
 let currentPopup;
-window.onload = () => {
+const handleNewImages = () => {
 	document.querySelectorAll("image").forEach(image => {
 		image.addEventListener("mouseover", () => {
 			if (!image.href.baseVal) return;
@@ -46,11 +50,12 @@ window.onload = () => {
 			const bbox = image.getBoundingClientRect();
 			const popup = document.createElement("card");
 			popup.classList.add("card", "card-side",
-				"h-32", "bg-gray-700");
+				"h-32", "bg-gray-700", "shadow-2xl");
 
 			const popupImage = document.createElement("figure");
+			popupImage.classList.add("w-full", "h-full");
 			const popupImageImage = document.createElement("img");
-			popupImageImage.classList.add("w-44", "object-contain");
+			popupImageImage.classList.add("w-32", "w-full", "h-full");
 			popupImageImage.src = image.href.baseVal;
 			popupImage.appendChild(popupImageImage);
 
@@ -79,10 +84,10 @@ window.onload = () => {
 				if (popup.getBoundingClientRect().height != 0) {
 					clearInterval(id);
 					popup.style.position = "absolute";
-					popup.style.left = bbox.x + bbox.width;
+					popup.style.left = bbox.x + bbox.width + "px";
 					popup.style.top = bbox.y
 						- (popup.getBoundingClientRect().height
-							- bbox.height) / 2;
+							- bbox.height) / 2 + "px";
 				}
 			});
 		});

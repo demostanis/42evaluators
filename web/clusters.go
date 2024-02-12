@@ -1,17 +1,20 @@
 package web
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
-	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/cable"
+	"github.com/demostanis/42evaluators/internal/clusters"
+	"github.com/demostanis/42evaluators/internal/models"
 	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
 )
@@ -24,7 +27,8 @@ type Cluster struct {
 		Id   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"campus"`
-	Svg string
+	Svg         string
+	DisplayName string
 }
 
 var allClusters []Cluster
@@ -46,19 +50,30 @@ func fetchSvg(cluster *Cluster) error {
 func handleClusters() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if allClusters == nil {
+			// TODO: open this file on startup and handle errors there
 			file, _ := os.Open("assets/clusters.json")
 			bytes, _ := io.ReadAll(file)
 			_ = json.Unmarshal(bytes, &allClusters)
+			for i, c := range allClusters {
+				allClusters[i].DisplayName = fmt.Sprintf(
+					"%s - %s", c.Campus.Name, c.Name)
+			}
+			slices.SortFunc(allClusters, func(a, b Cluster) int {
+				return cmp.Compare(a.DisplayName, b.DisplayName)
+			})
 		}
 
 		// TODO: find user's campus
-		defaultClusterId := 99
+		defaultClusterId := 199
 
 		var selectedCluster Cluster
 		cluster := r.URL.Query().Get("cluster")
 		clusterId, err := strconv.Atoi(cluster)
 		if cluster == "" || err != nil {
-			clusterId = defaultClusterId
+			http.Redirect(w, r,
+				fmt.Sprintf("/clusters?cluster=%d", defaultClusterId),
+				http.StatusMovedPermanently)
+			return
 		}
 		found := false
 		for _, cluster := range allClusters {
@@ -74,7 +89,7 @@ func handleClusters() http.Handler {
 			_ = fetchSvg(&selectedCluster)
 		}
 
-		clusters(allClusters, selectedCluster).
+		clustersMap(allClusters, selectedCluster).
 			Render(r.Context(), w)
 	})
 }
@@ -102,45 +117,7 @@ func findCampusIdForCluster(clusterId int) int {
 	return campusId
 }
 
-type Location struct {
-	Host     string `json:"host"`
-	CampusId int    `json:"campus_id"`
-	User     struct {
-		ID    int    `json:"id"`
-		Login string `json:"login"`
-		Image struct {
-			Versions struct {
-				Small string `json:"small"`
-			} `json:"versions"`
-		} `json:"image"`
-	} `json:"user"`
-}
-
-func getLocations(campusId int, page int) []cable.Location {
-	result := make([]cable.Location, 0)
-	locations, err := api.Do[[]Location](
-		api.NewRequest(fmt.Sprintf("/v2/campus/%d/locations", campusId)).
-			WithParams(map[string]string{
-				"page":           strconv.Itoa(page),
-				"filter[active]": "true",
-			}).
-			Authenticated())
-	if err != nil {
-		return result
-	}
-	for _, location := range *locations {
-		result = append(result, cable.Location{
-			UserId:   location.User.ID,
-			Login:    location.User.Login,
-			Host:     location.Host,
-			CampusId: location.CampusId,
-			Image:    location.User.Image.Versions.Small,
-		})
-	}
-	return result
-}
-
-func sendResponse(c *websocket.Conn, location cable.Location, db *gorm.DB) {
+func sendResponse(c *websocket.Conn, location models.Location, db *gorm.DB) {
 	image := location.Image
 	if image == "" {
 		db.
@@ -181,69 +158,70 @@ func clustersWs(db *gorm.DB) http.Handler {
 		defer close(clusterChan)
 
 		go func() {
-			var cancelPreviousGoroutine context.CancelFunc
 			for {
-				// When the user wants to see a new cluster...
-				wantedClusterId := <-clusterChan
+				_, rawMessage, err := c.ReadMessage()
+				if err != nil {
+					break
+				}
+
+				var message Message
+				err = json.Unmarshal(rawMessage, &message)
+				if err != nil {
+					break
+				}
+
+				clusterChan <- message.ClusterId
+			}
+		}()
+
+		var stopSendingLocationsForPreviousCluster func()
+		var wantedClusterId int
+		ctx := context.TODO()
+
+		for {
+			select {
+			// When the user wants to see a new cluster...
+			case wantedClusterId = <-clusterChan:
 				if wantedClusterId == 0 {
 					break
 				}
-				// We stop sending them information from the
-				// previous cluster
-				if cancelPreviousGoroutine != nil {
-					cancelPreviousGoroutine()
+				if stopSendingLocationsForPreviousCluster != nil {
+					stopSendingLocationsForPreviousCluster()
 				}
 
-				page := 1
-				for {
-					locations := getLocations(findCampusIdForCluster(wantedClusterId), page)
-					if len(locations) > 0 {
-						for _, location := range locations {
-							sendResponse(c, location, db)
-						}
-						page += 1
-					} else {
-						break
+				var locations []models.Location
+				db.
+					Model(&models.Location{}).
+					Where("campus_id = ?", findCampusIdForCluster(wantedClusterId)).
+					Find(&locations)
+
+				if len(locations) > 0 {
+					for _, location := range locations {
+						sendResponse(c, location, db)
 					}
+				} else {
+					break
 				}
 
-				ctx, cancel := context.WithCancel(context.Background())
-				cancelPreviousGoroutine = cancel
+				ctx, stopSendingLocationsForPreviousCluster = context.WithCancel(context.Background())
 
-				go func(ctx context.Context) {
-					for {
-						select {
-						case <-ctx.Done():
-							break
-						// When we receive a new location from the cable...
-						case location := <-cable.LocationChannel:
-							campusId := findCampusIdForCluster(wantedClusterId)
-							if location.CampusId == campusId {
-								// Respond with user information if the location's campus
-								// is the same as the wanted cluster's campus (it would be
-								// more performant to only send locations in the specifially
-								// requested cluster, but the cable unfortunately does not
-								// tell this)
-								sendResponse(c, location, db)
-							}
-						}
-					}
-				}(ctx)
-			}
-		}()
-		for {
-			_, rawMessage, err := c.ReadMessage()
-			if err != nil {
+			// When we receive a new location from the cable...
+			case location := <-cable.LocationChannel:
+				campusId := findCampusIdForCluster(wantedClusterId)
+				if location.CampusId == campusId {
+					// Respond with user information if the location's campus
+					// is the same as the wanted cluster's campus (it would be
+					// more performant to only send locations in the specifially
+					// requested cluster, but the cable unfortunately does not
+					// tell this)
+					sendResponse(c, location, db)
+				}
+				clusters.UpdateLocationInDB(location, db)
+				// TODO remove user if they left
+
+			case <-ctx.Done():
 				break
 			}
-
-			var message Message
-			err = json.Unmarshal(rawMessage, &message)
-			if err != nil {
-				break
-			}
-
-			clusterChan <- message.ClusterId
 		}
 	})
 }
