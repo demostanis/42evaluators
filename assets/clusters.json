@@ -432,30 +432,12 @@
     }
   },
   {
-    "id": 173,
-    "name": "Cluster 3",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/173/c3.svg",
-    "campus": {
-      "id": 57,
-      "name": "London"
-    }
-  },
-  {
     "id": 172,
     "name": "Cluster 2",
     "cdn_link": "https://cdn.intra.42.fr/cluster/image/172/c2.svg",
     "campus": {
       "id": 57,
       "name": "London"
-    }
-  },
-  {
-    "id": 171,
-    "name": "Cluster 1",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/171/42Perpignan_cluster_1.svg",
-    "campus": {
-      "id": 60,
-      "name": "Perpignan"
     }
   },
   {
@@ -609,15 +591,6 @@
     "campus": {
       "id": 52,
       "name": "Florence"
-    }
-  },
-  {
-    "id": 134,
-    "name": "test",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/134/test_orig_-_Copy.svg",
-    "campus": {
-      "id": 28,
-      "name": "Rio de Janeiro"
     }
   },
   {
@@ -798,15 +771,6 @@
     "campus": {
       "id": 48,
       "name": "Mulhouse"
-    }
-  },
-  {
-    "id": 103,
-    "name": "Test",
-    "cdn_link": null,
-    "campus": {
-      "id": 32,
-      "name": "Yerevan"
     }
   },
   {
