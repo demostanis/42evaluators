@@ -2,6 +2,8 @@ import * as three from 'three';
 import { Line2 } from 'three/addons/Line2.js';
 import { LineMaterial } from 'three/addons/LineMaterial.js';
 import { LineGeometry } from 'three/addons/LineGeometry.js';
+import { GLTFLoader } from 'three/addons/GLTFLoader.js';
+import { EffectComposer, RenderPass } from 'postprocessing';
 
 const pointsCount = 1000;
 const lucky = Math.random() > 0.995;
@@ -61,10 +63,30 @@ function renderBlackholeMap(blackholeMap) {
 	const scene = new three.Scene();
 	const camera = new three.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 1000);
 	camera.position.z = 15;
-	const renderer = new three.WebGLRenderer({ antialias: true });
+	const renderer = new three.WebGLRenderer({
+		powerPreference: "high-performance",
+		antialias: true,
+		stencil: false,
+		depth: false,
+	});
+	renderer.outputColorSpace = three.SRGBColorSpace;
 	const loader = new three.TextureLoader();
 	const materials = [];
 	const stages = {};
+
+	let blackholeModel;
+	let spaceModel;
+	const gltfLoader = new GLTFLoader();
+	gltfLoader.load("static/assets/blackhole/blackhole.glb", gltf => {
+		blackholeModel = gltf.scene;
+		blackholeModel.rotation.x = -5;
+		blackholeModel.scale.set(0.7, 0.7, 0.7);
+		scene.add(blackholeModel);
+	});
+	const renderScene = new RenderPass(scene, camera);
+	const composer = new EffectComposer(renderer);
+	composer.setSize(innerWidth, innerHeight);
+	composer.addPass(renderScene);
 
 	for (const user of blackholeMap) {
 		const diff = parseInt((user.date - Date.now()) / (24*3600*1000*7));
@@ -107,6 +129,7 @@ function renderBlackholeMap(blackholeMap) {
 		const map = loader.load(user.image);
 		const material = new three.MeshBasicMaterial({ map });
 		material.side = three.DoubleSide;
+		material.lightMapIntensity = 0;
 
 		let geometry;
 		if (lucky)
@@ -157,7 +180,7 @@ function renderBlackholeMap(blackholeMap) {
 
 		if (previousTarget) {
 			previousTarget.object.scale.set(1, 1, 1);
-			previousTarget.object.renderOrder = 0;
+			previousTarget.object.renderOrder = 1;
 		}
 
 		const [target] = raycaster.intersectObjects(circles);
@@ -175,12 +198,19 @@ function renderBlackholeMap(blackholeMap) {
 			const stage = parseInt(scrollY / 114) / 3 + 1;
 			if (stage < 1) return;
 			target.object.scale.set(stage, stage, stage);
-			target.object.renderOrder = 1;
+			target.object.renderOrder = 2;
 			previousTarget = target;
 		}
 	}
 	renderer.domElement.addEventListener("mousemove", handleMouse);
 	renderer.domElement.addEventListener("mousedown", handleMouse);
+
+	window.addEventListener("resize", () => {
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize(innerWidth, innerHeight);
+		composer.setSize(innerWidth, innerHeight);
+	});
 
 	renderer.setSize(innerWidth, innerHeight);
 	document.body.appendChild(renderer.domElement);
@@ -193,14 +223,16 @@ function renderBlackholeMap(blackholeMap) {
 			circle.position.x = circle.points[circle.curveIndex].x;
 			circle.position.y = circle.points[circle.curveIndex].y;
 
-			circle.curveIndex++;
-			if (circle.curveIndex == circle.points.length - 1)
-				circle.curveIndex = 0;
+			circle.curveIndex--;
+			if (circle.curveIndex == 0)
+				circle.curveIndex = circle.points.length - 1;
 		}
 		for (const stage of Object.keys(stages))
 			stages[stage].material?.resolution.set(innerWidth, innerHeight);
+		if (blackholeModel)
+			blackholeModel.rotation.y -= 0.01;
 
-		renderer.render(scene, camera);
+		composer.render();
 	}
 	render();
 }

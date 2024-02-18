@@ -55,7 +55,7 @@ const handleNewImages = () => {
 			const popupImage = document.createElement("figure");
 			popupImage.classList.add("w-full", "h-full");
 			const popupImageImage = document.createElement("img");
-			popupImageImage.classList.add("w-32", "w-full", "h-full");
+			popupImageImage.classList.add("w-full", "h-full");
 			popupImageImage.src = image.href.baseVal;
 			popupImage.appendChild(popupImageImage);
 
