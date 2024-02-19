@@ -46,6 +46,8 @@ const showBlackholes = stage => {
 	weeks.classList.add("uppercase", "font-bold",
 		"ml-3", "mt-1");
 	weeks.textContent = `in ${stage.diff} weeks`;
+	if (stage.blackholed)
+		weeks.textContent = `blackholed`;
 	if (stage.diff == 1)
 		weeks.textContent = `next week`;
 	if (stage.diff == 0)
@@ -73,6 +75,7 @@ function renderBlackholeMap(blackholeMap) {
 	const loader = new three.TextureLoader();
 	const materials = [];
 	const stages = {};
+	const blackholed = [];
 
 	let blackholeModel;
 	let spaceModel;
@@ -89,8 +92,11 @@ function renderBlackholeMap(blackholeMap) {
 	composer.addPass(renderScene);
 
 	for (const user of blackholeMap) {
-		const diff = parseInt((user.date - Date.now()) / (24*3600*1000*7));
-		if (diff < 0) continue; // blackholed
+		let diff = parseInt((user.date - Date.now()) / (24*3600*1000*7));
+		if (diff < 0) {
+			blackholed.push({ diff, user });
+			continue;
+		}
 
 		stages[diff] ||= { total: 0 };
 		stages[diff].total++;
@@ -128,8 +134,6 @@ function renderBlackholeMap(blackholeMap) {
 
 		const map = loader.load(user.image);
 		const material = new three.MeshBasicMaterial({ map });
-		material.side = three.DoubleSide;
-		material.lightMapIntensity = 0;
 
 		let geometry;
 		if (lucky)
@@ -144,6 +148,31 @@ function renderBlackholeMap(blackholeMap) {
 		circle.points = stage.points;
 		circle.curveIndex = Math.min(stage.points.length - 2,
 			parseInt((stage.points.length / stage.total) * stage.cur++));
+		circles.push(circle);
+		scene.add(circle);
+	}
+
+	for (const { user, diff } of blackholed) {
+		const map = loader.load(user.image);
+		const material = new three.MeshBasicMaterial({ map });
+
+		let geometry;
+		if (lucky)
+			geometry = new three.SphereGeometry(0.5, 64, 64);
+		else
+			geometry = new three.CircleGeometry(0.5, 64);
+		const circle = new three.Mesh(geometry, material);
+		if (lucky)
+			circle.rotation.y = 5;
+
+		circle.renderOrder = diff;
+		circle.position.x = Math.random() * 8 - 5;
+		circle.position.y = Math.random() * 8 - 5;
+		circle.position.z = diff - 100;
+		circle.visible = false;
+
+		user.circle = circle;
+		circle.user = user;
 		circles.push(circle);
 		scene.add(circle);
 	}
@@ -163,6 +192,22 @@ function renderBlackholeMap(blackholeMap) {
 			material.linewidth = 5;
 			previousMaterial = material;
 			showBlackholes(stage);
+		} else if (scrollY >= -900 && scrollY < 300) {
+			showBlackholes(stages[0]);
+		}
+
+		if (scrollY < -900) {
+			showBlackholes({
+				users: blackholed.map(b => b.user),
+				blackholed: true
+			});
+			for (const { user, diff } of blackholed) {
+				user.circle.visible = true;
+			}
+		} else {
+			for (const { user, diff } of blackholed) {
+				user.circle.visible = false;
+			}
 		}
 
 		camera.position.z += event.deltaY / 50;
@@ -219,6 +264,7 @@ function renderBlackholeMap(blackholeMap) {
 		requestAnimationFrame(render);
 		for (const i in circles) {
 			const circle = circles[i];
+			if (!circle.points) continue;
 
 			circle.position.x = circle.points[circle.curveIndex].x;
 			circle.position.y = circle.points[circle.curveIndex].y;
