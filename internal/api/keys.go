@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-	"net/http"
 	"net/url"
 	"os"
 	"strconv"
@@ -14,6 +13,9 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	http "github.com/bogdanfinn/fhttp"
+	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/demostanis/42evaluators/internal/database/repositories"
 	"github.com/demostanis/42evaluators/internal/models"
 	"github.com/google/uuid"
@@ -40,7 +42,7 @@ type Session struct {
 	intraSession string
 	userIdToken  string
 	redirectURI  string
-	client       *http.Client
+	client       tls_client.HttpClient
 	logger       zerolog.Logger
 	repo         *repositories.ApiKeysRepository
 }
@@ -91,13 +93,23 @@ func NewSession(db *gorm.DB) (*Session, error) {
 		return nil, ErrNoUserIdToken
 	}
 
+	client, err := tls_client.NewHttpClient(
+		tls_client.NewNoopLogger(),
+		[]tls_client.HttpClientOption{
+			tls_client.WithClientProfile(profiles.Chrome_105),
+		}...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Session{
 		repo:         repositories.NewApiKeysRepository(db),
 		redirectURI:  DefaultRedirectURI,
 		authToken:    authToken,
 		intraSession: intraSession,
 		userIdToken:  userIdToken,
-		client:       &http.Client{Timeout: 30 * time.Second},
+		client:       client,
 		logger:       zerolog.New(os.Stdout).With().Timestamp().Str("service", "42api-gen").Logger(),
 	}, nil
 }
@@ -165,19 +177,20 @@ func (s *Session) createApiKeys(x int) error {
 			Body:   io.NopCloser(buf),
 			Host:   host,
 			Header: http.Header{
-				"authority":    {"profile.intra.42.fr"},
-				"cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},
-				"origin":       {"https://profile.intra.42.fr"},
-				"referer":      {"https://profile.intra.42.fr/oauth/applications/new"},
-				"user-agent":   {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
-				"content-type": {writer.FormDataContentType()},
+				"Cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},
+				"Origin":       {"https://profile.intra.42.fr"},
+				"Referer":      {"https://profile.intra.42.fr/oauth/applications/new"},
+				"User-Agent":   {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
+				"Content-Type": {writer.FormDataContentType()},
 			},
 		}
+		//DebugRequest(req)
 
 		resp, err := s.client.Do(req)
 		if err != nil {
 			return fmt.Errorf("CreateApiKey client error: %w", err)
 		}
+		//DebugResponse(resp)
 
 		if resp.StatusCode != 302 && resp.StatusCode != 200 {
 			return fmt.Errorf("unexpected response status, got %s", resp.Status)
@@ -194,7 +207,11 @@ func (s *Session) createApiKeys(x int) error {
 		}
 
 		api := &models.ApiKey{Name: appName}
-		appIDraw := strings.Split(doc.Find("a[href^='/oauth/applications/']").AttrOr("href", ""), "/")[3]
+		elems := strings.Split(doc.Find("a[href^='/oauth/applications/']").AttrOr("href", ""), "/")
+		if len(elems) < 4 {
+			return errors.New("invalid response, did you pass the right authenticity token?")
+		}
+		appIDraw := elems[3]
 		if appIDraw == "" {
 			return errors.New("error could not find the application ID in html body")
 		}
