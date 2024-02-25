@@ -54,7 +54,7 @@ const showBlackholes = stage => {
 		weeks.textContent = `this week`;
 	blackholes.appendChild(weeks);
 
-	for (const user of stage.users) {
+	for (const user of stage.users.reverse()) {
 		blackholes.appendChild(createUserElem(user));
 	}
 }
