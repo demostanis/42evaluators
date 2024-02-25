@@ -44,13 +44,17 @@ type User struct {
 	BlackholedAt     time.Time
 	CorrectionPoints int
 
-	CampusID       int
 	ImageLink      string
 	ImageLinkSmall string
 	IsTest         bool
 	Level          float64
-	Coalition      Coalition `gorm:"foreignKey:ID"`
-	Title          Title     `gorm:"foreignKey:ID"`
+
+	CoalitionID int
+	Coalition   Coalition
+	TitleID     int
+	Title       Title
+	CampusID    int
+	Campus      Campus
 }
 
 func (user *User) UnmarshalJSON(data []byte) error {
@@ -82,4 +86,19 @@ func (user *User) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+func (user *User) UpdateFields(db *gorm.DB) error {
+	return db.Model(user).Updates(map[string]any{
+		"ID":               user.ID,
+		"Login":            user.Login,
+		"DisplayName":      user.DisplayName,
+		"IsStaff":          user.IsStaff,
+		"BlackholedAt":     user.BlackholedAt,
+		"CorrectionPoints": user.CorrectionPoints,
+		"ImageLink":        user.ImageLink,
+		"ImageLinkSmall":   user.ImageLinkSmall,
+		"IsTest":           user.IsTest,
+		"Level":            user.Level,
+	}).Error
 }

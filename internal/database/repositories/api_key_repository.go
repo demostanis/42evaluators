@@ -34,7 +34,7 @@ func (r *ApiKeysRepository) UpdateApiKey(apiKey *models.ApiKey) error {
 }
 
 // DeleteApiKeyByID deletes an API key by its ID from the database.
-func (r *ApiKeysRepository) DeleteApiKeyByID(id uint) error {
+func (r *ApiKeysRepository) DeleteApiKeyByID(id int) error {
 	return r.db.Delete(&models.ApiKey{}, id).Error
 }
 

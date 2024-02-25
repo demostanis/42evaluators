@@ -3,6 +3,7 @@ package users
 import (
 	"errors"
 	"fmt"
+
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/gorm"
@@ -25,6 +26,8 @@ func setCoalition(user models.User, db *gorm.DB) {
 	coalition, err := getCoalition(user)
 	if err == nil {
 		user.Coalition = *coalition
-		db.Save(&user)
+		db.Model(&user).Updates(models.User{
+			CoalitionID: (*coalition).ID,
+		})
 	}
 }

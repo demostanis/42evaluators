@@ -1,7 +1,9 @@
 package users
 
 import (
+	"errors"
 	"fmt"
+
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/gorm"
@@ -21,15 +23,17 @@ func getTitle(user models.User, db *gorm.DB) models.Title {
 			if title.Selected {
 				var cachedTitle models.Title
 				err := db.
+					Model(&models.Title{}).
 					Where("id = ?", title.Id).
 					First(&cachedTitle)
 
-				if err.Error == gorm.ErrRecordNotFound {
+				if errors.Is(err.Error, gorm.ErrRecordNotFound) {
 					actualTitle, err := api.Do[models.Title](
 						api.NewRequest(fmt.Sprintf("/v2/titles/%d", title.Id)).
 							Authenticated())
 					if err == nil {
-						db.Save(&actualTitle)
+						db.Error = nil // That fucking sucks
+						db.Create(&actualTitle)
 						return *actualTitle
 					} else {
 						break
@@ -43,8 +47,10 @@ func getTitle(user models.User, db *gorm.DB) models.Title {
 }
 
 func setTitle(user models.User, db *gorm.DB) {
-	user.Title = getTitle(user, db)
-	db.Save(&user)
-	// Why the fuck do I need to save the title here?
-	db.Save(&user.Title)
+	title := getTitle(user, db)
+	if title.ID != -1 {
+		db.Model(&user).Updates(models.User{
+			TitleID: title.ID,
+		})
+	}
 }

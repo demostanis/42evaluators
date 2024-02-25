@@ -23,5 +23,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_ = session.DeleteAllApplications()
+	err = session.DeleteAllApplications()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

@@ -1,12 +1,18 @@
 package users
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
+
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/models"
@@ -18,10 +24,9 @@ var (
 		"sort":              "-level",
 		"filter[cursus_id]": "21",
 	}
-	CampusesToFetch = []string{
-		//"62", "50",
-		"62",
-	}
+	ConcurrentCampusesFetch = int64(5)
+	ConcurrentPagesFetch    = int64(20)
+	ConcurrentUsersFetch    = int64(10)
 )
 
 func getPageCount(campusId string) (int, error) {
@@ -48,7 +53,7 @@ func getPageCount(campusId string) (int, error) {
 	return pageCount, nil
 }
 
-func fetchOnePage(page int, campusId string, db *gorm.DB) {
+func fetchOnePage(ctx context.Context, page int, campusId string, db *gorm.DB) {
 	params := maps.Clone(DefaultParams)
 	params["page"] = strconv.Itoa(page)
 	params["filter[campus_id]"] = campusId
@@ -61,34 +66,102 @@ func fetchOnePage(page int, campusId string, db *gorm.DB) {
 		return
 	}
 
+	var wg sync.WaitGroup
+	weights := semaphore.NewWeighted(ConcurrentUsersFetch)
+
 	for _, user := range *users {
-		if strings.HasSuffix(user.Login, "3b3-") {
+		if strings.HasPrefix(user.Login, "3b3-") {
 			continue
 		}
 
-		user.CampusID, _ = strconv.Atoi(campusId)
+		campusId, _ := strconv.Atoi(campusId)
 
-		go setIsTest(user, db)
-		go setTitle(user, db.Omit("is_test"))
-		go setCoalition(user, db.Omit("is_test"))
+		wg.Add(1)
+		weights.Acquire(ctx, 1)
 		go func(user models.User) {
-			db.Omit("is_test").Save(&user)
+			start := time.Now()
+			grp, _ := errgroup.WithContext(ctx)
+
+			err := db.
+				Model(&models.User{}).
+				Where("id = ?", user.ID).
+				First(nil).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				db.Error = nil
+				db.Create(&user)
+			}
+
+			grp.Go(func() error {
+				setIsTest(user, db)
+				return nil
+			})
+			grp.Go(func() error {
+				setTitle(user, db)
+				return nil
+			})
+			grp.Go(func() error {
+				setCoalition(user, db)
+				return nil
+			})
+			grp.Go(func() error {
+				setCampus(user, campusId, db)
+				return nil
+			})
+			grp.Go(func() error {
+				user.UpdateFields(db)
+				return nil
+			})
+
+			grp.Wait()
+			wg.Done()
+			weights.Release(1)
+			fmt.Printf("took %dms\n", time.Now().Sub(start).Milliseconds())
 		}(user)
 	}
 
+	wg.Wait()
 	fmt.Printf("fetched page %d...\n", page)
 }
 
-func GetUsers(db *gorm.DB) {
-	for _, campusId := range CampusesToFetch {
+func GetUsers(ctx context.Context, db *gorm.DB) {
+	start := time.Now()
+	campusesWeights := semaphore.NewWeighted(ConcurrentCampusesFetch)
+
+	var campusesToFetch []models.Campus
+	db.Find(&campusesToFetch)
+	fmt.Printf("fetching %d campuses...\n", len(campusesToFetch))
+
+	var wgForTimeTaken sync.WaitGroup
+	for _, campus := range campusesToFetch {
+		campusId := strconv.Itoa(campus.ID)
+		wgForTimeTaken.Add(1)
+		campusesWeights.Acquire(ctx, 1)
+
 		go func(campusId string) {
 			pageCount, _ := getPageCount(campusId)
 
 			fmt.Printf("fetching %d user pages...\n", pageCount)
 
+			var wg sync.WaitGroup
+
+			pagesWeights := semaphore.NewWeighted(ConcurrentCampusesFetch)
 			for page := 1; page <= pageCount; page++ {
-				go fetchOnePage(page, campusId, db)
+				wg.Add(1)
+				pagesWeights.Acquire(ctx, 1)
+
+				go func(page int) {
+					fetchOnePage(ctx, page, campusId, db)
+					wg.Done()
+					pagesWeights.Release(1)
+				}(page)
 			}
+
+			wg.Wait()
+			wgForTimeTaken.Done()
+			campusesWeights.Release(1)
 		}(campusId)
 	}
+
+	wgForTimeTaken.Wait()
+	fmt.Printf("took %.2f minutes to fetch all users\n", time.Now().Sub(start).Minutes())
 }

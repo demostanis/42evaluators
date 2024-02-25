@@ -47,6 +47,9 @@ func newDb(dialector gorm.Dialector) (*gorm.DB, error) {
 	if err = db.AutoMigrate(models.Location{}); err != nil {
 		return nil, err
 	}
+	if err = db.AutoMigrate(models.Campus{}); err != nil {
+		return nil, err
+	}
 
 	return db, nil
 }

@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -18,7 +20,6 @@ import (
 	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/demostanis/42evaluators/internal/database/repositories"
 	"github.com/demostanis/42evaluators/internal/models"
-	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
@@ -32,9 +33,8 @@ var (
 	DefaultSleepDelay  = 2 * time.Second
 	DefaultRedirectURI = "http://localhost:8000"
 
-	ErrNoAuthenticityToken = errors.New("no AUTHENTICITY_TOKEN found in .env file")
-	ErrNoIntraSession      = errors.New("no INTRA_SESSION_TOKEN found in .env file")
-	ErrNoUserIdToken       = errors.New("no USER_ID_TOKEN found in .env file")
+	ErrNoIntraSession = errors.New("no INTRA_SESSION_TOKEN found in .env file")
+	ErrNoUserIdToken  = errors.New("no USER_ID_TOKEN found in .env file")
 )
 
 type Session struct {
@@ -72,17 +72,76 @@ func GetKeys(x int, db *gorm.DB) error {
 		return err
 	}
 
-	return s.createApiKeys(x)
+	var wg sync.WaitGroup
+	for i := 0; i < x; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			err = s.createApiKey()
+			if err != nil {
+				return
+			}
+			fmt.Printf("Created API key %d/%d\n", i+1, x)
+		}(i)
+	}
+
+	wg.Wait()
+	return nil
+}
+
+func (s *Session) PullAuthenticityToken() error {
+	intraSess, ok := os.LookupEnv("INTRA_SESSION_TOKEN")
+	if !ok {
+		return ErrNoIntraSession
+	}
+
+	userID, ok := os.LookupEnv("USER_ID_TOKEN")
+	if !ok {
+		return ErrNoUserIdToken
+	}
+
+	req := &http.Request{
+		Method: http.MethodGet,
+		URL:    &url.URL{Scheme: "https", Host: host, Path: "/oauth/applications"},
+		Header: http.Header{
+			"authority":  {"profile.intra.42.fr"},
+			"cookie":     {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", userID, intraSess)},
+			"referer":    {"https://profile.intra.42.fr/languages"},
+			"User-Agent": {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"},
+			"accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"},
+		},
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("PullAuthenticityToken: unexpected status result, got %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
+	if err != nil {
+		return err
+	}
+
+	s.authToken, ok = doc.Find("meta[name=csrf-token]").Attr("content")
+	if !ok {
+		return fmt.Errorf("PullAuthenticityToken: unable to get csrf")
+	}
+
+	return nil
 }
 
 // newSession creates an instance of Session & looks up for
 // authentication tokens in your .env file.
 func NewSession(db *gorm.DB) (*Session, error) {
-	authToken, ok := os.LookupEnv("AUTHENTICITY_TOKEN")
-	if !ok {
-		return nil, ErrNoAuthenticityToken
-	}
-
 	intraSession, ok := os.LookupEnv("INTRA_SESSION_TOKEN")
 	if !ok {
 		return nil, ErrNoIntraSession
@@ -103,36 +162,105 @@ func NewSession(db *gorm.DB) (*Session, error) {
 		return nil, err
 	}
 
-	return &Session{
+	session := Session{
 		repo:         repositories.NewApiKeysRepository(db),
 		redirectURI:  DefaultRedirectURI,
-		authToken:    authToken,
 		intraSession: intraSession,
 		userIdToken:  userIdToken,
 		client:       client,
 		logger:       zerolog.New(os.Stdout).With().Timestamp().Str("service", "42api-gen").Logger(),
-	}, nil
+	}
+	err = session.PullAuthenticityToken()
+	if err != nil {
+		return nil, err
+	}
+
+	return &session, nil
+}
+
+func (s *Session) fetchApiKeysFromIntra() ([]string, error) {
+	req := &http.Request{
+		Method: http.MethodGet,
+		URL:    &url.URL{Scheme: "https", Host: host, Path: "/oauth/applications/"},
+		Header: http.Header{
+			"authority":  {"profile.intra.42.fr"},
+			"cookie":     {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},
+			"origin":     {"https://profile.intra.42.fr"},
+			"referer":    {"https://profile.intra.42.fr/oauth/applications/new"},
+			"user-agent": {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
+		},
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected response status fetching API key data, got %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, 0)
+
+	data, ok := doc.Find(".apps-root").First().Attr("data")
+	if !ok {
+		return nil, errors.New("no .apps_root")
+	}
+
+	var apps []struct{ Id int }
+	err = json.Unmarshal([]byte(data), &apps)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, app := range apps {
+		result = append(result, strconv.Itoa(app.Id))
+	}
+
+	return result, nil
 }
 
 func (s *Session) DeleteAllApplications() error {
-	keys, err := s.repo.GetAllApiKeys()
+	keys, err := s.fetchApiKeysFromIntra()
 	if err != nil {
 		return err
 	}
 
-	for _, key := range keys {
-		_ = s.DeleteApplication(key.AppID)
+	var wg sync.WaitGroup
+	for i, key := range keys {
+		wg.Add(1)
+		go func(i int, key string) {
+			defer wg.Done()
+			err = s.DeleteApplication(key)
+			if err != nil {
+				return
+			}
+			fmt.Printf("Delete API key %d/%d\n", i+1, len(keys))
+		}(i, key)
 	}
+	wg.Wait()
+
 	s.repo.DeleteAllApiKeys()
 	return nil
 }
 
-func (s *Session) DeleteApplication(id int) error {
+func (s *Session) DeleteApplication(id string) error {
 	req := &http.Request{
 		Method: http.MethodPost,
 		URL: &url.URL{
 			Scheme: "https", Host: host,
-			Path: fmt.Sprintf("/oauth/applications/%d", id),
+			Path: fmt.Sprintf("/oauth/applications/%s", id),
 		},
 		Host: host,
 		Body: io.NopCloser(
@@ -143,7 +271,7 @@ func (s *Session) DeleteApplication(id int) error {
 			"authority":    {"profile.intra.42.fr"},
 			"cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},
 			"origin":       {"https://profile.intra.42.fr"},
-			"referer":      {fmt.Sprintf("https://profile.intra.42.fr/oauth/applications/%d", id)},
+			"referer":      {fmt.Sprintf("https://profile.intra.42.fr/oauth/applications/%s", id)},
 			"User-Agent":   {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
 			"accept":       {"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
 			"content-type": {"application/x-www-form-urlencoded"},
@@ -155,85 +283,76 @@ func (s *Session) DeleteApplication(id int) error {
 		return fmt.Errorf("DeleteApplication client error: %w", err)
 	}
 
-	fmt.Println(resp.StatusCode)
 	if resp.StatusCode != 302 && resp.StatusCode != 200 {
 		return fmt.Errorf("unexpected response status, got %s", resp.Status)
 	}
+
+	//s.repo.DeleteApiKeyByID(id)
 	return nil
 }
 
-// createApiKeys creates x amount of 42 API keys.
-func (s *Session) createApiKeys(x int) error {
-	for i := 0; i < x; i++ {
-		appName := "42evaluators_" + uuid.NewString()
-		buf, writer, err := s.buildForm(appName)
-		if err != nil {
-			return err
-		}
-
-		req := &http.Request{
-			Method: http.MethodPost,
-			URL:    &url.URL{Scheme: "https", Host: host, Path: "/oauth/applications"},
-			Body:   io.NopCloser(buf),
-			Host:   host,
-			Header: http.Header{
-				"Cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},
-				"Origin":       {"https://profile.intra.42.fr"},
-				"Referer":      {"https://profile.intra.42.fr/oauth/applications/new"},
-				"User-Agent":   {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
-				"Content-Type": {writer.FormDataContentType()},
-			},
-		}
-		//DebugRequest(req)
-
-		resp, err := s.client.Do(req)
-		if err != nil {
-			return fmt.Errorf("CreateApiKey client error: %w", err)
-		}
-		//DebugResponse(resp)
-
-		if resp.StatusCode != 302 && resp.StatusCode != 200 {
-			return fmt.Errorf("unexpected response status, got %s", resp.Status)
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-
-		doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
-		if err != nil {
-			return err
-		}
-
-		api := &models.ApiKey{Name: appName}
-		elems := strings.Split(doc.Find("a[href^='/oauth/applications/']").AttrOr("href", ""), "/")
-		if len(elems) < 4 {
-			return errors.New("invalid response, did you pass the right authenticity token?")
-		}
-		appIDraw := elems[3]
-		if appIDraw == "" {
-			return errors.New("error could not find the application ID in html body")
-		}
-		appID, err := strconv.Atoi(appIDraw)
-		if err != nil {
-			return err
-		}
-		api.AppID = appID
-
-		if err = s.fetchApiData(api); err != nil {
-			return err
-		}
-
-		if err = s.repo.CreateApiKey(api); err != nil {
-			return fmt.Errorf("error inserting %s in db: %w", appName, err)
-		}
-
-		s.logger.Info().Msgf("successfully created api key: %s", api.Name)
-
-		//time.Sleep(DefaultSleepDelay)
+func (s *Session) createApiKey() error {
+	appName := "42evaluators"
+	buf, writer, err := s.buildForm(appName)
+	if err != nil {
+		return err
 	}
 
+	req := &http.Request{
+		Method: http.MethodPost,
+		URL:    &url.URL{Scheme: "https", Host: host, Path: "/oauth/applications"},
+		Body:   io.NopCloser(buf),
+		Host:   host,
+		Header: http.Header{
+			"Cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},
+			"Origin":       {"https://profile.intra.42.fr"},
+			"Referer":      {"https://profile.intra.42.fr/oauth/applications/new"},
+			"User-Agent":   {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
+			"Content-Type": {writer.FormDataContentType()},
+		},
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("CreateApiKey client error: %w", err)
+	}
+
+	if resp.StatusCode != 302 && resp.StatusCode != 200 {
+		return fmt.Errorf("unexpected response status, got %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
+	if err != nil {
+		return err
+	}
+
+	api := &models.ApiKey{Name: appName}
+	elems := strings.Split(doc.Find("a[href^='/oauth/applications/']").AttrOr("href", ""), "/")
+	if len(elems) < 4 {
+		return errors.New("invalid response, did you pass the right authenticity token?")
+	}
+	appIDraw := elems[3]
+	if appIDraw == "" {
+		return errors.New("error could not find the application ID in html body")
+	}
+	appID, err := strconv.Atoi(appIDraw)
+	if err != nil {
+		return err
+	}
+	api.AppID = appID
+
+	if err = s.fetchApiData(api); err != nil {
+		return err
+	}
+
+	if err = s.repo.CreateApiKey(api); err != nil {
+		return fmt.Errorf("error inserting %s in db: %w", appName, err)
+	}
 	return nil
 }
 

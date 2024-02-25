@@ -28,7 +28,11 @@ func urlWithPage(url *url.URL, page int) templ.SafeURL {
 }
 
 templ pageButton(url *url.URL, page int, text string, isActive bool, isLock bool) {
-	<a href={ urlWithPage(url, page) }>
+	<a
+		if !isLock {
+			href={ urlWithPage(url, page) }
+		}
+	>
 	<button
 		if isLock {
 			disabled
@@ -43,15 +47,23 @@ func isDisabled(targetedPage int, totalPage int) bool {
 
 templ pagination(url *url.URL, page int, totalPages int) {
 	<div class="join justify-center flex py-4">
+		@pageButton(url, 1, "<<", false, page == 1)
 		@pageButton(url,
-			page - 1, "«", false,
+			page - 1, "<", false,
 			isDisabled(page-1, totalPages + 1))
-		for i := 1; i <= totalPages + 1; i++ {
+		if page > 4 {
+			@pageButton(url, 0, "...", false, true)
+		}
+		for i := max(1, page - 3); i <= min(page + 3, totalPages + 1); i++ {
 			@pageButton(url, i, strconv.Itoa(i), i == page, false)
 		}
+		if page < totalPages - 3 {
+			@pageButton(url, 0, "...", false, true)
+		}
 		@pageButton(url,
-			 page + 1, "»", false,
+			 page + 1, ">", false,
 			 isDisabled(page+1, totalPages + 1))
+		@pageButton(url, totalPages + 1, ">>", false, page == totalPages + 1)
 	</div>
 }
 
@@ -60,8 +72,7 @@ func getProfileUrl(user models.User) templ.SafeURL {
 }
 
 func getBgUrl(user models.User) string {
-	//return "bg-[url(" + user.Coalition.CoverUrl + ")]"
-	return ""
+	return "bg-[url(" + user.Coalition.CoverUrl + ")] bg-cover bg-center"
 }
 
 func urlWithSorting(url *url.URL, sort string) templ.SafeURL {
@@ -73,6 +84,11 @@ func urlWithSorting(url *url.URL, sort string) templ.SafeURL {
 	newUrl := *url
 	newUrl.RawQuery = params.Encode()
 	return templ.SafeURL(newUrl.String())
+}
+
+script fallbackImages(src string) {
+	[].__proto__.slice.call(document.querySelectorAll("img")).forEach(img =>
+		(img.onerror = () => img.src = src));
 }
 
 templ leaderboard(users []models.User, url *url.URL, page int, totalPages int64, offset int) {
@@ -105,7 +121,7 @@ templ leaderboard(users []models.User, url *url.URL, page int, totalPages int64,
 						<td>{ strconv.Itoa(i + offset + 1) }.</td>
 						<td class="flex">
 							<div class="avatar placeholder w-24 h-24 object-contain">
-								<img class="rounded-full" src={ user.ImageLink }/>
+								<img class="rounded-full" src={ user.ImageLink } />
 							</div>
 						</td>
 						<td>
@@ -115,11 +131,12 @@ templ leaderboard(users []models.User, url *url.URL, page int, totalPages int64,
 						</td>
 						<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
 						<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>
-						<td>{ fmt.Sprintf("%d", user.CampusID) }</td>
+						<td>{ user.Campus.Name }</td>
 					</tr>
 				}
 			</tbody>
 		</table>
 		@pagination(url, page, int(totalPages))
 	</div>
+	@fallbackImages(models.DefaultImageLink)
 }

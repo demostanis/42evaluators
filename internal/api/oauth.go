@@ -1,6 +1,8 @@
 package api
 
 import (
+	"errors"
+
 	"github.com/demostanis/42evaluators/internal/models"
 )
 
@@ -21,6 +23,9 @@ func OauthToken(apiKey models.ApiKey) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if resp.AccessToken == "" {
+		return "", errors.New("No access token in response")
+	}
 
 	return resp.AccessToken, nil
 }
@@ -29,7 +34,7 @@ func InitClients(apiKeys []models.ApiKey) error {
 	for _, apiKey := range apiKeys {
 		accessToken, err := OauthToken(apiKey)
 		if err != nil {
-			return err
+			continue
 		}
 		clients = append(clients, RateLimitedClient(accessToken))
 	}
