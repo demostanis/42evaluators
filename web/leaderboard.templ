@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"net/url"
 )
 
 func getIsActiveClass(isActive bool) string {
@@ -15,11 +16,43 @@ func getIsActiveClass(isActive bool) string {
 	return isActiveClass
 }
 
-func getLinkForPage(page int) string {
-	if page == 1 {
-		return "/leaderboard"
+func urlWithPage(url *url.URL, page int) templ.SafeURL {
+	params := (*url).Query()
+	params.Del("page")
+	if page != 1 {
+		params.Add("page", strconv.Itoa(page))
 	}
-	return fmt.Sprintf("/leaderboard?page=%d", page)
+	newUrl := *url
+	newUrl.RawQuery = params.Encode()
+	return templ.SafeURL(newUrl.String())
+}
+
+templ pageButton(url *url.URL, page int, text string, isActive bool, isLock bool) {
+	<a href={ urlWithPage(url, page) }>
+	<button
+		if isLock {
+			disabled
+		}
+		class={ "join-item", "btn", "btn-md", getIsActiveClass(isActive) }
+	>{ text }</button></a>
+}
+
+func isDisabled(targetedPage int, totalPage int) bool {
+	return targetedPage < 1 || targetedPage > totalPage
+}
+
+templ pagination(url *url.URL, page int, totalPages int) {
+	<div class="join justify-center flex py-4">
+		@pageButton(url,
+			page - 1, "«", false,
+			isDisabled(page-1, totalPages + 1))
+		for i := 1; i <= totalPages + 1; i++ {
+			@pageButton(url, i, strconv.Itoa(i), i == page, false)
+		}
+		@pageButton(url,
+			 page + 1, "»", false,
+			 isDisabled(page+1, totalPages + 1))
+	</div>
 }
 
 func getProfileUrl(user models.User) templ.SafeURL {
@@ -27,58 +60,50 @@ func getProfileUrl(user models.User) templ.SafeURL {
 }
 
 func getBgUrl(user models.User) string {
-	return "bg-[url(" + user.Coalition.CoverUrl + ")]"
+	//return "bg-[url(" + user.Coalition.CoverUrl + ")]"
+	return ""
 }
 
-templ pageButton(page int, text string, isActive bool, isLock bool) {
-	<button
-		if isLock {
-			disabled
-		}
-		class={ "join-item", "btn", "btn-md", getIsActiveClass(isActive) }
-		hx-post={ getLinkForPage(page) }
-		hx-target="#main"
-		hx-swap="outerHTML"
-		hx-replace-url="true"
-	>{ text }</button>
-}
-
-func isDisabled(targetedPage int, totalPage int) bool {
-	if targetedPage < 1 || targetedPage > totalPage {
-		return true
+func urlWithSorting(url *url.URL, sort string) templ.SafeURL {
+	params := (*url).Query()
+	params.Del("sort")
+	if sort != "level" { // since that's the default
+		params.Add("sort", sort)
 	}
-	return false
+	newUrl := *url
+	newUrl.RawQuery = params.Encode()
+	return templ.SafeURL(newUrl.String())
 }
 
-templ pagination(page int, totalPages int) {
-	<div class="join justify-center flex py-4">
-		@pageButton(page - 1, "«", false, isDisabled(page-1, totalPages + 1))
-		for i := 1; i <= totalPages + 1; i++ {
-			@pageButton(i, strconv.Itoa(i), i == page, false)
-		}
-		@pageButton(page + 1, "»", false, isDisabled(page+1, totalPages + 1))
-	</div>
-}
-
-templ leaderboard(users []models.User, page int, totalPages int64, offset int) {
+templ leaderboard(users []models.User, url *url.URL, page int, totalPages int64, offset int) {
 	@header()
+
 	<div id="main">
-		@pagination(page, int(totalPages))
+		@pagination(url, page, int(totalPages))
 		<table class="table">
-			<thead>
+			<thead class="sticky top-0 bg-gray-700 z-10">
 				<tr class="text-2xl">
 					<th>Position</th>
 					<th>Profile picture</th>
-					<th>User</th>
-					<th>Level</th>
-					<th>Correction points</th>
+					<th><a href={ urlWithSorting(url, "login") }>
+						User
+					</a></th>
+					<th><a href={ urlWithSorting(url, "level") }>
+						Level
+					</a></th>
+					<th><a href={ urlWithSorting(url, "correction_points") }>
+						Correction points
+					</a></th>
+					<th><a href={ urlWithSorting(url, "campus_id") }>
+						Campus
+					</a></th>
 				</tr>
 			</thead>
 			<tbody>
 				for i, user := range users {
 					<tr class={ "text-xl", getBgUrl(user) }>
 						<td>{ strconv.Itoa(i + offset + 1) }.</td>
-						<td>
+						<td class="flex">
 							<div class="avatar placeholder w-24 h-24 object-contain">
 								<img class="rounded-full" src={ user.ImageLink }/>
 							</div>
@@ -90,10 +115,11 @@ templ leaderboard(users []models.User, page int, totalPages int64, offset int) {
 						</td>
 						<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
 						<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>
+						<td>{ fmt.Sprintf("%d", user.CampusID) }</td>
 					</tr>
 				}
 			</tbody>
 		</table>
-		@pagination(page, int(totalPages))
+		@pagination(url, page, int(totalPages))
 	</div>
 }

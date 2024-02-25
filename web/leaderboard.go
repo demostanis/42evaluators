@@ -15,6 +15,12 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			page = 1
 		}
 
+		// TODO: check sorting
+		sorting := r.URL.Query().Get("sort")
+		if sorting == "" {
+			sorting = "level"
+		}
+
 		var totalPages int64
 		db.
 			Model(&models.User{}).
@@ -32,11 +38,11 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Preload("Title").
 			Offset(offset).
 			Limit(UsersPerPage).
-			Order("level DESC").
+			Order(sorting + " DESC").
 			Where("is_staff = false AND is_test = false").
 			Find(&users)
 
-		leaderboard(users,
+		leaderboard(users, r.URL,
 			page, totalPages/UsersPerPage,
 			offset).Render(r.Context(), w)
 	})

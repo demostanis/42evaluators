@@ -44,6 +44,7 @@ type User struct {
 	BlackholedAt     time.Time
 	CorrectionPoints int
 
+	CampusID       int
 	ImageLink      string
 	ImageLinkSmall string
 	IsTest         bool

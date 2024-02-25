@@ -17,17 +17,23 @@ var (
 	DefaultParams = map[string]string{
 		"sort":              "-level",
 		"filter[cursus_id]": "21",
-		"filter[campus_id]": "62",
+	}
+	CampusesToFetch = []string{
+		//"62", "50",
+		"62",
 	}
 )
 
-func getPageCount() (int, error) {
+func getPageCount(campusId string) (int, error) {
+	params := maps.Clone(DefaultParams)
+	params["filter[campus_id]"] = campusId
+
 	var headers *http.Header
 	_, _ = api.Do[any](
 		api.NewRequest("/v2/cursus_users").
 			Authenticated().
 			WithMethod("HEAD").
-			WithParams(DefaultParams).
+			WithParams(params).
 			OutputHeadersIn(&headers))
 
 	if headers == nil {
@@ -42,9 +48,10 @@ func getPageCount() (int, error) {
 	return pageCount, nil
 }
 
-func fetchOnePage(page int, db *gorm.DB) {
+func fetchOnePage(page int, campusId string, db *gorm.DB) {
 	params := maps.Clone(DefaultParams)
 	params["page"] = strconv.Itoa(page)
+	params["filter[campus_id]"] = campusId
 
 	users, err := api.Do[[]models.User](
 		api.NewRequest("/v2/cursus_users").
@@ -55,6 +62,12 @@ func fetchOnePage(page int, db *gorm.DB) {
 	}
 
 	for _, user := range *users {
+		if strings.HasSuffix(user.Login, "3b3-") {
+			continue
+		}
+
+		user.CampusID, _ = strconv.Atoi(campusId)
+
 		go setIsTest(user, db)
 		go setTitle(user, db.Omit("is_test"))
 		go setCoalition(user, db.Omit("is_test"))
@@ -67,11 +80,15 @@ func fetchOnePage(page int, db *gorm.DB) {
 }
 
 func GetUsers(db *gorm.DB) {
-	pageCount, _ := getPageCount()
+	for _, campusId := range CampusesToFetch {
+		go func(campusId string) {
+			pageCount, _ := getPageCount(campusId)
 
-	fmt.Printf("fetching %d user pages...\n", pageCount)
+			fmt.Printf("fetching %d user pages...\n", pageCount)
 
-	for page := 1; page <= pageCount; page++ {
-		go fetchOnePage(page, db)
+			for page := 1; page <= pageCount; page++ {
+				go fetchOnePage(page, campusId, db)
+			}
+		}(campusId)
 	}
 }
