@@ -1,7 +1,6 @@
 package users
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/demostanis/42evaluators/internal/api"
@@ -19,15 +18,20 @@ func getCoalition(user models.User) (*models.Coalition, error) {
 	if len(*coalitions) >= 1 {
 		return &(*coalitions)[0], nil
 	}
-	return nil, errors.New("no coalition")
+	return nil, nil
 }
 
-func setCoalition(user models.User, db *gorm.DB) {
+func setCoalition(user models.User, db *gorm.DB) error {
 	coalition, err := getCoalition(user)
-	if err == nil {
-		user.Coalition = *coalition
-		db.Model(&user).Updates(models.User{
-			CoalitionID: (*coalition).ID,
-		})
+	if err != nil {
+		return err
 	}
+
+	if coalition != nil {
+		user.Coalition = *coalition
+		return db.Model(&user).Updates(models.User{
+			CoalitionID: (*coalition).ID,
+		}).Error
+	}
+	return nil
 }

@@ -14,43 +14,50 @@ type TitleId struct {
 	Selected bool `json:"selected"`
 }
 
-func getTitle(user models.User, db *gorm.DB) models.Title {
+func getTitle(user models.User, db *gorm.DB) (*models.Title, error) {
 	titles, err := api.Do[[]TitleId](
 		api.NewRequest(fmt.Sprintf("/v2/users/%d/titles_users", user.ID)).
 			Authenticated())
-	if err == nil {
-		for _, title := range *titles {
-			if title.Selected {
-				var cachedTitle models.Title
-				err := db.
-					Model(&models.Title{}).
-					Where("id = ?", title.Id).
-					First(&cachedTitle)
+	if err != nil {
+		return nil, err
+	}
 
-				if errors.Is(err.Error, gorm.ErrRecordNotFound) {
-					actualTitle, err := api.Do[models.Title](
-						api.NewRequest(fmt.Sprintf("/v2/titles/%d", title.Id)).
-							Authenticated())
-					if err == nil {
-						db.Error = nil // That fucking sucks
-						db.Create(&actualTitle)
-						return *actualTitle
-					} else {
-						break
-					}
+	for _, title := range *titles {
+		if title.Selected {
+			var cachedTitle models.Title
+			err := db.
+				Model(&models.Title{}).
+				Where("id = ?", title.Id).
+				First(&cachedTitle).Error
+
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				actualTitle, err := api.Do[models.Title](
+					api.NewRequest(fmt.Sprintf("/v2/titles/%d", title.Id)).
+						Authenticated())
+				if err != nil {
+					return nil, err
 				}
-				return cachedTitle
+
+				db.Error = nil // That fucking sucks
+				err = db.Create(&actualTitle).Error
+				return actualTitle, err
 			}
+			return &cachedTitle, err
 		}
 	}
-	return models.DefaultTitle
+	return nil, nil
 }
 
-func setTitle(user models.User, db *gorm.DB) {
-	title := getTitle(user, db)
-	if title.ID != -1 {
-		db.Model(&user).Updates(models.User{
-			TitleID: title.ID,
-		})
+func setTitle(user models.User, db *gorm.DB) error {
+	title, err := getTitle(user, db)
+	if err != nil {
+		return err
 	}
+
+	if title != nil {
+		return db.Model(&user).Updates(models.User{
+			TitleID: (*title).ID,
+		}).Error
+	}
+	return nil
 }

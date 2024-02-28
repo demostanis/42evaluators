@@ -48,8 +48,8 @@ func isTest(user models.User) bool {
 	return whether
 }
 
-func setIsTest(user models.User, db *gorm.DB) {
-	db.Model(&user).Updates(map[string]any{
+func setIsTest(user models.User, db *gorm.DB) error {
+	return db.Model(&user).Updates(map[string]any{
 		"IsTest": isTest(user),
-	})
+	}).Error
 }

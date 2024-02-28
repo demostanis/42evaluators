@@ -32,7 +32,7 @@ func getPageCount() (int, error) {
 	return pageCount, nil
 }
 
-func fetchOnePage(page int, db *gorm.DB) {
+func fetchOnePage(page int, db *gorm.DB) error {
 	campuses, err := api.Do[[]models.Campus](
 		api.NewRequest("/v2/campus").
 			Authenticated().
@@ -40,21 +40,30 @@ func fetchOnePage(page int, db *gorm.DB) {
 				"page": strconv.Itoa(page),
 			}))
 	if err != nil {
-		return
+		return err
 	}
 
 	for _, campus := range *campuses {
-		db.Save(&campus)
+		err := db.Save(&campus).Error
+		if err != nil {
+			return err
+		}
 	}
+
 	fmt.Printf("fetched page %d...\n", page)
+	return nil
 }
 
-func GetCampuses(db *gorm.DB) {
-	pageCount, _ := getPageCount()
+func GetCampuses(db *gorm.DB, errstream chan error) {
+	pageCount, err := getPageCount()
+	if err != nil {
+		errstream <- err
+		return
+	}
 
 	fmt.Printf("fetching %d campus pages...\n", pageCount)
 
 	for page := 1; page <= pageCount; page++ {
-		go fetchOnePage(page, db)
+		errstream <- fetchOnePage(page, db)
 	}
 }

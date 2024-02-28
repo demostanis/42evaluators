@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 
 	"github.com/demostanis/42evaluators/internal/api"
@@ -53,7 +52,10 @@ func getPageCount(campusId string) (int, error) {
 	return pageCount, nil
 }
 
-func fetchOnePage(ctx context.Context, page int, campusId string, db *gorm.DB) {
+func fetchOnePage(
+	ctx context.Context, page int, campusId string,
+	db *gorm.DB, errstream chan error,
+) {
 	params := maps.Clone(DefaultParams)
 	params["page"] = strconv.Itoa(page)
 	params["filter[campus_id]"] = campusId
@@ -63,6 +65,7 @@ func fetchOnePage(ctx context.Context, page int, campusId string, db *gorm.DB) {
 			Authenticated().
 			WithParams(params))
 	if err != nil {
+		errstream <- err
 		return
 	}
 
@@ -76,11 +79,11 @@ func fetchOnePage(ctx context.Context, page int, campusId string, db *gorm.DB) {
 
 		campusId, _ := strconv.Atoi(campusId)
 
-		wg.Add(1)
 		weights.Acquire(ctx, 1)
+		wg.Add(1)
+
 		go func(user models.User) {
 			start := time.Now()
-			grp, _ := errgroup.WithContext(ctx)
 
 			err := db.
 				Model(&models.User{}).
@@ -91,28 +94,31 @@ func fetchOnePage(ctx context.Context, page int, campusId string, db *gorm.DB) {
 				db.Create(&user)
 			}
 
-			grp.Go(func() error {
-				setIsTest(user, db)
-				return nil
-			})
-			grp.Go(func() error {
-				setTitle(user, db)
-				return nil
-			})
-			grp.Go(func() error {
-				setCoalition(user, db)
-				return nil
-			})
-			grp.Go(func() error {
-				setCampus(user, campusId, db)
-				return nil
-			})
-			grp.Go(func() error {
-				user.UpdateFields(db)
-				return nil
-			})
+			var userWg sync.WaitGroup
 
-			grp.Wait()
+			userWg.Add(5)
+			go func() {
+				errstream <- setIsTest(user, db)
+				userWg.Done()
+			}()
+			go func() {
+				errstream <- setTitle(user, db)
+				userWg.Done()
+			}()
+			go func() {
+				errstream <- setCoalition(user, db)
+				userWg.Done()
+			}()
+			go func() {
+				errstream <- setCampus(user, campusId, db)
+				userWg.Done()
+			}()
+			go func() {
+				errstream <- user.UpdateFields(db)
+				userWg.Done()
+			}()
+
+			userWg.Wait()
 			wg.Done()
 			weights.Release(1)
 			fmt.Printf("took %dms\n", time.Now().Sub(start).Milliseconds())
@@ -123,7 +129,7 @@ func fetchOnePage(ctx context.Context, page int, campusId string, db *gorm.DB) {
 	fmt.Printf("fetched page %d...\n", page)
 }
 
-func GetUsers(ctx context.Context, db *gorm.DB) {
+func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 	start := time.Now()
 	campusesWeights := semaphore.NewWeighted(ConcurrentCampusesFetch)
 
@@ -134,6 +140,7 @@ func GetUsers(ctx context.Context, db *gorm.DB) {
 	var wgForTimeTaken sync.WaitGroup
 	for _, campus := range campusesToFetch {
 		campusId := strconv.Itoa(campus.ID)
+		// temporary, obv...
 		if campusId != "62" {
 			continue
 		}
@@ -142,21 +149,25 @@ func GetUsers(ctx context.Context, db *gorm.DB) {
 		campusesWeights.Acquire(ctx, 1)
 
 		go func(campusId string) {
-			pageCount, _ := getPageCount(campusId)
+			pageCount, err := getPageCount(campusId)
+			if err != nil {
+				errstream <- err
+				return
+			}
 
 			fmt.Printf("fetching %d user pages...\n", pageCount)
 
 			var wg sync.WaitGroup
-
 			pagesWeights := semaphore.NewWeighted(ConcurrentCampusesFetch)
+
 			for page := 1; page <= pageCount; page++ {
-				wg.Add(1)
 				pagesWeights.Acquire(ctx, 1)
+				wg.Add(1)
 
 				go func(page int) {
-					fetchOnePage(ctx, page, campusId, db)
-					wg.Done()
+					fetchOnePage(ctx, page, campusId, db, errstream)
 					pagesWeights.Release(1)
+					wg.Done()
 				}(page)
 			}
 
@@ -167,5 +178,6 @@ func GetUsers(ctx context.Context, db *gorm.DB) {
 	}
 
 	wgForTimeTaken.Wait()
-	fmt.Printf("took %.2f minutes to fetch all users\n", time.Now().Sub(start).Minutes())
+	fmt.Printf("took %.2f minutes to fetch all users\n",
+		time.Now().Sub(start).Minutes())
 }

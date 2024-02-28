@@ -1,16 +1,23 @@
 package clusters
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/models"
+	"golang.org/x/sync/semaphore"
 	"gorm.io/gorm"
+)
+
+const (
+	ConcurrentLocationsFetch = 20
 )
 
 var DefaultParams = map[string]string{
@@ -43,7 +50,6 @@ type Cluster struct {
 	DisplayName string
 }
 
-// TODO: we should move this function somewhere to reuse it
 func getPageCount() (int, error) {
 	var headers *http.Header
 	_, _ = api.Do[any](
@@ -79,7 +85,7 @@ func UpdateLocationInDB(location models.Location, db *gorm.DB) {
 	db.Model(&newLocation).Select("end_at").Updates(&location)
 }
 
-func fetchOnePage(page int, db *gorm.DB) {
+func fetchOnePage(page int, db *gorm.DB) error {
 	params := maps.Clone(DefaultParams)
 	params["page"] = strconv.Itoa(page)
 
@@ -88,7 +94,7 @@ func fetchOnePage(page int, db *gorm.DB) {
 			WithParams(params).
 			Authenticated())
 	if err != nil {
-		return
+		return err
 	}
 
 	for _, location := range *locations {
@@ -100,14 +106,29 @@ func fetchOnePage(page int, db *gorm.DB) {
 			Image:    location.User.Image.Versions.Small,
 		}, db)
 	}
+	return nil
 }
 
-func GetLocations(db *gorm.DB) {
-	pageCount, _ := getPageCount()
+func GetLocations(ctx context.Context, db *gorm.DB, errstream chan error) {
+	pageCount, err := getPageCount()
+	if err != nil {
+		errstream <- err
+		return
+	}
 
 	fmt.Printf("fetching %d location pages...\n", pageCount)
 
+	var wg sync.WaitGroup
+	weights := semaphore.NewWeighted(ConcurrentLocationsFetch)
 	for page := 1; page <= pageCount; page++ {
-		go fetchOnePage(page, db)
+		weights.Acquire(ctx, 1)
+		wg.Add(1)
+
+		go func(page int) {
+			errstream <- fetchOnePage(page, db)
+			weights.Release(1)
+			wg.Done()
+		}(page)
 	}
+	wg.Wait()
 }
