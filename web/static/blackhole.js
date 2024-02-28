@@ -93,7 +93,7 @@ function renderBlackholeMap(blackholeMap) {
 
 	for (const user of blackholeMap) {
 		let diff = parseInt((user.date - Date.now()) / (24*3600*1000*7));
-		if (diff < 0) {
+		if (user.date < Date.now() || diff < 0) {
 			blackholed.push({ diff, user });
 			continue;
 		}
