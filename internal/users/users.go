@@ -98,23 +98,28 @@ func fetchOnePage(
 
 			userWg.Add(5)
 			go func() {
-				errstream <- setIsTest(user, db)
+				errstream <- fmt.Errorf("users.setIsTest: %v",
+					setIsTest(user, db))
 				userWg.Done()
 			}()
 			go func() {
-				errstream <- setTitle(user, db)
+				errstream <- fmt.Errorf("users.setTitle: %v",
+					setTitle(user, db))
 				userWg.Done()
 			}()
 			go func() {
-				errstream <- setCoalition(user, db)
+				errstream <- fmt.Errorf("users.setCoalition: %v",
+					setCoalition(user, db))
 				userWg.Done()
 			}()
 			go func() {
-				errstream <- setCampus(user, campusId, db)
+				errstream <- fmt.Errorf("users.setCampus: %v",
+					setCampus(user, campusId, db))
 				userWg.Done()
 			}()
 			go func() {
-				errstream <- user.UpdateFields(db)
+				errstream <- fmt.Errorf("users.UpdateFields: %v",
+					user.UpdateFields(db))
 				userWg.Done()
 			}()
 
@@ -151,7 +156,7 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 		go func(campusId string) {
 			pageCount, err := getPageCount(campusId)
 			if err != nil {
-				errstream <- err
+				errstream <- fmt.Errorf("failed to get page count: %v", err)
 				return
 			}
 

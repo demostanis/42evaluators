@@ -71,7 +71,7 @@ func getPageCount() (int, error) {
 	return pageCount, nil
 }
 
-func UpdateLocationInDB(location models.Location, db *gorm.DB) {
+func updateLocationInDB(location models.Location, db *gorm.DB) error {
 	var newLocation models.Location
 	db.Where("host = ?", location.Host).Find(&newLocation)
 
@@ -82,7 +82,11 @@ func UpdateLocationInDB(location models.Location, db *gorm.DB) {
 
 	f(&location)
 	// We also have to manually update end_at since it might be nil
-	db.Model(&newLocation).Select("end_at").Updates(&location)
+	return db.
+		Model(&newLocation).
+		Select("end_at").
+		Updates(&location).
+		Error
 }
 
 func fetchOnePage(page int, db *gorm.DB) error {
@@ -98,13 +102,16 @@ func fetchOnePage(page int, db *gorm.DB) error {
 	}
 
 	for _, location := range *locations {
-		UpdateLocationInDB(models.Location{
+		err := updateLocationInDB(models.Location{
 			UserId:   location.User.ID,
 			Login:    location.User.Login,
 			Host:     location.Host,
 			CampusId: location.CampusId,
 			Image:    location.User.Image.Versions.Small,
 		}, db)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -112,7 +119,7 @@ func fetchOnePage(page int, db *gorm.DB) error {
 func GetLocations(ctx context.Context, db *gorm.DB, errstream chan error) {
 	pageCount, err := getPageCount()
 	if err != nil {
-		errstream <- err
+		errstream <- fmt.Errorf("failed to get page count: %v", err)
 		return
 	}
 
