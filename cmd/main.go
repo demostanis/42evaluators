@@ -19,9 +19,11 @@ import (
 
 func reportErrors(errstream chan error) {
 	// TODO: perform error reporting on e.g. Sentry
-	err := <-errstream
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	for {
+		err := <-errstream
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
 	}
 }
 

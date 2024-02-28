@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"maps"
 	"net/http"
 	"strconv"
@@ -98,28 +99,36 @@ func fetchOnePage(
 
 			userWg.Add(5)
 			go func() {
-				errstream <- fmt.Errorf("users.setIsTest: %v",
-					setIsTest(user, db))
+				if err = setIsTest(user, db); err != nil {
+					errstream <- fmt.Errorf("users.setIsTest: %w", err)
+				}
 				userWg.Done()
 			}()
 			go func() {
-				errstream <- fmt.Errorf("users.setTitle: %v",
-					setTitle(user, db))
+				if err = setTitle(user, db); err != nil {
+					errstream <- fmt.Errorf("users.setTitle: %w", err)
+				}
 				userWg.Done()
 			}()
 			go func() {
-				errstream <- fmt.Errorf("users.setCoalition: %v",
-					setCoalition(user, db))
+				if err = setCoalition(user, db); err != nil {
+
+					errstream <- fmt.Errorf("users.setCoalition: %w", err)
+				} else {
+					log.Println("set coal error", err)
+				}
 				userWg.Done()
 			}()
 			go func() {
-				errstream <- fmt.Errorf("users.setCampus: %v",
-					setCampus(user, campusId, db))
+				if err = setCampus(user, campusId, db); err != nil {
+					errstream <- fmt.Errorf("users.setCampus: %w", err)
+				}
 				userWg.Done()
 			}()
 			go func() {
-				errstream <- fmt.Errorf("users.UpdateFields: %v",
-					user.UpdateFields(db))
+				if err = user.UpdateFields(db); err != nil {
+					errstream <- fmt.Errorf("users.UpdateFields: %w", err)
+				}
 				userWg.Done()
 			}()
 

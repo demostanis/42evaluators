@@ -2,10 +2,13 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/sync/semaphore"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/url"
 	"os"
@@ -26,7 +29,8 @@ import (
 )
 
 const (
-	host = "profile.intra.42.fr"
+	host            = "profile.intra.42.fr"
+	ConcurrentFetch = int64(42)
 )
 
 var (
@@ -72,13 +76,19 @@ func GetKeys(x int, db *gorm.DB) error {
 		return err
 	}
 
+	sem := semaphore.NewWeighted(ConcurrentFetch)
 	var wg sync.WaitGroup
 	for i := 0; i < x; i++ {
 		wg.Add(1)
+		if err = sem.Acquire(context.TODO(), 1); err != nil {
+
+		}
 		go func(i int) {
+			defer sem.Release(1)
 			defer wg.Done()
 			err = s.createApiKey()
 			if err != nil {
+				log.Println(err)
 				return
 			}
 			fmt.Printf("Created API key %d/%d\n", i+1, x)
