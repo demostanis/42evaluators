@@ -1,14 +1,11 @@
 package main
 
 import (
-	"context"
-
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/cable"
 	"github.com/demostanis/42evaluators/internal/campus"
 	"github.com/demostanis/42evaluators/internal/database/config"
 	"github.com/demostanis/42evaluators/internal/database/repositories"
-	"github.com/demostanis/42evaluators/internal/users"
 	"github.com/joho/godotenv"
 
 	"log"
@@ -38,7 +35,7 @@ func main() {
 	}
 
 	campus.GetCampuses(db)
-	go users.GetUsers(context.Background(), db)
+	//go users.GetUsers(context.Background(), db)
 	//clusters.GetLocations(db)
 	go cable.ConnectToCable()
 

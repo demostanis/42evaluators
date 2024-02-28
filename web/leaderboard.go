@@ -1,11 +1,17 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/gorm"
+)
+
+const (
+	PromoFormat = "01/2006"
 )
 
 func WithCampus(campusId string) func(db *gorm.DB) *gorm.DB {
@@ -14,6 +20,20 @@ func WithCampus(campusId string) func(db *gorm.DB) *gorm.DB {
 			return db.Where("campus_id = ?", campusId)
 		}
 		return db
+	}
+}
+
+func WithPromo(promo string) func(db *gorm.DB) *gorm.DB {
+	promoBeginAt, err := time.Parse(PromoFormat, promo)
+
+	return func(db *gorm.DB) *gorm.DB {
+		if err != nil {
+			return db
+		}
+		return db.Where("begin_at LIKE ?", fmt.Sprintf("%d-%02d-%%",
+			promoBeginAt.Year(), promoBeginAt.Month()))
+		return db
+
 	}
 }
 
@@ -31,12 +51,14 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 		}
 
 		campus := r.URL.Query().Get("campus")
+		promo := r.URL.Query().Get("promo")
 
 		var totalPages int64
 		db.
 			Model(&models.User{}).
 			Where("is_staff = false AND is_test = false").
 			Scopes(WithCampus(campus)).
+			Scopes(WithPromo(promo)).
 			Count(&totalPages)
 
 		if page > int(totalPages) {
@@ -54,6 +76,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Order(sorting + " DESC").
 			Where("is_staff = false AND is_test = false").
 			Scopes(WithCampus(campus)).
+			Scopes(WithPromo(promo)).
 			Find(&users)
 
 		leaderboard(users, r.URL,

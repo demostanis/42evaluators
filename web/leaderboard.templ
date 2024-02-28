@@ -117,7 +117,7 @@ templ leaderboard(users []models.User, url *url.URL, page int, totalPages int64,
 			</thead>
 			<tbody>
 				for i, user := range users {
-					<tr class={ "text-xl", getBgUrl(user) }>
+					<tr class={ "text-white", "drop-shadow", "text-xl", getBgUrl(user) }>
 						<td>{ strconv.Itoa(i + offset + 1) }.</td>
 						<td class="flex">
 							<div class="avatar placeholder w-24 h-24 object-contain">

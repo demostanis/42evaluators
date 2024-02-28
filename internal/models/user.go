@@ -11,7 +11,7 @@ import (
 const (
 	DefaultImageLink      = "https://cdn.intra.42.fr/users/ec0e0f87fa56b0b3e872b800e120dc0b/sheldon.jpeg"
 	DefaultImageLinkSmall = "https://cdn.intra.42.fr/users/a58fb999e453e72955ab3d926d5cf872/small_sheldon.jpeg"
-	BlackholeFormat       = time.RFC3339
+	DateFormat            = time.RFC3339
 )
 
 type CursusUser struct {
@@ -33,6 +33,7 @@ type CursusUser struct {
 	} `json:"user"`
 	Level        float64 `json:"level"`
 	BlackholedAt string  `json:"blackholed_at"`
+	BeginAt      string  `json:"begin_at"`
 }
 
 type User struct {
@@ -42,6 +43,7 @@ type User struct {
 	DisplayName      string
 	IsStaff          bool
 	BlackholedAt     time.Time
+	BeginAt          time.Time
 	CorrectionPoints int
 
 	ImageLink      string
@@ -68,8 +70,9 @@ func (user *User) UnmarshalJSON(data []byte) error {
 	user.Login = cursusUser.User.Login
 	user.DisplayName = cursusUser.User.DisplayName
 	user.IsStaff = cursusUser.User.IsStaff
-	user.BlackholedAt, _ = time.Parse(BlackholeFormat, cursusUser.BlackholedAt)
+	user.BlackholedAt, _ = time.Parse(DateFormat, cursusUser.BlackholedAt)
 	user.CorrectionPoints = cursusUser.User.CorrectionPoints
+	user.BeginAt, _ = time.Parse(DateFormat, cursusUser.BeginAt)
 
 	user.ImageLinkSmall = cursusUser.User.Image.Versions.Small
 	if user.ImageLinkSmall == "" {
@@ -100,5 +103,6 @@ func (user *User) UpdateFields(db *gorm.DB) error {
 		"ImageLinkSmall":   user.ImageLinkSmall,
 		"IsTest":           user.IsTest,
 		"Level":            user.Level,
+		"BeginAt":          user.BeginAt,
 	}).Error
 }

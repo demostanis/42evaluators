@@ -134,6 +134,10 @@ func GetUsers(ctx context.Context, db *gorm.DB) {
 	var wgForTimeTaken sync.WaitGroup
 	for _, campus := range campusesToFetch {
 		campusId := strconv.Itoa(campus.ID)
+		if campusId != "62" {
+			continue
+		}
+
 		wgForTimeTaken.Add(1)
 		campusesWeights.Acquire(ctx, 1)
 
