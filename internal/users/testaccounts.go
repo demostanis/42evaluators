@@ -49,7 +49,7 @@ func isTest(user models.User) bool {
 }
 
 func setIsTest(user models.User, db *gorm.DB) {
-	db.Model(&user).Updates(models.User{
-		IsTest: isTest(user),
+	db.Model(&user).Updates(map[string]any{
+		"IsTest": isTest(user),
 	})
 }
