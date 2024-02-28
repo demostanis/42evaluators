@@ -1,7 +1,8 @@
-package web
+package templates
 
 import (
 	"strconv"
+	"github.com/demostanis/42evaluators/internal/clusters"
 )
 
 script cropToContent() {
@@ -16,7 +17,7 @@ script cropToContent() {
 	c();
 }
 
-templ clustersMap(allClusters []Cluster, selectedCluster Cluster) {
+templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Cluster) {
 	@header()
 
 	<script src="static/clusters.js"></script>

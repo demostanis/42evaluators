@@ -24,6 +24,7 @@ func blackholeMap(db *gorm.DB) http.Handler {
 		var users []models.User
 		db.
 			Where("is_staff = false AND is_test = false").
+			Scopes(WithCampus("62")).
 			Find(&users)
 
 		for _, user := range users {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/a-h/templ"
+	"github.com/demostanis/42evaluators/web/templates"
 	"gorm.io/gorm"
 )
 
@@ -14,7 +15,7 @@ const (
 
 func Run(db *gorm.DB) {
 	http.Handle("/leaderboard", handleLeaderboard(db))
-	http.Handle("/blackhole", templ.Handler(blackhole()))
+	http.Handle("/blackhole", templ.Handler(templates.Blackhole()))
 	http.Handle("/blackhole.json", blackholeMap(db))
 	http.Handle("/clusters", handleClusters())
 	http.Handle("/clusters.live", clustersWs(db))

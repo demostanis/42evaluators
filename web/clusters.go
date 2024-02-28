@@ -15,25 +15,14 @@ import (
 	"github.com/demostanis/42evaluators/internal/cable"
 	"github.com/demostanis/42evaluators/internal/clusters"
 	"github.com/demostanis/42evaluators/internal/models"
+	"github.com/demostanis/42evaluators/web/templates"
 	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
 )
 
-type Cluster struct {
-	Id     int    `json:"id"`
-	Name   string `json:"name"`
-	Image  string `json:"cdn_link"`
-	Campus struct {
-		Id   int    `json:"id"`
-		Name string `json:"name"`
-	} `json:"campus"`
-	Svg         string
-	DisplayName string
-}
+var allClusters []clusters.Cluster
 
-var allClusters []Cluster
-
-func fetchSvg(cluster *Cluster) error {
+func fetchSvg(cluster *clusters.Cluster) error {
 	resp, err := http.Get(cluster.Image)
 	if err != nil {
 		return err
@@ -58,7 +47,7 @@ func handleClusters() http.Handler {
 				allClusters[i].DisplayName = fmt.Sprintf(
 					"%s - %s", c.Campus.Name, c.Name)
 			}
-			slices.SortFunc(allClusters, func(a, b Cluster) int {
+			slices.SortFunc(allClusters, func(a, b clusters.Cluster) int {
 				return cmp.Compare(a.DisplayName, b.DisplayName)
 			})
 		}
@@ -66,7 +55,7 @@ func handleClusters() http.Handler {
 		// TODO: find user's campus
 		defaultClusterId := 199
 
-		var selectedCluster Cluster
+		var selectedCluster clusters.Cluster
 		cluster := r.URL.Query().Get("cluster")
 		clusterId, err := strconv.Atoi(cluster)
 		if cluster == "" || err != nil {
@@ -89,7 +78,7 @@ func handleClusters() http.Handler {
 			_ = fetchSvg(&selectedCluster)
 		}
 
-		clustersMap(allClusters, selectedCluster).
+		templates.ClustersMap(allClusters, selectedCluster).
 			Render(r.Context(), w)
 	})
 }

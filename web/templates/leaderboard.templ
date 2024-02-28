@@ -1,4 +1,4 @@
-package web
+package templates
 
 import (
 	"github.com/demostanis/42evaluators/internal/models"
@@ -91,7 +91,7 @@ script fallbackImages(src string) {
 		(img.onerror = () => img.src = src));
 }
 
-templ leaderboard(users []models.User, url *url.URL, page int, totalPages int64, offset int) {
+templ Leaderboard(users []models.User, url *url.URL, page int, totalPages int64, offset int) {
 	@header()
 
 	<div id="main">
@@ -117,7 +117,7 @@ templ leaderboard(users []models.User, url *url.URL, page int, totalPages int64,
 			</thead>
 			<tbody>
 				for i, user := range users {
-					<tr class={ "text-white", "drop-shadow", "text-xl", getBgUrl(user) }>
+					<tr class={ "text-white", "text-xl", getBgUrl(user) }>
 						<td>{ strconv.Itoa(i + offset + 1) }.</td>
 						<td class="flex">
 							<div class="avatar placeholder w-24 h-24 object-contain">

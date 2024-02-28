@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/demostanis/42evaluators/internal/models"
+	"github.com/demostanis/42evaluators/web/templates"
 	"gorm.io/gorm"
 )
 
@@ -14,6 +15,7 @@ const (
 	PromoFormat = "01/2006"
 )
 
+// TODO: refactor in another file
 func WithCampus(campusId string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if campusId != "" {
@@ -79,7 +81,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Scopes(WithPromo(promo)).
 			Find(&users)
 
-		leaderboard(users, r.URL,
+		templates.Leaderboard(users, r.URL,
 			page, totalPages/UsersPerPage,
 			offset).Render(r.Context(), w)
 	})

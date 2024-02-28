@@ -31,6 +31,18 @@ type Location struct {
 	} `json:"user"`
 }
 
+type Cluster struct {
+	Id     int    `json:"id"`
+	Name   string `json:"name"`
+	Image  string `json:"cdn_link"`
+	Campus struct {
+		Id   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"campus"`
+	Svg         string
+	DisplayName string
+}
+
 // TODO: we should move this function somewhere to reuse it
 func getPageCount() (int, error) {
 	var headers *http.Header
