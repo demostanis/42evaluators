@@ -56,7 +56,7 @@ func getPageCount() (int, error) {
 			WithParams(DefaultParams).
 			WithMethod("HEAD").
 			OutputHeadersIn(&headers))
-	return api.GetPageCount(headers, err)
+	return api.GetPageCount(headers, ">", err)
 }
 
 func UpdateLocationInDB(location models.Location, db *gorm.DB) error {

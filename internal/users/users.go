@@ -40,7 +40,7 @@ func getPageCount(campusId string) (int, error) {
 			WithParams(params).
 			OutputHeadersIn(&headers))
 
-	return api.GetPageCount(headers, err)
+	return api.GetPageCount(headers, "&", err)
 }
 
 func fetchOnePage(
