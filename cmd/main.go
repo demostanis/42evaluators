@@ -8,7 +8,6 @@ import (
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/cable"
 	"github.com/demostanis/42evaluators/internal/campus"
-	"github.com/demostanis/42evaluators/internal/clusters"
 	"github.com/demostanis/42evaluators/internal/database/config"
 	"github.com/demostanis/42evaluators/internal/database/repositories"
 	"github.com/demostanis/42evaluators/internal/users"
@@ -57,7 +56,7 @@ func main() {
 
 	go campus.GetCampuses(db, errstream)
 	go users.GetUsers(ctx, db, errstream)
-	go clusters.GetLocations(ctx, db, errstream)
+	//go clusters.GetLocations(ctx, db, errstream)
 	go cable.ConnectToCable()
 
 	go reportErrors(errstream)

@@ -2,12 +2,10 @@ package clusters
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/demostanis/42evaluators/internal/api"
@@ -52,23 +50,13 @@ type Cluster struct {
 
 func getPageCount() (int, error) {
 	var headers *http.Header
-	_, _ = api.Do[any](
+	_, err := api.Do[any](
 		api.NewRequest("/v2/locations").
 			Authenticated().
 			WithParams(DefaultParams).
 			WithMethod("HEAD").
 			OutputHeadersIn(&headers))
-
-	if headers == nil {
-		return 0, errors.New("response did not contain any headers")
-	}
-	_, after, _ := strings.Cut(headers.Get("link"), "page=")
-	pageCountRaw, _, _ := strings.Cut(after, ">")
-	pageCount, err := strconv.Atoi(pageCountRaw)
-	if err != nil {
-		return 0, errors.New("failed to find page count")
-	}
-	return pageCount, nil
+	return api.GetPageCount(headers, err)
 }
 
 func UpdateLocationInDB(location models.Location, db *gorm.DB) error {
@@ -119,7 +107,7 @@ func fetchOnePage(page int, db *gorm.DB) error {
 func GetLocations(ctx context.Context, db *gorm.DB, errstream chan error) {
 	pageCount, err := getPageCount()
 	if err != nil {
-		errstream <- fmt.Errorf("failed to get page count: %v", err)
+		errstream <- fmt.Errorf("failed to get page count for locations: %v", err)
 		return
 	}
 
