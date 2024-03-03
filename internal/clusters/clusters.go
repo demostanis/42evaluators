@@ -60,7 +60,7 @@ func getPageCount() (int, error) {
 			OutputHeadersIn(&headers))
 
 	if headers == nil {
-		return 0, errors.New("request did not contain any headers")
+		return 0, errors.New("response did not contain any headers")
 	}
 	_, after, _ := strings.Cut(headers.Get("link"), "page=")
 	pageCountRaw, _, _ := strings.Cut(after, ">")
