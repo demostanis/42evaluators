@@ -149,6 +149,9 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 
 	var campusesToFetch []models.Campus
 	db.Find(&campusesToFetch)
+	if len(campusesToFetch) == 0 {
+		return
+	}
 	fmt.Printf("fetching %d campuses...\n", len(campusesToFetch))
 
 	var wgForTimeTaken sync.WaitGroup
