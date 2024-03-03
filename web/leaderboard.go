@@ -34,8 +34,6 @@ func WithPromo(promo string) func(db *gorm.DB) *gorm.DB {
 		}
 		return db.Where("begin_at LIKE ?", fmt.Sprintf("%d-%02d-%%",
 			promoBeginAt.Year(), promoBeginAt.Month()))
-		return db
-
 	}
 }
 
@@ -69,7 +67,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 
 		var users []models.User
 		offset := (page - 1) * UsersPerPage
-		db.
+		err = db.
 			Preload("Coalition").
 			Preload("Title").
 			Preload("Campus").
@@ -79,10 +77,45 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Where("is_staff = false AND is_test = false").
 			Scopes(WithCampus(campus)).
 			Scopes(WithPromo(promo)).
-			Find(&users)
+			Find(&users).Error
 
-		templates.Leaderboard(users, r.URL,
-			page, totalPages/UsersPerPage,
-			offset).Render(r.Context(), w)
+		var campuses []models.Campus
+		db.Find(&campuses)
+
+		var campusUsers []models.User
+		db.
+			Scopes(WithCampus(campus)).
+			Where("is_staff = false AND is_test = false").
+			Find(&campusUsers)
+
+		promos := make([]templates.Promo, 0)
+		for _, user := range campusUsers {
+			userPromo := fmt.Sprintf("%02d/%d",
+				user.BeginAt.Month(),
+				user.BeginAt.Year())
+			shouldAdd := true
+			for _, alreadyAddedPromo := range promos {
+				if userPromo == alreadyAddedPromo.Name {
+					shouldAdd = false
+					break
+				}
+			}
+			if shouldAdd {
+				promos = append(promos, templates.Promo{
+					Name:   userPromo,
+					Active: promo == userPromo,
+				})
+			}
+		}
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+		} else {
+			activeCampusId, _ := strconv.Atoi(campus)
+			templates.Leaderboard(users,
+				promos, campuses, activeCampusId,
+				r.URL, page, totalPages/UsersPerPage,
+				offset).Render(r.Context(), w)
+		}
 	})
 }
