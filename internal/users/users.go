@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"maps"
 	"net/http"
 	"strconv"
@@ -105,8 +104,6 @@ func fetchOnePage(
 				if err = setCoalition(user, db); err != nil {
 
 					errstream <- fmt.Errorf("users.setCoalition: %w", err)
-				} else {
-					log.Println("set coal error", err)
 				}
 				userWg.Done()
 			}()
