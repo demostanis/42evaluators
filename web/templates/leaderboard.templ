@@ -8,6 +8,11 @@ import (
 	"net/url"
 )
 
+type Promo struct {
+	Name   string
+	Active bool
+}
+
 func getIsActiveClass(isActive bool) string {
 	var isActiveClass string
 	if isActive {
@@ -46,7 +51,7 @@ func isDisabled(targetedPage int, totalPage int) bool {
 }
 
 templ pagination(url *url.URL, page int, totalPages int) {
-	<div class="join justify-center flex py-4">
+	<div class="join justify-center flex pb-4 pt-2">
 		@pageButton(url, 1, "<<", false, page == 1)
 		@pageButton(url,
 			page - 1, "<", false,
@@ -72,11 +77,13 @@ func getProfileUrl(user models.User) templ.SafeURL {
 }
 
 func getBgUrl(user models.User) string {
-	if user.Coalition.CoverUrl == "" {
-		return "bg-[url(https://profile.intra.42.fr/assets/background_login-a4e0666f73c02f025f590b474b394fd86e1cae20e95261a6e4862c2d0faa1b04.jpg)] bg-cover bg-center"
-	} else {
-		return "bg-[url(" + user.Coalition.CoverUrl + ")] bg-cover bg-center"
-	}
+	// TODO: stick the coalition cover somewhere prettier
+	//if user.Coalition.CoverUrl == "" {
+	//	return "bg-[url(https://profile.intra.42.fr/assets/background_login-a4e0666f73c02f025f590b474b394fd86e1cae20e95261a6e4862c2d0faa1b04.jpg)] bg-cover bg-center"
+	//} else {
+	//	return "bg-[url(" + user.Coalition.CoverUrl + ")] bg-cover bg-center"
+	//}
+	return ""
 }
 
 func urlWithSorting(url *url.URL, sort string) templ.SafeURL {
@@ -95,10 +102,73 @@ script fallbackImages(src string) {
 		(img.onerror = () => img.src = src));
 }
 
-templ Leaderboard(users []models.User, url *url.URL, page int, totalPages int64, offset int) {
+script updateLeaderboardWhenNeeded(campusIds []int) {
+	function updatePromo(e) {
+		const params = new URLSearchParams(window.location.search);
+		const selected = e.target.selectedOptions[0];
+		if (selected.textContent != "Any promo") {
+			params.delete("promo");
+			params.append("promo", selected.textContent.replace(/promo in /, ""));
+		} else
+			params.delete("promo");
+		window.location.search = params;
+	}
+	function updateCampus(e) {
+		const params = new URLSearchParams(window.location.search);
+		const selected = e.target.selectedOptions[0];
+		if (selected.textContent != "Any campus") {
+			params.delete("campus");
+			params.append("campus", campusIds[e.target.selectedIndex - 1]);
+		} else
+			params.delete("campus");
+		window.location.search = params;
+	}
+
+	document.querySelector(".promo-selector")
+		.addEventListener("change", updatePromo)
+	document.querySelector(".campus-selector")
+		.addEventListener("change", updateCampus)
+}
+
+func getCampusIds(campuses []models.Campus) []int {
+	ids := make([]int, 0)
+	for _, campus := range campuses {
+		ids = append(ids, campus.ID)
+	}
+	return ids
+}
+
+templ Leaderboard(users []models.User,
+	promos []Promo, campuses []models.Campus, activeCampus int,
+	url *url.URL, page int, totalPages int64,
+	offset int) {
 	@header()
 
 	<div id="main">
+		<div class="flex justify-center items-center space-x-4">
+			<span>Filter by: </span>
+			<select class="select promo-selector">
+				<option>Any promo</option>
+				for _, promo := range promos {
+					<option
+						if promo.Active {
+							selected
+						}
+					>promo in { promo.Name }</option>
+				}
+			</select>
+			<span>of</span>
+			<select class="select campus-selector">
+				<option>Any campus</option>
+				for _, campus := range campuses {
+					<option
+						if activeCampus == campus.ID {
+							selected
+						}
+					>{ campus.Name } campus</option>
+				}
+			</select>
+		</div>
 		@pagination(url, page, int(totalPages))
 		<table class="table">
 			<thead class="sticky top-0 bg-gray-700 z-10">
@@ -143,4 +213,5 @@ templ Leaderboard(users []models.User, url *url.URL, page int, totalPages int64,
 		@pagination(url, page, int(totalPages))
 	</div>
 	@fallbackImages(models.DefaultImageLink)
+	@updateLeaderboardWhenNeeded(getCampusIds(campuses))
 }

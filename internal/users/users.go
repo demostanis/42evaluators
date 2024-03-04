@@ -33,23 +33,14 @@ func getPageCount(campusId string) (int, error) {
 	params["filter[campus_id]"] = campusId
 
 	var headers *http.Header
-	_, _ = api.Do[any](
+	_, err := api.Do[any](
 		api.NewRequest("/v2/cursus_users").
 			Authenticated().
 			WithMethod("HEAD").
 			WithParams(params).
 			OutputHeadersIn(&headers))
 
-	if headers == nil {
-		return 0, errors.New("request did not contain any headers")
-	}
-	_, after, _ := strings.Cut(headers.Get("link"), "page=")
-	pageCountRaw, _, _ := strings.Cut(after, "&")
-	pageCount, err := strconv.Atoi(pageCountRaw)
-	if err != nil {
-		return 0, fmt.Errorf("page count isn't a number: %v", pageCountRaw)
-	}
-	return pageCount, nil
+	return api.GetPageCount(headers, "&", err)
 }
 
 func fetchOnePage(
@@ -167,7 +158,7 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 		go func(campusId string) {
 			pageCount, err := getPageCount(campusId)
 			if err != nil {
-				errstream <- fmt.Errorf("failed to get page count: %v", err)
+				errstream <- fmt.Errorf("failed to get page count for users: %v", err)
 				return
 			}
 

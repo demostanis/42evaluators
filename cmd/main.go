@@ -1,14 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
 	"github.com/demostanis/42evaluators/internal/api"
-	"github.com/demostanis/42evaluators/internal/cable"
-	"github.com/demostanis/42evaluators/internal/campus"
-	"github.com/demostanis/42evaluators/internal/clusters"
 	"github.com/demostanis/42evaluators/internal/database/config"
 	"github.com/demostanis/42evaluators/internal/database/repositories"
 	"github.com/joho/godotenv"
@@ -53,15 +49,15 @@ func main() {
 		return
 	}
 
-	ctx := context.Background()
-	errstream := make(chan error)
+	//ctx := context.Background()
+	//errstream := make(chan error)
 
-	go campus.GetCampuses(db, errstream)
+	//go campus.GetCampuses(db, errstream)
 	//go users.GetUsers(ctx, db, errstream)
-	go clusters.GetLocations(ctx, db, errstream)
-	go cable.ConnectToCable(errstream)
+	//go clusters.GetLocations(ctx, db, errstream)
+	//go cable.ConnectToCable()
 
-	go reportErrors(errstream)
+	//go reportErrors(errstream)
 
 	for {
 	}

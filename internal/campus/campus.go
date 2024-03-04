@@ -1,11 +1,9 @@
 package campus
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/models"
@@ -14,22 +12,12 @@ import (
 
 func getPageCount() (int, error) {
 	var headers *http.Header
-	_, _ = api.Do[any](
+	_, err := api.Do[any](
 		api.NewRequest("/v2/campus").
 			Authenticated().
 			WithMethod("HEAD").
 			OutputHeadersIn(&headers))
-
-	if headers == nil {
-		return 0, errors.New("request did not contain any headers")
-	}
-	_, after, _ := strings.Cut(headers.Get("link"), "page=")
-	pageCountRaw, _, _ := strings.Cut(after, ">")
-	pageCount, err := strconv.Atoi(pageCountRaw)
-	if err != nil {
-		return 0, errors.New("failed to find page count")
-	}
-	return pageCount, nil
+	return api.GetPageCount(headers, ">", err)
 }
 
 func fetchOnePage(page int, db *gorm.DB) error {
@@ -57,7 +45,7 @@ func fetchOnePage(page int, db *gorm.DB) error {
 func GetCampuses(db *gorm.DB, errstream chan error) {
 	pageCount, err := getPageCount()
 	if err != nil {
-		errstream <- fmt.Errorf("failed to get page count: %v", err)
+		errstream <- fmt.Errorf("failed to get page count for campuses: %v", err)
 		return
 	}
 

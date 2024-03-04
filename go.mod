@@ -37,7 +37,7 @@ require (
 )
 
 require (
-	github.com/a-h/templ v0.2.513
+	github.com/a-h/templ v0.2.598
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	golang.org/x/net v0.20.0 // indirect
 )
