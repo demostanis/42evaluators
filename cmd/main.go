@@ -55,10 +55,9 @@ func main() {
 	//go campus.GetCampuses(db, errstream)
 	//go users.GetUsers(ctx, db, errstream)
 	//go clusters.GetLocations(ctx, db, errstream)
-	//go cable.ConnectToCable()
+	//go cable.ConnectToCable(errstream)
 
 	//go reportErrors(errstream)
 
-	for {
-	}
+	select {}
 }
