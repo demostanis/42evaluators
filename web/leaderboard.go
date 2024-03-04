@@ -3,7 +3,9 @@ package web
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/demostanis/42evaluators/internal/models"
@@ -29,11 +31,22 @@ func WithPromo(promo string) func(db *gorm.DB) *gorm.DB {
 	promoBeginAt, err := time.Parse(PromoFormat, promo)
 
 	return func(db *gorm.DB) *gorm.DB {
-		if err != nil {
-			return db
+		if err == nil {
+			promoStr := fmt.Sprintf("%d-%02d-%%",
+				promoBeginAt.Year(), promoBeginAt.Month())
+
+			var count int64
+			err = db.
+				Session(&gorm.Session{}).
+				Model(&models.User{}).
+				Where("begin_at LIKE ?", promoStr).
+				Count(&count).
+				Error
+			if err == nil && count > 0 {
+				return db.Where("begin_at LIKE ?", promoStr)
+			}
 		}
-		return db.Where("begin_at LIKE ?", fmt.Sprintf("%d-%02d-%%",
-			promoBeginAt.Year(), promoBeginAt.Month()))
+		return db
 	}
 }
 
@@ -107,6 +120,18 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 				})
 			}
 		}
+		slices.SortFunc(promos, func(a, b templates.Promo) int {
+			parseDate := func(promo templates.Promo) (int, int) {
+				parts := strings.Split(promo.Name, "/")
+				month, _ := strconv.Atoi(parts[0])
+				year, _ := strconv.Atoi(parts[1])
+				return month, year
+			}
+			monthA, yearA := parseDate(a)
+			monthB, yearB := parseDate(b)
+
+			return (monthA | yearA<<5) - (monthB | yearB<<5)
+		})
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
