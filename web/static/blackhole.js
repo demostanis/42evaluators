@@ -63,14 +63,9 @@ function renderBlackholeMap(blackholeMap) {
 	const circles = [];
 
 	const scene = new three.Scene();
-	const camera = new three.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 1000);
+	const camera = new three.PerspectiveCamera(50, innerWidth/innerHeight);
 	camera.position.z = 15;
-	const renderer = new three.WebGLRenderer({
-		powerPreference: "high-performance",
-		antialias: true,
-		stencil: false,
-		depth: false,
-	});
+	const renderer = new three.WebGLRenderer({ antialias: true });
 	renderer.outputColorSpace = three.SRGBColorSpace;
 	const loader = new three.TextureLoader();
 	const materials = [];
@@ -204,11 +199,14 @@ function renderBlackholeMap(blackholeMap) {
 			for (const { user, diff } of blackholed) {
 				user.circle.visible = true;
 			}
+			camera.far = 100;
 		} else {
 			for (const { user, diff } of blackholed) {
 				user.circle.visible = false;
 			}
+			camera.far = 2000;
 		}
+		camera.updateProjectionMatrix();
 
 		camera.position.z += event.deltaY / 50;
 	});
