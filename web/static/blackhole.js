@@ -3,10 +3,12 @@ import { Line2 } from 'three/addons/Line2.js';
 import { LineMaterial } from 'three/addons/LineMaterial.js';
 import { LineGeometry } from 'three/addons/LineGeometry.js';
 import { GLTFLoader } from 'three/addons/GLTFLoader.js';
-import { EffectComposer, RenderPass } from 'postprocessing';
 
 const pointsCount = 1000;
 const lucky = Math.random() > 0.995;
+
+let rendererHeight = innerHeight - document.querySelector(".navbar").getBoundingClientRect().height;
+document.querySelector("#blackholes").style.height = rendererHeight + "px";
 
 const createUserElem = user => {
 	const cardImage = document.createElement("figure");
@@ -63,7 +65,7 @@ function renderBlackholeMap(blackholeMap) {
 	const circles = [];
 
 	const scene = new three.Scene();
-	const camera = new three.PerspectiveCamera(50, innerWidth/innerHeight);
+	const camera = new three.PerspectiveCamera(50, innerWidth/rendererHeight);
 	camera.position.z = 15;
 	const renderer = new three.WebGLRenderer({ antialias: true });
 	renderer.outputColorSpace = three.SRGBColorSpace;
@@ -82,10 +84,6 @@ function renderBlackholeMap(blackholeMap) {
 		blackholeModel.scale.set(0.7, 0.7, 0.7);
 		scene.add(blackholeModel);
 	});
-	const renderScene = new RenderPass(scene, camera);
-	const composer = new EffectComposer(renderer);
-	composer.setSize(innerWidth, innerHeight);
-	composer.addPass(renderScene);
 
 	for (const user of blackholeMap) {
 		let diff = parseInt((user.date - Date.now()) / (24*3600*1000*7));
@@ -250,13 +248,14 @@ function renderBlackholeMap(blackholeMap) {
 	renderer.domElement.addEventListener("mousedown", handleMouse);
 
 	window.addEventListener("resize", () => {
-		camera.aspect = window.innerWidth / window.innerHeight;
+		rendererHeight = innerHeight - document.querySelector(".navbar").getBoundingClientRect().height;
+		camera.aspect = window.innerWidth / rendererHeight;
 		camera.updateProjectionMatrix();
-		renderer.setSize(innerWidth, innerHeight);
-		composer.setSize(innerWidth, innerHeight);
+		renderer.setSize(innerWidth, rendererHeight);
+		document.querySelector("#blackholes").style.height = rendererHeight + "px";
 	});
 
-	renderer.setSize(innerWidth, innerHeight);
+	renderer.setSize(innerWidth, rendererHeight);
 	document.body.appendChild(renderer.domElement);
 
 	function render() {
@@ -273,11 +272,11 @@ function renderBlackholeMap(blackholeMap) {
 				circle.curveIndex = circle.points.length - 1;
 		}
 		for (const stage of Object.keys(stages))
-			stages[stage].material?.resolution.set(innerWidth, innerHeight);
+			stages[stage].material?.resolution.set(innerWidth, rendererHeight);
 		if (blackholeModel)
 			blackholeModel.rotation.y -= 0.01;
 
-		composer.render();
+		renderer.render(scene, camera);
 	}
 	render();
 }
