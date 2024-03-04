@@ -4,6 +4,7 @@ import "gorm.io/gorm"
 
 type Location struct {
 	gorm.Model
+	ID       int     `json:"id"`
 	UserId   int     `json:"user_id"`
 	Login    string  `json:"login"`
 	Host     string  `json:"host"`

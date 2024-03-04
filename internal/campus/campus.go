@@ -57,13 +57,15 @@ func fetchOnePage(page int, db *gorm.DB) error {
 func GetCampuses(db *gorm.DB, errstream chan error) {
 	pageCount, err := getPageCount()
 	if err != nil {
-		errstream <- err
+		errstream <- fmt.Errorf("failed to get page count: %v", err)
 		return
 	}
 
 	fmt.Printf("fetching %d campus pages...\n", pageCount)
 
 	for page := 1; page <= pageCount; page++ {
-		errstream <- fetchOnePage(page, db)
+		if err = fetchOnePage(page, db); err != nil {
+			errstream <- fmt.Errorf("failed to get one campus page: %v", err)
+		}
 	}
 }

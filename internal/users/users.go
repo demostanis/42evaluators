@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"maps"
 	"net/http"
 	"strconv"
@@ -48,7 +47,7 @@ func getPageCount(campusId string) (int, error) {
 	pageCountRaw, _, _ := strings.Cut(after, "&")
 	pageCount, err := strconv.Atoi(pageCountRaw)
 	if err != nil {
-		return 0, errors.New("failed to find page count")
+		return 0, fmt.Errorf("page count isn't a number: %v", pageCountRaw)
 	}
 	return pageCount, nil
 }
@@ -114,8 +113,6 @@ func fetchOnePage(
 				if err = setCoalition(user, db); err != nil {
 
 					errstream <- fmt.Errorf("users.setCoalition: %w", err)
-				} else {
-					log.Println("set coal error", err)
 				}
 				userWg.Done()
 			}()
@@ -149,6 +146,11 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 
 	var campusesToFetch []models.Campus
 	db.Find(&campusesToFetch)
+	if len(campusesToFetch) == 0 {
+		time.Sleep(100) // wait some time for campuses to be fetched...
+		GetUsers(ctx, db, errstream)
+		return
+	}
 	fmt.Printf("fetching %d campuses...\n", len(campusesToFetch))
 
 	var wgForTimeTaken sync.WaitGroup

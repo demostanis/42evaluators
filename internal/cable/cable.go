@@ -2,6 +2,7 @@ package cable
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -24,13 +25,14 @@ var (
 	LocationChannel = make(chan models.Location)
 )
 
-func ConnectToCable() {
+func ConnectToCable(errstream chan error) {
 	headers := http.Header{}
 	headers.Add("Cookie", "user.id="+os.Getenv("USER_ID_TOKEN"))
 	headers.Add("Origin", "https://meta.intra.42.fr")
 
 	client, _, err := websocket.DefaultDialer.Dial("wss://profile.intra.42.fr/cable", headers)
 	if err != nil {
+		errstream <- fmt.Errorf("failed to connect to cable: %v", err)
 		return
 	}
 	defer client.Close()
@@ -38,12 +40,13 @@ func ConnectToCable() {
 	for {
 		_, message, err := client.ReadMessage()
 		if err != nil {
-			ConnectToCable()
+			ConnectToCable(errstream)
 			return
 		}
 		var answer Answer
 		err = json.Unmarshal(message, &answer)
 		if err != nil {
+			errstream <- fmt.Errorf("cable message failed to unmarshal: %v", err)
 			continue
 		}
 		location := answer.Message.Location

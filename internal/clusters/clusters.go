@@ -25,6 +25,7 @@ var DefaultParams = map[string]string{
 }
 
 type Location struct {
+	ID       int    `json:"id"`
 	Host     string `json:"host"`
 	CampusId int    `json:"campus_id"`
 	User     struct {
@@ -73,20 +74,24 @@ func getPageCount() (int, error) {
 
 func UpdateLocationInDB(location models.Location, db *gorm.DB) error {
 	var newLocation models.Location
-	db.Where("host = ?", location.Host).Find(&newLocation)
+	err := db.Where("id = ?", location.ID).Find(&newLocation).Error
 
-	f := db.Save
-	if newLocation.Host != "" {
-		f = db.Model(&newLocation).Updates
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return db.Create(&location).Error
 	}
-
-	f(&location)
-	// We also have to manually update end_at since it might be nil
 	return db.
 		Model(&newLocation).
-		Select("end_at").
-		Updates(&location).
-		Error
+		// I wonder why I need to specify this...
+		Where("id = ?", location.ID).
+		Updates(map[string]any{
+			"ID":       location.ID,
+			"UserId":   location.UserId,
+			"Login":    location.Login,
+			"Host":     location.Host,
+			"CampusId": location.CampusId,
+			"EndAt":    location.EndAt,
+			"Image":    location.Image,
+		}).Error
 }
 
 func fetchOnePage(page int, db *gorm.DB) error {
@@ -132,7 +137,9 @@ func GetLocations(ctx context.Context, db *gorm.DB, errstream chan error) {
 		wg.Add(1)
 
 		go func(page int) {
-			errstream <- fetchOnePage(page, db)
+			if err := fetchOnePage(page, db); err != nil {
+				errstream <- fmt.Errorf("failed to get one location page: %v", err)
+			}
 			weights.Release(1)
 			wg.Done()
 		}(page)

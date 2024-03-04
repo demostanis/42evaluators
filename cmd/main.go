@@ -11,7 +11,6 @@ import (
 	"github.com/demostanis/42evaluators/internal/clusters"
 	"github.com/demostanis/42evaluators/internal/database/config"
 	"github.com/demostanis/42evaluators/internal/database/repositories"
-	"github.com/demostanis/42evaluators/internal/users"
 	"github.com/joho/godotenv"
 
 	"github.com/demostanis/42evaluators/web"
@@ -39,6 +38,8 @@ func main() {
 		return
 	}
 
+	go web.Run(db)
+
 	repo := repositories.NewApiKeysRepository(db)
 
 	keys, err := repo.GetAllApiKeys()
@@ -56,11 +57,12 @@ func main() {
 	errstream := make(chan error)
 
 	go campus.GetCampuses(db, errstream)
-	go users.GetUsers(ctx, db, errstream)
+	//go users.GetUsers(ctx, db, errstream)
 	go clusters.GetLocations(ctx, db, errstream)
-	go cable.ConnectToCable()
+	go cable.ConnectToCable(errstream)
 
 	go reportErrors(errstream)
 
-	web.Run(db)
+	for {
+	}
 }
