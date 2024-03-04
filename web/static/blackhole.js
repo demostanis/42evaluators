@@ -67,7 +67,12 @@ function renderBlackholeMap(blackholeMap) {
 	const scene = new three.Scene();
 	const camera = new three.PerspectiveCamera(50, innerWidth/rendererHeight);
 	camera.position.z = 15;
-	const renderer = new three.WebGLRenderer({ antialias: true });
+	const renderer = new three.WebGLRenderer({
+		powerPreference: "high-performance",
+		antialias: true,
+		stencil: false,
+		depth: false,
+	});
 	renderer.outputColorSpace = three.SRGBColorSpace;
 	const loader = new three.TextureLoader();
 	const materials = [];
