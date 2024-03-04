@@ -72,7 +72,11 @@ func getProfileUrl(user models.User) templ.SafeURL {
 }
 
 func getBgUrl(user models.User) string {
-	return "bg-[url(" + user.Coalition.CoverUrl + ")] bg-cover bg-center"
+	if user.Coalition.CoverUrl == "" {
+		return "bg-[url(https://profile.intra.42.fr/assets/background_login-a4e0666f73c02f025f590b474b394fd86e1cae20e95261a6e4862c2d0faa1b04.jpg)] bg-cover bg-center"
+	} else {
+		return "bg-[url(" + user.Coalition.CoverUrl + ")] bg-cover bg-center"
+	}
 }
 
 func urlWithSorting(url *url.URL, sort string) templ.SafeURL {

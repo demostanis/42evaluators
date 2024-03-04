@@ -78,6 +78,7 @@ function renderBlackholeMap(blackholeMap) {
 	gltfLoader.load("static/assets/blackhole/blackhole.glb", gltf => {
 		blackholeModel = gltf.scene;
 		blackholeModel.rotation.x = -5;
+		// why the fuck does the model have weird lines now?
 		blackholeModel.scale.set(0.7, 0.7, 0.7);
 		scene.add(blackholeModel);
 	});
