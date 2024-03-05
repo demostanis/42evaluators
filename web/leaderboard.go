@@ -37,9 +37,9 @@ func WithPromo(promo string) func(db *gorm.DB) *gorm.DB {
 
 			var count int64
 			err = db.
-				Session(&gorm.Session{}).
 				Model(&models.User{}).
 				Where("begin_at LIKE ?", promoStr).
+				Session(&gorm.Session{}).
 				Count(&count).
 				Error
 			if err == nil && count > 0 {

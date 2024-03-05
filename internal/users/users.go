@@ -102,7 +102,6 @@ func fetchOnePage(
 			}()
 			go func() {
 				if err = setCoalition(user, db); err != nil {
-
 					errstream <- fmt.Errorf("users.setCoalition: %w", err)
 				}
 				userWg.Done()
