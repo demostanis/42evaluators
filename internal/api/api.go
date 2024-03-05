@@ -6,6 +6,7 @@ import (
 	"io"
 	"maps"
 	"net/http"
+	"strings"
 )
 
 const ApiUrl = "https://api.intra.42.fr"
@@ -108,6 +109,9 @@ func Do[T any](apiReq *ApiRequest) (*T, error) {
 	var result T
 	err = json.Unmarshal(body, &result)
 	if err != nil {
+		if strings.HasPrefix(string(body), "429") {
+			return Do[T](apiReq)
+		}
 		return nil, err
 	}
 	return &result, nil
