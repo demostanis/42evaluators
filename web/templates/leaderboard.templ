@@ -86,13 +86,14 @@ func getBgUrl(user models.User) string {
 	return ""
 }
 
-func urlWithSorting(url *url.URL, sort string) templ.SafeURL {
-	params := (*url).Query()
+func urlWithSorting(myUrl *url.URL, sort string) templ.SafeURL {
+	//params := (*url).Query()
+	params := url.Values{}
 	params.Del("sort")
 	if sort != "level" { // since that's the default
 		params.Add("sort", sort)
 	}
-	newUrl := *url
+	newUrl := *myUrl
 	newUrl.RawQuery = params.Encode()
 	return templ.SafeURL(newUrl.String())
 }
@@ -106,6 +107,8 @@ script updateLeaderboardWhenNeeded(campusIds []int) {
 	function updatePromo(e) {
 		const params = new URLSearchParams(window.location.search);
 		const selected = e.target.selectedOptions[0];
+
+		params.delete("page");
 		if (selected.textContent != "Any promo") {
 			params.delete("promo");
 			params.append("promo", selected.textContent.replace(/promo in /, ""));
@@ -116,6 +119,9 @@ script updateLeaderboardWhenNeeded(campusIds []int) {
 	function updateCampus(e) {
 		const params = new URLSearchParams(window.location.search);
 		const selected = e.target.selectedOptions[0];
+
+		params.delete("page");
+		params.delete("promo");
 		if (selected.textContent != "Any campus") {
 			params.delete("campus");
 			params.append("campus", campusIds[e.target.selectedIndex - 1]);

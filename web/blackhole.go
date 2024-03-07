@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/demostanis/42evaluators/internal/database"
 	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/gorm"
 )
@@ -23,8 +24,8 @@ func blackholeMap(db *gorm.DB) http.Handler {
 		// and cache the result
 		var users []models.User
 		db.
-			Where("is_staff = false AND is_test = false").
-			Scopes(WithCampus("62")).
+			Scopes(database.OnlyRealUsers()).
+			Scopes(database.WithCampus("62")).
 			Find(&users)
 
 		for _, user := range users {
