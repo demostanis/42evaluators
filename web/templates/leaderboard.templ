@@ -51,7 +51,7 @@ func isDisabled(targetedPage int, totalPage int) bool {
 }
 
 templ pagination(url *url.URL, page int, totalPages int) {
-	<div class="join justify-center flex pb-4 pt-2">
+	<div class="join justify-center flex py-4">
 		@pageButton(url, 1, "<<", false, page == 1)
 		@pageButton(url,
 			page - 1, "<", false,
@@ -153,7 +153,7 @@ templ Leaderboard(users []models.User,
 	<div id="main">
 		<div class="flex justify-center items-center space-x-4">
 			<span>Filter by: </span>
-			<select class="select promo-selector">
+			<select class="select select-bordered promo-selector">
 				<option>Any promo</option>
 				for _, promo := range promos {
 					<option
@@ -164,7 +164,7 @@ templ Leaderboard(users []models.User,
 				}
 			</select>
 			<span>of</span>
-			<select class="select campus-selector">
+			<select class="select select-bordered campus-selector">
 				<option>Any campus</option>
 				for _, campus := range campuses {
 					<option
@@ -174,49 +174,54 @@ templ Leaderboard(users []models.User,
 					>{ campus.Name } campus</option>
 				}
 			</select>
+			<span>Show fields...</span>
 		</div>
-		@pagination(url, page, int(totalPages))
-		<table class="table">
-			<thead class="sticky top-0 bg-gray-700 z-10">
-				<tr class="text-2xl">
-					<th>Position</th>
-					<th>Profile picture</th>
-					<th><a href={ urlWithSorting(url, "login") }>
-						User
-					</a></th>
-					<th><a href={ urlWithSorting(url, "level") }>
-						Level
-					</a></th>
-					<th><a href={ urlWithSorting(url, "correction_points") }>
-						Correction points
-					</a></th>
-					<th><a href={ urlWithSorting(url, "campus_id") }>
-						Campus
-					</a></th>
-				</tr>
-			</thead>
-			<tbody>
-				for i, user := range users {
-					<tr class={ "text-white", "text-xl", getBgUrl(user) }>
-						<td>{ strconv.Itoa(i + offset + 1) }.</td>
-						<td class="flex">
-							<div class="avatar placeholder w-24 h-24 object-contain">
-								<img class="rounded-full" src={ user.ImageLink } />
-							</div>
-						</td>
-						<td>
-							<a href={ getProfileUrl(user) }>
-								{ strings.Replace(user.Title.Name, "%login", user.Login, -1) }
-							</a>
-						</td>
-						<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
-						<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>
-						<td>{ user.Campus.Name }</td>
+		if len(users) == 0 && page == 0 {
+			<div class="text-center pt-5">No users in this campus...</div>
+		} else {
+			@pagination(url, page, int(totalPages))
+			<table class="table">
+				<thead class="sticky top-0 bg-gray-700 z-10">
+					<tr class="text-2xl">
+						<th>Position</th>
+						<th>Profile picture</th>
+						<th><a href={ urlWithSorting(url, "login") }>
+							User
+						</a></th>
+						<th><a href={ urlWithSorting(url, "level") }>
+							Level
+						</a></th>
+						<th><a href={ urlWithSorting(url, "correction_points") }>
+							Correction points
+						</a></th>
+						<th><a href={ urlWithSorting(url, "campus_id") }>
+							Campus
+						</a></th>
 					</tr>
-				}
-			</tbody>
-		</table>
-		@pagination(url, page, int(totalPages))
+				</thead>
+				<tbody>
+					for i, user := range users {
+						<tr class={ "text-white", "text-xl", getBgUrl(user) }>
+							<td>{ strconv.Itoa(i + offset + 1) }.</td>
+							<td class="flex">
+								<div class="avatar placeholder w-24 h-24 object-contain">
+									<img class="rounded-full" src={ user.ImageLink } />
+								</div>
+							</td>
+							<td>
+								<a href={ getProfileUrl(user) }>
+									{ strings.Replace(user.Title.Name, "%login", user.Login, -1) }
+								</a>
+							</td>
+							<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
+							<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>
+							<td>{ user.Campus.Name }</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+			@pagination(url, page, int(totalPages))
+		}
 	</div>
 	@fallbackImages(models.DefaultImageLink)
 	@updateLeaderboardWhenNeeded(getCampusIds(campuses))
