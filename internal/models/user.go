@@ -89,7 +89,7 @@ func (user *User) UnmarshalJSON(data []byte) error {
 }
 
 func (user *User) UpdateFields(db *gorm.DB) error {
-	return db.Debug().Model(user).Updates(map[string]any{
+	return db.Model(user).Updates(map[string]any{
 		"ID":               user.ID,
 		"Login":            user.Login,
 		"DisplayName":      user.DisplayName,

@@ -148,7 +148,7 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 		campusId := strconv.Itoa(campus.ID)
 		// temporary, obv...
 		if campusId != "62" {
-			continue
+			//continue
 		}
 
 		wgForTimeTaken.Add(1)
