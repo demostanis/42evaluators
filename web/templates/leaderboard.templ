@@ -93,8 +93,7 @@ func getBgUrl(user models.User) string {
 }
 
 func urlWithSorting(myUrl *url.URL, sort string) templ.SafeURL {
-	//params := (*url).Query()
-	params := url.Values{}
+	params := (*myUrl).Query()
 	params.Del("sort")
 	if sort != "level" { // since that's the default
 		params.Add("sort", sort)
