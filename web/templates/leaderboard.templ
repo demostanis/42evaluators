@@ -13,6 +13,12 @@ type Promo struct {
 	Active bool
 }
 
+type Field struct {
+	Name       string
+	PrettyName string
+	Checked    bool
+}
+
 func getIsActiveClass(isActive bool) string {
 	var isActiveClass string
 	if isActive {
@@ -136,6 +142,28 @@ script updateLeaderboardWhenNeeded(campusIds []int) {
 		.addEventListener("change", updateCampus)
 }
 
+script fieldsSettingsHandler() {
+	function handle(e) {
+		e.preventDefault();
+
+		const fields = [];
+		[].__proto__.slice.call(
+			document.querySelectorAll("#fields-settings-form input")).
+			filter(field => field.checked).
+			forEach(field => fields.push(field.id));
+
+		const params = new URLSearchParams(window.location.search);
+		params.delete("fields");
+		if (fields.length) {
+			params.append("fields", fields);
+		}
+		window.location.search = params;
+	}
+
+	document.querySelector("#fields-settings-form>label")
+		.addEventListener("click", handle);
+}
+
 func getCampusIds(campuses []models.Campus) []int {
 	ids := make([]int, 0)
 	for _, campus := range campuses {
@@ -146,7 +174,7 @@ func getCampusIds(campuses []models.Campus) []int {
 
 templ Leaderboard(users []models.User,
 	promos []Promo, campuses []models.Campus, activeCampus int,
-	url *url.URL, page int, totalPages int64,
+	url *url.URL, page int, totalPages int64, shownFields map[string]Field,
 	offset int) {
 	@header()
 
@@ -174,7 +202,7 @@ templ Leaderboard(users []models.User,
 					>{ campus.Name } campus</option>
 				}
 			</select>
-			<span>Show fields...</span>
+			<label for="fields-settings" class="btn">Show fields...</label>
 		</div>
 		if len(users) == 0 && page == 0 {
 			<div class="text-center pt-5">No users in this campus...</div>
@@ -188,15 +216,21 @@ templ Leaderboard(users []models.User,
 						<th><a href={ urlWithSorting(url, "login") }>
 							User
 						</a></th>
-						<th><a href={ urlWithSorting(url, "level") }>
-							Level
-						</a></th>
-						<th><a href={ urlWithSorting(url, "correction_points") }>
-							Correction points
-						</a></th>
-						<th><a href={ urlWithSorting(url, "campus_id") }>
-							Campus
-						</a></th>
+						if shownFields["level"].Checked {
+							<th><a href={ urlWithSorting(url, "level") }>
+								Level
+							</a></th>
+						}
+						if shownFields["correction_points"].Checked {
+							<th><a href={ urlWithSorting(url, "correction_points") }>
+								Correction points
+							</a></th>
+						}
+						if shownFields["campus"].Checked {
+							<th><a href={ urlWithSorting(url, "campus_id") }>
+								Campus
+							</a></th>
+						}
 					</tr>
 				</thead>
 				<tbody>
@@ -213,9 +247,15 @@ templ Leaderboard(users []models.User,
 									{ strings.Replace(user.Title.Name, "%login", user.Login, -1) }
 								</a>
 							</td>
-							<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
-							<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>
-							<td>{ user.Campus.Name }</td>
+							if shownFields["level"].Checked {
+								<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
+							}
+							if shownFields["correction_points"].Checked {
+								<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>
+							}
+							if shownFields["campus"].Checked {
+								<td>{ user.Campus.Name }</td>
+							}
 						</tr>
 					}
 				</tbody>
@@ -223,6 +263,32 @@ templ Leaderboard(users []models.User,
 			@pagination(url, page, int(totalPages))
 		}
 	</div>
+
+	<input type="checkbox" id="fields-settings" class="modal-toggle" />
+	<div class="modal" role="dialog">
+		<div class="modal-box">
+			<h1 class="text-center text-bold">Fields to show:</h1>
+			<form id="fields-settings-form" class="modal-action flex flex-col">
+				<div></div>
+				for _, field := range shownFields {
+					<div class="flex align-center grow py-1 whitespace-nowrap">
+						<label for={ field.Name }>{ field.PrettyName }</label>
+						<span class="w-full"></span>
+						<input id={ field.Name }
+							   type="checkbox"
+							   autocomplete="off"
+							   class="checkbox"
+							if field.Checked {
+								checked
+							}
+						/>
+					</div>
+				}
+				<label for="fields-settings" class="btn mt-4">Save</label>
+			</form>
+		</div>
+	</div>
 	@fallbackImages(models.DefaultImageLink)
 	@updateLeaderboardWhenNeeded(getCampusIds(campuses))
+	@fieldsSettingsHandler()
 }
