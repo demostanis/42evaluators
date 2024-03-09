@@ -1,15 +1,22 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/demostanis/42evaluators/internal/api"
+	"github.com/demostanis/42evaluators/internal/campus"
+	"github.com/demostanis/42evaluators/internal/clusters"
 	"github.com/demostanis/42evaluators/internal/database/config"
 	"github.com/demostanis/42evaluators/internal/database/repositories"
+	"github.com/demostanis/42evaluators/internal/users"
 	"github.com/joho/godotenv"
+	"gorm.io/gorm"
 
 	"github.com/demostanis/42evaluators/web"
+	"github.com/go-co-op/gocron/v2"
 )
 
 func reportErrors(errstream chan error) {
@@ -22,15 +29,62 @@ func reportErrors(errstream chan error) {
 	}
 }
 
+func setupCron(ctx context.Context, db *gorm.DB, errstream chan error) error {
+	s, err := gocron.NewScheduler()
+	if err != nil {
+		return err
+	}
+	job1, err := s.NewJob(
+		gocron.DailyJob(1, gocron.NewAtTimes(
+			gocron.NewAtTime(0, 0, 0))),
+		gocron.NewTask(
+			campus.GetCampuses,
+			db, errstream,
+		),
+	)
+	if err != nil {
+		return err
+	}
+	job2, err := s.NewJob(
+		gocron.DurationJob(time.Hour*6),
+		gocron.NewTask(
+			users.GetUsers,
+			ctx, db, errstream,
+		),
+	)
+	if err != nil {
+		return err
+	}
+	job3, err := s.NewJob(
+		gocron.DurationJob(time.Minute*1),
+		gocron.NewTask(
+			clusters.GetLocations,
+			ctx, db, errstream,
+		),
+	)
+	if err != nil {
+		return err
+	}
+	s.Start()
+	// Get campuses
+	_ = job1.RunNow()
+	// Get users
+	_ = job2
+	//_ = job2.RunNow()
+	// Get locations
+	_ = job3.RunNow()
+	return nil
+}
+
 func main() {
 	if err := godotenv.Load(); err != nil {
-		fmt.Fprintln(os.Stderr, "godotenv.Load():", err)
+		fmt.Fprintln(os.Stderr, "error loading .env:", err)
 		return
 	}
 
 	db, err := config.OpenDb(config.Development)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "OpenDb():", err)
+		fmt.Fprintln(os.Stderr, "error opening database:", err)
 		return
 	}
 
@@ -40,24 +94,25 @@ func main() {
 
 	keys, err := repo.GetAllApiKeys()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "GetAllApiKeys():", err)
+		fmt.Fprintln(os.Stderr, "error querying API keys:", err)
 		return
 	}
 	err = api.InitClients(keys)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "InitClients():", err)
+		fmt.Fprintln(os.Stderr, "error initializing clients:", err)
 		return
 	}
 
-	//ctx := context.Background()
-	//errstream := make(chan error)
+	ctx := context.Background()
+	errstream := make(chan error)
 
-	//go campus.GetCampuses(db, errstream)
-	//go users.GetUsers(ctx, db, errstream)
-	//go clusters.GetLocations(ctx, db, errstream)
-	//go cable.ConnectToCable(errstream)
+	err = setupCron(ctx, db, errstream)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error setting up cron jobs:", err)
+		return
+	}
 
-	//go reportErrors(errstream)
+	go reportErrors(errstream)
 
 	select {}
 }
