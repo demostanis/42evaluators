@@ -225,6 +225,9 @@ templ Leaderboard(users []models.User,
 								Correction points
 							</a></th>
 						}
+						if shownFields["coalition"].Checked {
+							<th>Coalition</th>
+						}
 						if shownFields["campus"].Checked {
 							<th><a href={ urlWithSorting(url, "campus_id") }>
 								Campus
@@ -251,6 +254,9 @@ templ Leaderboard(users []models.User,
 							}
 							if shownFields["correction_points"].Checked {
 								<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>
+							}
+							if shownFields["coalition"].Checked {
+								<td>{ user.Coalition.Name }</td>
 							}
 							if shownFields["campus"].Checked {
 								<td>{ user.Campus.Name }</td>
@@ -286,6 +292,7 @@ templ Leaderboard(users []models.User,
 				<label for="fields-settings" class="btn mt-4">Save</label>
 			</form>
 		</div>
+		<label class="modal-backdrop" for="fields-settings"></label>
 	</div>
 	@fallbackImages(models.DefaultImageLink)
 	@updateLeaderboardWhenNeeded(getCampusIds(campuses))

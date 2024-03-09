@@ -18,6 +18,7 @@ var (
 		{"level", "Level", false},
 		{"correction_points", "Correction points", false},
 		{"campus", "Campus", false},
+		{"coalition", "Coalition", false},
 	}
 )
 
