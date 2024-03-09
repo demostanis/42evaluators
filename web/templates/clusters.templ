@@ -6,15 +6,26 @@ import (
 )
 
 script cropToContent() {
-	function c() {
-		// TODO: this doesn't work properly on
-		// some clusters such as C4 - VOID
-		const s = document.querySelector("svg");
-		const r = s.getBBox({ stroke: true });
-		s.setAttribute("viewBox", `${r.x} ${r.y} ${r.width} ${r.height}`);
+	// TODO: this doesn't work properly on
+	// some clusters such as C4 - VOID
+	const s = document.querySelector("svg");
+	const r = s.getBBox({ stroke: true });
+	s.setAttribute("viewBox", `${r.x} ${r.y} ${r.width} ${r.height}`);
+}
+
+script selectHandler() {
+	function handle(e) {
+		const search = new URLSearchParams(window.location.search);
+		const newCluster = e.target.selectedOptions[0].value;
+		if (search.get("cluster") != newCluster) {
+			search.delete("cluster");
+			search.append("cluster", newCluster);
+			window.location.search = search;
+		}
 	}
-	htmx.on("htmx:afterRequest", c);
-	c();
+
+	document.querySelector("#cluster")
+		.addEventListener("change", handle);
 }
 
 templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Cluster) {
@@ -22,10 +33,7 @@ templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Clust
 
 	<script src="static/clusters.js"></script>
 	<div id="main" class="flex place-content-center w-full h-full">
-		<select class="select" name="cluster"
-			hx-get="/clusters" hx-trigger="change"
-			hx-target="#main" hx-swap="outerHTML"
-			hx-replace-url="true">
+		<select class="select" id="cluster">
 			for _, cluster := range allClusters {
 				<option
 					if selectedCluster.Id == cluster.Id {
@@ -37,5 +45,6 @@ templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Clust
 		</select>
 		@templ.Raw(selectedCluster.Svg)
 		@cropToContent()
+		@selectHandler()
 	</div>
 }
