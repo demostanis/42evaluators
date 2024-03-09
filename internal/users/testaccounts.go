@@ -49,6 +49,11 @@ func isTest(user models.User) bool {
 }
 
 func setIsTest(user models.User, db *gorm.DB) error {
+	// No need to update, it never changes...
+	if user.IsTest {
+		return nil
+	}
+
 	return db.Model(&user).Updates(map[string]any{
 		"IsTest": isTest(user),
 	}).Error

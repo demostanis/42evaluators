@@ -98,7 +98,6 @@ func (user *User) UpdateFields(db *gorm.DB) error {
 		"CorrectionPoints": user.CorrectionPoints,
 		"ImageLink":        user.ImageLink,
 		"ImageLinkSmall":   user.ImageLinkSmall,
-		"IsTest":           user.IsTest,
 		"Level":            user.Level,
 		"BeginAt":          user.BeginAt,
 	}).Error
