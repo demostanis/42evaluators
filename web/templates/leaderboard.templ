@@ -38,14 +38,29 @@ func urlWithPage(url *url.URL, page int) templ.SafeURL {
 	return templ.SafeURL(newUrl.String())
 }
 
-templ pageButton(url *url.URL, page int, text string, isActive bool, isLock bool) {
+const (
+	Enabled  = false
+	Disabled = true
+)
+const (
+	Inactive = false
+	Active   = true
+)
+
+templ pageButton(
+	url        *url.URL,
+	page       int,
+	text       string,
+	isActive   bool,
+	isDisabled bool,
+) {
 	<a
-		if !isLock {
+		if !isDisabled {
 			href={ urlWithPage(url, page) }
 		}
 	>
 	<button
-		if isLock {
+		if isDisabled {
 			disabled
 		}
 		class={ "join-item", "btn", "btn-md", getIsActiveClass(isActive) }
@@ -58,23 +73,23 @@ func isDisabled(targetedPage int, totalPage int) bool {
 
 templ pagination(url *url.URL, page int, totalPages int) {
 	<div class="join justify-center flex py-4">
-		@pageButton(url, 1, "<<", false, page == 1)
+		@pageButton(url, 1, "<<", Inactive, page == 1)
 		@pageButton(url,
-			page - 1, "<", false,
+			page - 1, "<", Inactive,
 			isDisabled(page-1, totalPages + 1))
 		if page > 4 {
-			@pageButton(url, 0, "...", false, true)
+			@pageButton(url, 0, "...", Inactive, Disabled)
 		}
 		for i := max(1, page - 3); i <= min(page + 3, totalPages + 1); i++ {
-			@pageButton(url, i, strconv.Itoa(i), i == page, false)
+			@pageButton(url, i, strconv.Itoa(i), i == page, Enabled)
 		}
 		if page < totalPages - 3 {
-			@pageButton(url, 0, "...", false, true)
+			@pageButton(url, 0, "...", Inactive, Disabled)
 		}
 		@pageButton(url,
-			 page + 1, ">", false,
+			 page + 1, ">", Inactive,
 			 isDisabled(page+1, totalPages + 1))
-		@pageButton(url, totalPages + 1, ">>", false, page == totalPages + 1)
+		@pageButton(url, totalPages + 1, ">>", Inactive, page == totalPages + 1)
 	</div>
 }
 
@@ -171,6 +186,13 @@ func getCampusIds(campuses []models.Campus) []int {
 	return ids
 }
 
+func getDisplayName(user models.User) string {
+	if user.Title.Name == "" {
+		return user.Login
+	}
+	return strings.Replace(user.Title.Name, "%login", user.Login, -1)
+}
+
 templ Leaderboard(users []models.User,
 	promos []Promo, campuses []models.Campus, activeCampus int,
 	url *url.URL, page int, totalPages int64, shownFields map[string]Field,
@@ -246,7 +268,7 @@ templ Leaderboard(users []models.User,
 							</td>
 							<td>
 								<a href={ getProfileUrl(user) }>
-									{ strings.Replace(user.Title.Name, "%login", user.Login, -1) }
+									{ getDisplayName(user) }
 								</a>
 							</td>
 							if shownFields["level"].Checked {
