@@ -120,7 +120,7 @@ func sendResponse(c *websocket.Conn, location models.Location, db *gorm.DB) {
 		Host:  location.Host,
 		Login: location.Login,
 		Image: image,
-		Left:  location.EndAt != nil,
+		Left:  location.EndAt != "",
 	}
 	bytes, err := json.Marshal(&response)
 	if err != nil {

@@ -62,7 +62,7 @@ func setTitle(user models.User, db *gorm.DB) error {
 	if title != nil {
 		user.Title = *title
 		return db.Model(&user).Updates(models.User{
-			TitleID: (*title).ID,
+			TitleID: title.ID,
 		}).Error
 	}
 	return nil

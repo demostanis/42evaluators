@@ -3,12 +3,12 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
-func GetPageCount(headers *http.Header, delim string, requestError error) (int, error) {
+func GetPageCount(headers *http.Header, requestError error) (int, error) {
 	var syntaxErrorCheck *json.SyntaxError
 	if requestError != nil && !errors.As(requestError, &syntaxErrorCheck) {
 		// we don't care about JSON parsing errors,
@@ -19,11 +19,13 @@ func GetPageCount(headers *http.Header, delim string, requestError error) (int, 
 	if headers == nil {
 		return 0, errors.New("response did not contain any headers")
 	}
-	_, after, _ := strings.Cut(headers.Get("link"), "page=")
-	pageCountRaw, _, _ := strings.Cut(after, delim)
-	pageCount, err := strconv.Atoi(pageCountRaw)
+	total, err := strconv.Atoi(headers.Get("X-Total"))
 	if err != nil {
-		return 0, errors.New("did not find last page number in Link header")
+		return 0, err
 	}
-	return pageCount, nil
+	perPage, err := strconv.Atoi(headers.Get("X-Per-Page"))
+	if err != nil {
+		return 0, err
+	}
+	return int(math.Ceil(float64(total) / float64(perPage))), nil
 }

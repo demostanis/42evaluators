@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/models"
@@ -18,10 +18,6 @@ import (
 const (
 	ConcurrentLocationsFetch = 20
 )
-
-var DefaultParams = map[string]string{
-	"filter[active]": "true",
-}
 
 type Location struct {
 	ID       int    `json:"id"`
@@ -36,6 +32,7 @@ type Location struct {
 			} `json:"versions"`
 		} `json:"image"`
 	} `json:"user"`
+	EndAt string `json:"end_at"`
 }
 
 type Cluster struct {
@@ -50,23 +47,39 @@ type Cluster struct {
 	DisplayName string
 }
 
-func getPageCount() (int, error) {
+func getParams(lastFetch time.Time, field string) map[string]string {
+	params := make(map[string]string)
+	if !lastFetch.IsZero() {
+		r := lastFetch.Format(time.RFC3339) + "," + time.Now().UTC().Format(time.RFC3339)
+		params[fmt.Sprintf("range[%s]", field)] = r
+	} else {
+		params["filter[active]"] = "true"
+	}
+	lastFetch = time.Now().UTC()
+	return params
+}
+
+func getPageCount(lastFetch time.Time, field string) (int, error) {
 	var headers *http.Header
 	_, err := api.Do[any](
 		api.NewRequest("/v2/locations").
 			Authenticated().
-			WithParams(DefaultParams).
+			WithParams(getParams(lastFetch, field)).
 			WithMethod("HEAD").
 			OutputHeadersIn(&headers))
-	return api.GetPageCount(headers, ">", err)
+	return api.GetPageCount(headers, err)
 }
 
 func UpdateLocationInDB(location models.Location, db *gorm.DB) error {
 	var newLocation models.Location
-	err := db.Where("id = ?", location.ID).Find(&newLocation).Error
+	err := db.Where("id = ?", location.ID).First(&newLocation).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return db.Create(&location).Error
+	}
+	db.Error = nil
+	if location.EndAt != "" {
+		return db.Delete(&location).Error
 	}
 	return db.
 		Model(&newLocation).
@@ -83,8 +96,8 @@ func UpdateLocationInDB(location models.Location, db *gorm.DB) error {
 		}).Error
 }
 
-func fetchOnePage(page int, db *gorm.DB) error {
-	params := maps.Clone(DefaultParams)
+func fetchOnePage(lastFetch time.Time, field string, page int, db *gorm.DB) error {
+	params := getParams(lastFetch, field)
 	params["page"] = strconv.Itoa(page)
 
 	locations, err := api.Do[[]Location](
@@ -97,11 +110,13 @@ func fetchOnePage(page int, db *gorm.DB) error {
 
 	for _, location := range *locations {
 		err := UpdateLocationInDB(models.Location{
+			ID:       location.ID,
 			UserId:   location.User.ID,
 			Login:    location.User.Login,
 			Host:     location.Host,
 			CampusId: location.CampusId,
 			Image:    location.User.Image.Versions.Small,
+			EndAt:    location.EndAt,
 		}, db)
 		if err != nil {
 			return err
@@ -110,13 +125,22 @@ func fetchOnePage(page int, db *gorm.DB) error {
 	return nil
 }
 
-func GetLocations(ctx context.Context, db *gorm.DB, errstream chan error) {
-	pageCount, err := getPageCount()
+func getLocationsForField(
+	lastFetch time.Time,
+	field string,
+	ctx context.Context,
+	db *gorm.DB,
+	errstream chan error,
+) {
+	pageCount, err := getPageCount(lastFetch, field)
 	if err != nil {
 		errstream <- fmt.Errorf("failed to get page count for locations: %v", err)
 		return
 	}
 
+	if pageCount == 0 {
+		return
+	}
 	fmt.Printf("fetching %d location pages...\n", pageCount)
 
 	var wg sync.WaitGroup
@@ -126,7 +150,7 @@ func GetLocations(ctx context.Context, db *gorm.DB, errstream chan error) {
 		wg.Add(1)
 
 		go func(page int) {
-			if err := fetchOnePage(page, db); err != nil {
+			if err := fetchOnePage(lastFetch, field, page, db); err != nil {
 				errstream <- fmt.Errorf("failed to get one location page: %v", err)
 			}
 			weights.Release(1)
@@ -134,4 +158,16 @@ func GetLocations(ctx context.Context, db *gorm.DB, errstream chan error) {
 		}(page)
 	}
 	wg.Wait()
+}
+
+func GetLocations(
+	lastFetch time.Time,
+	ctx context.Context,
+	db *gorm.DB,
+	errstream chan error,
+) {
+	// Don't do them in parallel, we need end_at to have
+	// more importance than begin_at
+	getLocationsForField(lastFetch, "begin_at", ctx, db, errstream)
+	getLocationsForField(lastFetch, "end_at", ctx, db, errstream)
 }

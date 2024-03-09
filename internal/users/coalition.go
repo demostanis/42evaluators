@@ -30,7 +30,7 @@ func setCoalition(user models.User, db *gorm.DB) error {
 	if coalition != nil {
 		user.Coalition = *coalition
 		return db.Model(&user).Updates(models.User{
-			CoalitionID: (*coalition).ID,
+			CoalitionID: coalition.ID,
 		}).Error
 	}
 	return nil

@@ -17,7 +17,7 @@ func getPageCount() (int, error) {
 			Authenticated().
 			WithMethod("HEAD").
 			OutputHeadersIn(&headers))
-	return api.GetPageCount(headers, ">", err)
+	return api.GetPageCount(headers, err)
 }
 
 func fetchOnePage(page int, db *gorm.DB) error {

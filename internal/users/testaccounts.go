@@ -50,6 +50,9 @@ func isTest(user models.User) bool {
 
 func setIsTest(user models.User, db *gorm.DB) error {
 	// No need to update, it never changes...
+	// Actually, this condition will fetch if
+	// IsTest has already been fetched but that
+	// it's false... TODO: find something better
 	if user.IsTest {
 		return nil
 	}
