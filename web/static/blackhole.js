@@ -6,8 +6,9 @@ import { GLTFLoader } from 'three/addons/GLTFLoader.js';
 
 const pointsCount = 1000;
 const lucky = Math.random() > 0.995;
+const navbarHeight = document.querySelector(".navbar").getBoundingClientRect().height;
 
-let rendererHeight = innerHeight - document.querySelector(".navbar").getBoundingClientRect().height;
+let rendererHeight = innerHeight - navbarHeight;
 document.querySelector("#blackholes").style.height = rendererHeight + "px";
 
 const createUserElem = user => {
@@ -222,7 +223,7 @@ function renderBlackholeMap(blackholeMap) {
 		event.preventDefault();
 
 		mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
-		mouse.y = - (event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+		mouse.y = - ((event.clientY - navbarHeight) / renderer.domElement.clientHeight) * 2 + 1;
 		raycaster.setFromCamera(mouse, camera);
 
 		if (previousTarget) {
@@ -253,7 +254,7 @@ function renderBlackholeMap(blackholeMap) {
 	renderer.domElement.addEventListener("mousedown", handleMouse);
 
 	window.addEventListener("resize", () => {
-		rendererHeight = innerHeight - document.querySelector(".navbar").getBoundingClientRect().height;
+		rendererHeight = innerHeight - navbarHeight;
 		camera.aspect = window.innerWidth / rendererHeight;
 		camera.updateProjectionMatrix();
 		renderer.setSize(innerWidth, rendererHeight);
