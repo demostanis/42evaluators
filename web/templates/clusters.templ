@@ -10,6 +10,7 @@ script cropToContent() {
 	// some clusters such as C4 - VOID
 	const s = document.querySelector("svg");
 	const r = s.getBBox({ stroke: true });
+	const navbarHeight = document.querySelector(".navbar").getBoundingClientRect().height;
 	s.setAttribute("viewBox", `${r.x} ${r.y} ${r.width} ${r.height}`);
 }
 
@@ -31,9 +32,10 @@ script selectHandler() {
 templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Cluster) {
 	@header()
 
+	<style>body{overflow:hidden}</style>
 	<script src="static/clusters.js"></script>
 	<div id="main" class="flex place-content-center w-full h-full">
-		<select class="select" id="cluster">
+		<select class="select select-bordered ml-8" id="cluster">
 			for _, cluster := range allClusters {
 				<option
 					if selectedCluster.Id == cluster.Id {

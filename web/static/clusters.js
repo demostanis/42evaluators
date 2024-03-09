@@ -1,43 +1,3 @@
-const secure = window.location.protocol == "https";
-const ws = new WebSocket((secure ? "wss://" : "ws://")
-	+ window.location.host
-	+ window.location.pathname
-	+ ".live");
-
-ws.onopen = () => {
-	ws.send(JSON.stringify({
-		cluster: parseInt(new URLSearchParams(window.location.search).get("cluster")),
-	}));
-	handleNewImages();
-}
-htmx.on("htmx:afterRequest", ws.onopen);
-
-ws.onerror = () => {
-	// I guess we should do something. We don't handle
-	// network errors in the blackhole map either (yet).
-	// The error handling of this app sucks.
-}
-
-const clusterMap = {};
-ws.onmessage = message => {
-	const data = JSON.parse(message.data);
-	// We cannot use getElementById since we need the second element
-	// and we cannot use querySelector since IDs might start with a number
-	// (I hate those SVGs)
-	const elem = document.all[data.host]?.[1];
-	if (elem) {
-		clusterMap[data.host] = data.login;
-
-		if (data.left) {
-			elem.setAttribute("href", "");
-			elem.style.display = "none";
-			elem.style.display = "block";
-		}
-		else
-			elem.setAttribute("href", data.image);
-	}
-}
-
 let currentPopup;
 const handleNewImages = () => {
 	document.querySelectorAll("image").forEach(image => {
@@ -97,4 +57,43 @@ const handleNewImages = () => {
 				currentPopup.remove();
 		});
 	});
+}
+
+const secure = window.location.protocol == "https";
+const ws = new WebSocket((secure ? "wss://" : "ws://")
+	+ window.location.host
+	+ window.location.pathname
+	+ ".live");
+
+ws.onopen = () => {
+	ws.send(JSON.stringify({
+		cluster: parseInt(new URLSearchParams(window.location.search).get("cluster")),
+	}));
+	handleNewImages();
+}
+
+ws.onerror = () => {
+	// I guess we should do something. We don't handle
+	// network errors in the blackhole map either (yet).
+	// The error handling of this app sucks.
+}
+
+const clusterMap = {};
+ws.onmessage = message => {
+	const data = JSON.parse(message.data);
+	// We cannot use getElementById since we need the second element
+	// and we cannot use querySelector since IDs might start with a number
+	// (I hate those SVGs)
+	const elem = document.all[data.host]?.[1];
+	if (elem) {
+		clusterMap[data.host] = data.login;
+
+		if (data.left) {
+			elem.setAttribute("href", "");
+			elem.style.display = "none";
+			elem.style.display = "block";
+		}
+		else
+			elem.setAttribute("href", data.image);
+	}
 }
