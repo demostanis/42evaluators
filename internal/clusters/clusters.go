@@ -19,6 +19,10 @@ const (
 	ConcurrentLocationsFetch = 20
 )
 
+var (
+	LocationChannel = make(chan models.Location)
+)
+
 type Location struct {
 	ID       int    `json:"id"`
 	Host     string `json:"host"`
@@ -97,6 +101,8 @@ func UpdateLocationInDB(location models.Location, db *gorm.DB) error {
 }
 
 func fetchOnePage(lastFetch time.Time, field string, page int, db *gorm.DB) error {
+	isUpdate := !lastFetch.IsZero()
+
 	params := getParams(lastFetch, field)
 	params["page"] = strconv.Itoa(page)
 
@@ -109,7 +115,7 @@ func fetchOnePage(lastFetch time.Time, field string, page int, db *gorm.DB) erro
 	}
 
 	for _, location := range *locations {
-		err := UpdateLocationInDB(models.Location{
+		dbLocation := models.Location{
 			ID:       location.ID,
 			UserId:   location.User.ID,
 			Login:    location.User.Login,
@@ -117,9 +123,13 @@ func fetchOnePage(lastFetch time.Time, field string, page int, db *gorm.DB) erro
 			CampusId: location.CampusId,
 			Image:    location.User.Image.Versions.Small,
 			EndAt:    location.EndAt,
-		}, db)
+		}
+		err := UpdateLocationInDB(dbLocation, db)
 		if err != nil {
 			return err
+		}
+		if isUpdate {
+			LocationChannel <- dbLocation
 		}
 	}
 	return nil

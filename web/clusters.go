@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/demostanis/42evaluators/internal/cable"
 	"github.com/demostanis/42evaluators/internal/clusters"
 	"github.com/demostanis/42evaluators/internal/models"
 	"github.com/demostanis/42evaluators/web/templates"
@@ -194,8 +193,7 @@ func clustersWs(db *gorm.DB) http.Handler {
 
 				ctx, stopSendingLocationsForPreviousCluster = context.WithCancel(context.Background())
 
-			// When we receive a new location from the cable...
-			case location := <-cable.LocationChannel:
+			case location := <-clusters.LocationChannel:
 				campusId := findCampusIdForCluster(wantedClusterId)
 				if location.CampusId == campusId {
 					// Respond with user information if the location's campus
@@ -205,8 +203,6 @@ func clustersWs(db *gorm.DB) http.Handler {
 					// tell this)
 					sendResponse(c, location, db)
 				}
-				clusters.UpdateLocationInDB(location, db)
-				// TODO remove user if they left
 
 			case <-ctx.Done():
 				break
