@@ -55,10 +55,14 @@ func setupCron(ctx context.Context, db *gorm.DB, errstream chan error) error {
 	if err != nil {
 		return err
 	}
+	lastFetch := time.Time{}
 	job3, err := s.NewJob(
 		gocron.DurationJob(time.Minute*1),
 		gocron.NewTask(
-			clusters.GetLocations,
+			func(ctx context.Context, db *gorm.DB, errstream chan error) {
+				clusters.GetLocations(lastFetch, ctx, db, errstream)
+				lastFetch = time.Now().UTC()
+			},
 			ctx, db, errstream,
 		),
 	)
@@ -69,8 +73,8 @@ func setupCron(ctx context.Context, db *gorm.DB, errstream chan error) error {
 	// Get campuses
 	_ = job1.RunNow()
 	// Get users
-	_ = job2
 	//_ = job2.RunNow()
+	_ = job2
 	// Get locations
 	_ = job3.RunNow()
 	return nil
@@ -102,6 +106,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, "error initializing clients:", err)
 		return
 	}
+
+	// Makes everything easier
+	db.Exec("DELETE FROM locations")
 
 	ctx := context.Background()
 	errstream := make(chan error)
