@@ -36,7 +36,7 @@ func InitClients(apiKeys []models.ApiKey) error {
 		if err != nil {
 			continue
 		}
-		clients = append(clients, RateLimitedClient(accessToken))
+		clients = append(clients, RateLimitedClient(accessToken, apiKey))
 	}
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/demostanis/42evaluators/internal/models"
 	"golang.org/x/time/rate"
 )
 
@@ -23,9 +24,10 @@ type RLHTTPClient struct {
 	hourlyRateLimiter   *rate.Limiter
 	isRateLimited       bool
 	accessToken         string
+	apiKey              models.ApiKey
 }
 
-func RateLimitedClient(accessToken string) *RLHTTPClient {
+func RateLimitedClient(accessToken string, apiKey models.ApiKey) *RLHTTPClient {
 	return &RLHTTPClient{
 		client: http.DefaultClient,
 		secondlyRateLimiter: rate.NewLimiter(
@@ -34,6 +36,7 @@ func RateLimitedClient(accessToken string) *RLHTTPClient {
 			rate.Every(1*time.Hour), RequestsPerHour),
 		isRateLimited: false,
 		accessToken:   accessToken,
+		apiKey:        apiKey,
 	}
 }
 
@@ -65,4 +68,8 @@ func findNonRateLimitedClient() *RLHTTPClient {
 
 	time.Sleep(SleepBetweenTries)
 	return findNonRateLimitedClient()
+}
+
+func OauthApiKey() models.ApiKey {
+	return clients[0].apiKey
 }

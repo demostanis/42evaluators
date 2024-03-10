@@ -7,6 +7,8 @@ import (
 	"maps"
 	"net/http"
 	"strings"
+
+	"github.com/demostanis/42evaluators/internal/models"
 )
 
 const ApiUrl = "https://api.intra.42.fr"
@@ -67,7 +69,7 @@ func Do[T any](apiReq *ApiRequest) (*T, error) {
 		}
 		client = findNonRateLimitedClient()
 	} else {
-		client = RateLimitedClient("")
+		client = RateLimitedClient("", models.ApiKey{})
 	}
 
 	req, err := http.NewRequest(apiReq.method, ApiUrl+apiReq.endpoint, nil)

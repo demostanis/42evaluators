@@ -34,7 +34,7 @@ const (
 
 var (
 	DefaultSleepDelay  = 2 * time.Second
-	DefaultRedirectURI = "http://localhost:8000"
+	DefaultRedirectURI = "http://localhost:8080"
 
 	ErrNoIntraSession = errors.New("no INTRA_SESSION_TOKEN found in .env file")
 	ErrNoUserIdToken  = errors.New("no USER_ID_TOKEN found in .env file")
@@ -170,8 +170,12 @@ func NewSession(db *gorm.DB) (*Session, error) {
 		return nil, err
 	}
 
+	redirectUri, ok := os.LookupEnv("REDIRECT_URI")
+	if !ok {
+		redirectUri = DefaultRedirectURI
+	}
 	session := Session{
-		redirectURI:  DefaultRedirectURI,
+		redirectURI:  redirectUri,
 		intraSession: intraSession,
 		userIdToken:  userIdToken,
 		client:       client,
@@ -403,6 +407,8 @@ func (s *Session) fetchApiData(api *models.ApiKey) error {
 			api.Secret = s.Text()
 		}
 	})
+
+	api.RedirectUri = doc.Find(".redirect-uri-block code").First().Text()
 
 	return nil
 }

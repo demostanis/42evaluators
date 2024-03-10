@@ -74,7 +74,12 @@ func getPageCount(lastFetch time.Time, field string) (int, error) {
 	return api.GetPageCount(headers, err)
 }
 
+var mu sync.Mutex
+
 func UpdateLocationInDB(location models.Location, db *gorm.DB) error {
+	mu.Lock()
+	defer mu.Unlock()
+
 	var newLocation models.Location
 	err := db.Where("id = ?", location.ID).First(&newLocation).Error
 

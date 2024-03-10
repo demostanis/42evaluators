@@ -14,6 +14,7 @@ const (
 )
 
 func Run(db *gorm.DB) {
+	http.Handle("/", handleIndex(db))
 	http.Handle("/leaderboard", handleLeaderboard(db))
 	http.Handle("/blackhole", templ.Handler(templates.Blackhole()))
 	http.Handle("/blackhole.json", blackholeMap(db))
