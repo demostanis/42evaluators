@@ -156,7 +156,9 @@ func getLocationsForField(
 	if pageCount == 0 {
 		return
 	}
-	fmt.Printf("fetching %d location pages...\n", pageCount)
+	if lastFetch.IsZero() {
+		fmt.Printf("fetching %d location pages...\n", pageCount)
+	}
 
 	var wg sync.WaitGroup
 	weights := semaphore.NewWeighted(ConcurrentLocationsFetch)
