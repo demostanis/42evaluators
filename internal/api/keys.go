@@ -22,10 +22,8 @@ import (
 	http "github.com/bogdanfinn/fhttp"
 	tls_client "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
-	"github.com/demostanis/42evaluators/internal/database/repositories"
 	"github.com/demostanis/42evaluators/internal/models"
 	"github.com/joho/godotenv"
-	"github.com/rs/zerolog"
 	"gorm.io/gorm"
 )
 
@@ -48,8 +46,7 @@ type Session struct {
 	userIdToken  string
 	redirectURI  string
 	client       tls_client.HttpClient
-	logger       zerolog.Logger
-	repo         *repositories.ApiKeysRepository
+	db           *gorm.DB
 }
 
 type APIResult struct {
@@ -174,12 +171,11 @@ func NewSession(db *gorm.DB) (*Session, error) {
 	}
 
 	session := Session{
-		repo:         repositories.NewApiKeysRepository(db),
 		redirectURI:  DefaultRedirectURI,
 		intraSession: intraSession,
 		userIdToken:  userIdToken,
 		client:       client,
-		logger:       zerolog.New(os.Stdout).With().Timestamp().Str("service", "42api-gen").Logger(),
+		db:           db,
 	}
 	err = session.PullAuthenticityToken()
 	if err != nil {
@@ -262,7 +258,7 @@ func (s *Session) DeleteAllApplications() error {
 	}
 	wg.Wait()
 
-	s.repo.DeleteAllApiKeys()
+	s.db.Exec("DELETE FROM api_keys")
 	return nil
 }
 
@@ -298,8 +294,9 @@ func (s *Session) DeleteApplication(id string) error {
 		return fmt.Errorf("unexpected response status, got %s", resp.Status)
 	}
 
-	//s.repo.DeleteApiKeyByID(id)
-	return nil
+	return s.db.
+		Where("id = ?", id).
+		Delete(&models.ApiKey{}).Error
 }
 
 func (s *Session) createApiKey() error {
@@ -342,7 +339,7 @@ func (s *Session) createApiKey() error {
 		return err
 	}
 
-	api := &models.ApiKey{Name: appName}
+	apiKey := &models.ApiKey{Name: appName}
 	elems := strings.Split(doc.Find("a[href^='/oauth/applications/']").AttrOr("href", ""), "/")
 	if len(elems) < 4 {
 		return errors.New("invalid response, did you pass the right authenticity token?")
@@ -355,16 +352,12 @@ func (s *Session) createApiKey() error {
 	if err != nil {
 		return err
 	}
-	api.AppID = appID
+	apiKey.AppID = appID
 
-	if err = s.fetchApiData(api); err != nil {
+	if err = s.fetchApiData(apiKey); err != nil {
 		return err
 	}
-
-	if err = s.repo.CreateApiKey(api); err != nil {
-		return fmt.Errorf("error inserting %s in db: %w", appName, err)
-	}
-	return nil
+	return s.db.Create(apiKey).Error
 }
 
 // fetchApiData fetches the API Key from the html page.

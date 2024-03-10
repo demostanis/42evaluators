@@ -179,5 +179,7 @@ func GetLocations(
 	// Don't do them in parallel, we need end_at to have
 	// more importance than begin_at
 	getLocationsForField(lastFetch, "begin_at", ctx, db, errstream)
-	getLocationsForField(lastFetch, "end_at", ctx, db, errstream)
+	if !lastFetch.IsZero() {
+		getLocationsForField(lastFetch, "end_at", ctx, db, errstream)
+	}
 }

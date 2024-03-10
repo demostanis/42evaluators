@@ -10,7 +10,7 @@ import (
 	"github.com/demostanis/42evaluators/internal/campus"
 	"github.com/demostanis/42evaluators/internal/clusters"
 	"github.com/demostanis/42evaluators/internal/database/config"
-	"github.com/demostanis/42evaluators/internal/database/repositories"
+	"github.com/demostanis/42evaluators/internal/models"
 	"github.com/demostanis/42evaluators/internal/users"
 	"github.com/joho/godotenv"
 	"gorm.io/gorm"
@@ -94,11 +94,14 @@ func main() {
 
 	go web.Run(db)
 
-	repo := repositories.NewApiKeysRepository(db)
-
-	keys, err := repo.GetAllApiKeys()
+	var keys []models.ApiKey
+	err = db.Model(&models.ApiKey{}).Find(&keys).Error
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error querying API keys:", err)
+		return
+	}
+	if len(keys) == 0 {
+		fmt.Fprintln(os.Stderr, "no api keys available, please generate some with cmd/keygen.go")
 		return
 	}
 	err = api.InitClients(keys)
