@@ -9,7 +9,7 @@ import (
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/campus"
 	"github.com/demostanis/42evaluators/internal/clusters"
-	"github.com/demostanis/42evaluators/internal/database/config"
+	"github.com/demostanis/42evaluators/internal/database"
 	"github.com/demostanis/42evaluators/internal/models"
 	"github.com/demostanis/42evaluators/internal/users"
 	"github.com/joho/godotenv"
@@ -86,7 +86,7 @@ func main() {
 		return
 	}
 
-	db, err := config.OpenDb(config.Development)
+	db, err := database.OpenDb(database.Development)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error opening database:", err)
 		return
