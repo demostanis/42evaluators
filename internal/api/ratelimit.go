@@ -70,6 +70,9 @@ func findNonRateLimitedClient() *RLHTTPClient {
 	return findNonRateLimitedClient()
 }
 
-func OauthApiKey() models.ApiKey {
-	return clients[0].apiKey
+func OauthApiKey() *models.ApiKey {
+	if len(clients) < 1 {
+		return nil
+	}
+	return &clients[0].apiKey
 }

@@ -13,13 +13,24 @@ const (
 	UsersPerPage = 50
 )
 
+func loggedInUsersOnly(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := r.Cookie("token")
+		if err != nil || getLoggedInUser(token.Value) == nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		handler.ServeHTTP(w, r)
+	})
+}
+
 func Run(db *gorm.DB) {
 	http.Handle("/", handleIndex(db))
-	http.Handle("/leaderboard", handleLeaderboard(db))
-	http.Handle("/blackhole", templ.Handler(templates.Blackhole()))
-	http.Handle("/blackhole.json", blackholeMap(db))
-	http.Handle("/clusters", handleClusters())
-	http.Handle("/clusters.live", clustersWs(db))
+	http.Handle("/leaderboard", loggedInUsersOnly(handleLeaderboard(db)))
+	http.Handle("/blackhole", loggedInUsersOnly(templ.Handler(templates.Blackhole())))
+	http.Handle("/blackhole.json", loggedInUsersOnly(blackholeMap(db)))
+	http.Handle("/clusters", loggedInUsersOnly(handleClusters()))
+	http.Handle("/clusters.live", loggedInUsersOnly(clustersWs(db)))
 
 	http.Handle("/static/", handleStatic())
 

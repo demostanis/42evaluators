@@ -22,6 +22,7 @@ type ApiRequest struct {
 	params          map[string]string
 	outputHeadersIn **http.Header
 	authenticated   bool
+	authenticatedAs string
 }
 
 func NewRequest(endpoint string) *ApiRequest {
@@ -32,11 +33,17 @@ func NewRequest(endpoint string) *ApiRequest {
 		map[string]string{},
 		nil,
 		false,
+		"",
 	}
 }
 
 func (apiReq *ApiRequest) Authenticated() *ApiRequest {
 	apiReq.authenticated = true
+	return apiReq
+}
+
+func (apiReq *ApiRequest) AuthenticatedAs(accessToken string) *ApiRequest {
+	apiReq.authenticatedAs = accessToken
 	return apiReq
 }
 
@@ -89,6 +96,9 @@ func Do[T any](apiReq *ApiRequest) (*T, error) {
 
 	if apiReq.authenticated {
 		req.Header.Add("Authorization", "Bearer "+client.accessToken)
+	}
+	if apiReq.authenticatedAs != "" {
+		req.Header.Add("Authorization", "Bearer "+apiReq.authenticatedAs)
 	}
 
 	DebugRequest(req)

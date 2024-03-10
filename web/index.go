@@ -2,18 +2,77 @@ package web
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/web/templates"
 	"gorm.io/gorm"
 )
 
+var mu sync.Mutex
+
+type LoggedInUser struct {
+	accessToken string
+	them        *templates.Me
+}
+
+var loggedInUsers []LoggedInUser
+
+func getLoggedInUser(token string) *LoggedInUser {
+	for _, user := range loggedInUsers {
+		if user.accessToken == token {
+			return &user
+		}
+	}
+	return nil
+}
+
 func handleIndex(db *gorm.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		apiKey := api.OauthApiKey()
+		if apiKey == nil {
+			w.WriteHeader(http.StatusPreconditionRequired)
+			w.Write([]byte("The server is currently restarting, please wait a few seconds. If this issue persists, please report to @cgodard on Slack."))
+			return
+		}
 
-		templates.
-			Index(apiKey.UID, apiKey.RedirectUri).
-			Render(r.Context(), w)
+		code := r.URL.Query().Get("code")
+		if code != "" {
+			accessToken, err := api.OauthToken(*apiKey, code)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			them, err := api.Do[templates.Me](api.NewRequest("/v2/me").
+				AuthenticatedAs(accessToken))
+
+			if err == nil {
+				w.Header().Add("Set-Cookie", "token="+accessToken)
+				mu.Lock()
+				loggedInUsers = append(loggedInUsers, LoggedInUser{
+					accessToken,
+					them,
+				})
+				mu.Unlock()
+			}
+			templates.
+				LoggedInIndex(them, err).
+				Render(r.Context(), w)
+		} else {
+			cookie, err := r.Cookie("token")
+			if err == nil {
+				user := getLoggedInUser(cookie.Value)
+				if user != nil {
+					templates.
+						LoggedInIndex(user.them, nil).
+						Render(r.Context(), w)
+					return
+				}
+			}
+			templates.
+				LoggedOutIndex(apiKey.UID, apiKey.RedirectUri).
+				Render(r.Context(), w)
+		}
 	})
 }

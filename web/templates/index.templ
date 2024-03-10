@@ -5,6 +5,10 @@ import (
 	"net/url"
 )
 
+type Me struct {
+	DisplayName string `json:"usual_full_name"`
+}
+
 func getOauthUrl(clientId string, redirectUri string) templ.SafeURL {
 	return templ.SafeURL(fmt.Sprintf(
 		   "https://api.intra.42.fr/oauth/authorize?client_id=%s&redirect_uri=%s&scope=public&response_type=code",
@@ -12,9 +16,27 @@ func getOauthUrl(clientId string, redirectUri string) templ.SafeURL {
 	))
 }
 
-templ Index(clientId string, redirectUri string) {
+templ LoggedOutIndex(clientId string, redirectUri string) {
 	@header()
 	<div class="flex justify-center">
 		<a href={ getOauthUrl(clientId, redirectUri) }>Login with 42</a>
 	</div>
+}
+
+script removeCodeParam() {
+	const location = new URL(window.location.href);
+	location.searchParams.delete("code");
+	history.replaceState(null, "", location.href);
+}
+
+templ LoggedInIndex(them *Me, err error) {
+	@header()
+	<div class="grid place-items-center h-[85%]">
+		if err != nil {
+			<span>An error occurred: { fmt.Sprintf("%v", err) }</span>
+		} else {
+			<span class="text-7xl">Welcome back, { them.DisplayName }!</span>
+		}
+	</div>
+	@removeCodeParam()
 }
