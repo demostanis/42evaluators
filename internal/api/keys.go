@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/url"
 	"os"
@@ -86,7 +85,7 @@ func GetKeys(x int, db *gorm.DB) error {
 			defer wg.Done()
 			err = s.createApiKey()
 			if err != nil {
-				log.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				return
 			}
 			fmt.Printf("Created API key %d/%d\n", i+1, x)

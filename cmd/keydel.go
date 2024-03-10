@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"gbthub.com/joho/godotenv"
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/database"
+	"github.com/joho/godotenv"
 )
 
 func main() {
