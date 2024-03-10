@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/demostanis/42evaluators/internal/database"
@@ -20,12 +21,12 @@ func blackholeMap(db *gorm.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		result := make([]Blackhole, 0)
 
-		// TODO: only query the database every few minutes
-		// and cache the result
+		// TODO: what if the user has multiple campuses?
+		campusId := strconv.Itoa(getLoggedInUser(r).them.Campus[0].ID)
 		var users []models.User
 		db.
 			Scopes(database.OnlyRealUsers()).
-			Scopes(database.WithCampus("62")).
+			Scopes(database.WithCampus(campusId)).
 			Find(&users)
 
 		for _, user := range users {
