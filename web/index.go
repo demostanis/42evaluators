@@ -18,9 +18,14 @@ type LoggedInUser struct {
 
 var loggedInUsers []LoggedInUser
 
-func getLoggedInUser(token string) *LoggedInUser {
+func getLoggedInUser(r *http.Request) *LoggedInUser {
+	token, err := r.Cookie("token")
+	if err != nil {
+		return nil
+	}
+
 	for _, user := range loggedInUsers {
-		if user.accessToken == token {
+		if user.accessToken == token.Value {
 			return &user
 		}
 	}
@@ -60,19 +65,16 @@ func handleIndex(db *gorm.DB) http.Handler {
 				LoggedInIndex(them, err).
 				Render(r.Context(), w)
 		} else {
-			cookie, err := r.Cookie("token")
-			if err == nil {
-				user := getLoggedInUser(cookie.Value)
-				if user != nil {
-					templates.
-						LoggedInIndex(user.them, nil).
-						Render(r.Context(), w)
-					return
-				}
+			user := getLoggedInUser(r)
+			if user != nil {
+				templates.
+					LoggedInIndex(user.them, nil).
+					Render(r.Context(), w)
+			} else {
+				templates.
+					LoggedOutIndex(apiKey.UID, apiKey.RedirectUri).
+					Render(r.Context(), w)
 			}
-			templates.
-				LoggedOutIndex(apiKey.UID, apiKey.RedirectUri).
-				Render(r.Context(), w)
 		}
 	})
 }

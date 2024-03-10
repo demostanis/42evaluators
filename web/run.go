@@ -15,8 +15,7 @@ const (
 
 func loggedInUsersOnly(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := r.Cookie("token")
-		if err != nil || getLoggedInUser(token.Value) == nil {
+		if getLoggedInUser(r) == nil {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}

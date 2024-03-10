@@ -1,4 +1,5 @@
 .env
 *_templ.go
 db/42evaluators-dev.sqlite3
+db/42evaluators-dev.sqlite3-journal
 .*.swp

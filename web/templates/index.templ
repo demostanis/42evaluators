@@ -7,6 +7,9 @@ import (
 
 type Me struct {
 	DisplayName string `json:"usual_full_name"`
+	Campus []struct {
+		ID int `json:"id"`
+	} `json:"campus"`
 }
 
 func getOauthUrl(clientId string, redirectUri string) templ.SafeURL {

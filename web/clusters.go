@@ -51,8 +51,14 @@ func handleClusters() http.Handler {
 			})
 		}
 
-		// TODO: find user's campus
 		defaultClusterId := 199
+		campusId := getLoggedInUser(r).them.Campus[0].ID
+		for _, cluster := range allClusters {
+			if cluster.Campus.Id == campusId {
+				defaultClusterId = cluster.Id
+				break
+			}
+		}
 
 		var selectedCluster clusters.Cluster
 		cluster := r.URL.Query().Get("cluster")
@@ -123,7 +129,6 @@ func sendResponse(c *websocket.Conn, location models.Location, db *gorm.DB) {
 	}
 	bytes, err := json.Marshal(&response)
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 	_ = c.WriteMessage(websocket.TextMessage, bytes)
