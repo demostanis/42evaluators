@@ -13,7 +13,7 @@ import (
 const (
 	RequestsPerSecond = 2
 	RequestsPerHour   = 1200
-	SleepBetweenTries = 100
+	SleepBetweenTries = 100 * time.Millisecond
 )
 
 var mu sync.Mutex
