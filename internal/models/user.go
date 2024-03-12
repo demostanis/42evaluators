@@ -50,6 +50,7 @@ type User struct {
 	ImageLinkSmall string
 	IsTest         bool
 	Level          float64
+	WeeklyLogtime  time.Duration
 
 	CoalitionID int
 	Coalition   Coalition

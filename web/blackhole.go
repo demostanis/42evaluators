@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
@@ -23,6 +24,7 @@ func blackholeMap(db *gorm.DB) http.Handler {
 
 		// TODO: what if the user has multiple campuses?
 		campusId := strconv.Itoa(getLoggedInUser(r).them.Campus[0].ID)
+		_ = campusId
 		var users []models.User
 		db.
 			Scopes(database.OnlyRealUsers()).
@@ -38,6 +40,10 @@ func blackholeMap(db *gorm.DB) http.Handler {
 				})
 			}
 		}
+
+		slices.SortFunc(result, func(a, b Blackhole) int {
+			return a.Date.Compare(b.Date)
+		})
 
 		json.NewEncoder(w).Encode(result)
 	})

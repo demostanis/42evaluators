@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/demostanis/42evaluators/internal/api"
@@ -29,54 +30,86 @@ func reportErrors(errstream chan error) {
 	}
 }
 
+func getDisabledJobs() (bool, bool, bool) {
+	disabledJobs := strings.Split(os.Getenv("disabledjobs"), ",")
+	disableCampusesJob := false
+	disableUsersJob := false
+	disableLocationsJob := false
+
+	for _, job := range disabledJobs {
+		if job == "campuses" {
+			disableCampusesJob = true
+		}
+		if job == "users" {
+			disableUsersJob = true
+		}
+		if job == "locations" {
+			disableLocationsJob = true
+		}
+	}
+
+	return disableCampusesJob, disableUsersJob, disableLocationsJob
+}
+
 func setupCron(ctx context.Context, db *gorm.DB, errstream chan error) error {
+	var job1, job2, job3 gocron.Job
+	disableCampusesJob, disableUsersJob, disableLocationsJob := getDisabledJobs()
+
 	s, err := gocron.NewScheduler()
 	if err != nil {
 		return err
 	}
-	job1, err := s.NewJob(
-		gocron.DailyJob(1, gocron.NewAtTimes(
-			gocron.NewAtTime(0, 0, 0))),
-		gocron.NewTask(
-			campus.GetCampuses,
-			db, errstream,
-		),
-	)
-	if err != nil {
-		return err
+	if !disableCampusesJob {
+		job1, err = s.NewJob(
+			gocron.DailyJob(1, gocron.NewAtTimes(
+				gocron.NewAtTime(0, 0, 0))),
+			gocron.NewTask(
+				campus.GetCampuses,
+				db, errstream,
+			),
+		)
+		if err != nil {
+			return err
+		}
 	}
-	job2, err := s.NewJob(
-		gocron.DurationJob(time.Hour*6),
-		gocron.NewTask(
-			users.GetUsers,
-			ctx, db, errstream,
-		),
-	)
-	if err != nil {
-		return err
+	if !disableUsersJob {
+		job2, err = s.NewJob(
+			gocron.DurationJob(time.Hour*6),
+			gocron.NewTask(
+				users.GetUsers,
+				ctx, db, errstream,
+			),
+		)
+		if err != nil {
+			return err
+		}
 	}
-	lastFetch := time.Time{}
-	job3, err := s.NewJob(
-		gocron.DurationJob(time.Minute*1),
-		gocron.NewTask(
-			func(ctx context.Context, db *gorm.DB, errstream chan error) {
-				clusters.GetLocations(lastFetch, ctx, db, errstream)
-				lastFetch = time.Now().UTC()
-			},
-			ctx, db, errstream,
-		),
-	)
-	if err != nil {
-		return err
+	if !disableLocationsJob {
+		lastFetch := time.Time{}
+		job3, err = s.NewJob(
+			gocron.DurationJob(time.Minute*1),
+			gocron.NewTask(
+				func(ctx context.Context, db *gorm.DB, errstream chan error) {
+					clusters.GetLocations(lastFetch, ctx, db, errstream)
+					lastFetch = time.Now().UTC()
+				},
+				ctx, db, errstream,
+			),
+		)
+		if err != nil {
+			return err
+		}
 	}
 	s.Start()
-	// Get campuses
-	_ = job1.RunNow()
-	// Get users
-	//_ = job2.RunNow()
-	_ = job2
-	// Get locations
-	_ = job3.RunNow()
+	if !disableCampusesJob {
+		_ = job1.RunNow()
+	}
+	if !disableUsersJob {
+		_ = job2.RunNow()
+	}
+	if !disableLocationsJob {
+		_ = job3.RunNow()
+	}
 	return nil
 }
 
@@ -109,9 +142,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, "error initializing clients:", err)
 		return
 	}
-
-	// Makes everything easier
-	db.Exec("DELETE FROM locations")
 
 	ctx := context.Background()
 	errstream := make(chan error)

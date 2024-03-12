@@ -242,6 +242,11 @@ templ Leaderboard(users []models.User,
 								Level
 							</a></th>
 						}
+						if shownFields["weekly_logtime"].Checked {
+							<th><a href={ urlWithSorting(url, "weekly_logtime") }>
+								Weekly logtime
+							</a></th>
+						}
 						if shownFields["correction_points"].Checked {
 							<th><a href={ urlWithSorting(url, "correction_points") }>
 								Correction points
@@ -273,6 +278,11 @@ templ Leaderboard(users []models.User,
 							</td>
 							if shownFields["level"].Checked {
 								<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
+							}
+							if shownFields["weekly_logtime"].Checked {
+								<td>{ fmt.Sprintf("%02dh%02d",
+										int(user.WeeklyLogtime.Hours()),
+										int(user.WeeklyLogtime.Seconds()/60)%60) }</td>
 							}
 							if shownFields["correction_points"].Checked {
 								<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>

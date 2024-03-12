@@ -16,6 +16,7 @@ import (
 var (
 	SortableFields = []templates.Field{
 		{"level", "Level", false},
+		{"weekly_logtime", "Weekly logtime", false},
 		{"correction_points", "Correction points", false},
 		{"campus", "Campus", false},
 		{"coalition", "Coalition", false},

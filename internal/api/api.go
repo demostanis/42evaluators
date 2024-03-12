@@ -7,6 +7,7 @@ import (
 	"maps"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/demostanis/42evaluators/internal/models"
 )
@@ -122,6 +123,7 @@ func Do[T any](apiReq *ApiRequest) (*T, error) {
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		if strings.HasPrefix(string(body), "429") {
+			time.Sleep(1 * time.Second)
 			return Do[T](apiReq)
 		}
 		return nil, err

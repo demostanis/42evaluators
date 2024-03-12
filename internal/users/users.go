@@ -87,7 +87,7 @@ func fetchOnePage(
 
 			var userWg sync.WaitGroup
 
-			userWg.Add(5)
+			userWg.Add(6)
 			go func() {
 				if err = setIsTest(user, db); err != nil {
 					errstream <- fmt.Errorf("users.setIsTest: %w", err)
@@ -115,6 +115,12 @@ func fetchOnePage(
 			go func() {
 				if err = user.UpdateFields(db); err != nil {
 					errstream <- fmt.Errorf("users.UpdateFields: %w", err)
+				}
+				userWg.Done()
+			}()
+			go func() {
+				if err = setWeeklyLogtime(user, db); err != nil {
+					errstream <- fmt.Errorf("users.setWeeklyLogTime: %w", err)
 				}
 				userWg.Done()
 			}()
@@ -146,10 +152,6 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 	var wgForTimeTaken sync.WaitGroup
 	for _, campus := range campusesToFetch {
 		campusId := strconv.Itoa(campus.ID)
-		// temporary, obv...
-		if campusId != "62" {
-			//continue
-		}
 
 		wgForTimeTaken.Add(1)
 		campusesWeights.Acquire(ctx, 1)

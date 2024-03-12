@@ -183,6 +183,10 @@ func GetLocations(
 	db *gorm.DB,
 	errstream chan error,
 ) {
+	if lastFetch.IsZero() {
+		// Makes everything easier
+		db.Exec("DELETE FROM locations")
+	}
 	// Don't do them in parallel, we need end_at to have
 	// more importance than begin_at
 	getLocationsForField(lastFetch, "begin_at", ctx, db, errstream)
