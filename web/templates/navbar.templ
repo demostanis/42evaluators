@@ -1,23 +1,35 @@
 package templates
 
+templ links() {
+	<li><a href="/leaderboard" class="text-xl">
+		Leaderboard
+	</a></li>
+	<li><a href="/blackhole" class="text-xl">
+		Blackhole map
+	</a></li>
+	<li><a href="/clusters" class="text-xl">
+		Clusters map
+	</a></li>
+}
+
 templ navbar() {
 	<div class="navbar bg-gray-800">
 		<div class="navbar-start">
+			<div class="dropdown">
+				<div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+					☰
+				</div>
+				<ul tabindex="0" class="menu menu-sm dropdown-content bg-gray-800 rounded-box shadow-xl w-52">
+					@links()
+				</ul>
+			</div>
 			<a href="/" class="m-3 text-2xl font-bold">
 				42evaluators
 			</a>
 		</div>
-		<div class="navbar-center">
+		<div class="navbar-center hidden lg:flex">
 			<ul class="menu menu-horizontal space-x-4">
-				<li><a href="/leaderboard" class="text-xl">
-					Leaderboard
-				</a></li>
-				<li><a href="/blackhole" class="text-xl">
-					Blackhole map
-				</a></li>
-				<li><a href="/clusters" class="text-xl">
-					Clusters map
-				</a></li>
+				@links()
 			</ul>
 		</div>
 		<div class="navbar-end">

@@ -16,7 +16,7 @@ const (
 func loggedInUsersOnly(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if getLoggedInUser(r) == nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, "/?needslogin=1", http.StatusSeeOther)
 			return
 		}
 		handler.ServeHTTP(w, r)

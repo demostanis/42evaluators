@@ -19,31 +19,38 @@ func getOauthUrl(clientId string, redirectUri string) templ.SafeURL {
 	))
 }
 
-templ LoggedOutIndex(clientId string, redirectUri string) {
+script removeUselessParams() {
+	const location = new URL(window.location.href);
+	location.searchParams.delete("code");
+	location.searchParams.delete("needslogin");
+	history.replaceState(null, "", location.href);
+}
+
+templ LoggedOutIndex(clientId string, redirectUri string, needsLogin bool) {
 	@header()
+	if needsLogin {
+		<div class="bg-gray-900 w-full h-12 flex items-center justify-center">
+			<span>You need to be logged-in to access this page.</span>
+		</div>
+	}
 	<div class="grid place-items-center h-[85%]">
 		<span>
-			<a class="text-7xl inline" href={ getOauthUrl(clientId, redirectUri) }>
+			<a class="text-4xl lg:text-7xl inline" href={ getOauthUrl(clientId, redirectUri) }>
 				Login with <img class="w-28 inline" src="https://meta.intra.42.fr/assets/42_logo-7dfc9110a5319a308863b96bda33cea995046d1731cebb735e41b16255106c12.svg" />
 			</a>
 		</span>
 	</div>
-}
-
-script removeCodeParam() {
-	const location = new URL(window.location.href);
-	location.searchParams.delete("code");
-	history.replaceState(null, "", location.href);
+	@removeUselessParams()
 }
 
 templ LoggedInIndex(them *Me, err error) {
 	@header()
-	<div class="grid place-items-center h-[85%]">
+	<div class="m-5 text-4xl lg:text-7xl grid place-items-center h-[85%]">
 		if err != nil {
 			<span>An error occurred: { fmt.Sprintf("%v", err) }</span>
 		} else {
-			<span class="text-7xl">Welcome back, { them.DisplayName }!</span>
+			<span>Welcome back, { them.DisplayName }!</span>
 		}
 	</div>
-	@removeCodeParam()
+	@removeUselessParams()
 }

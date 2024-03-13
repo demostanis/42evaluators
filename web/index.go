@@ -71,8 +71,9 @@ func handleIndex(db *gorm.DB) http.Handler {
 					LoggedInIndex(user.them, nil).
 					Render(r.Context(), w)
 			} else {
+				needsLogin := r.URL.Query().Get("needslogin") != ""
 				templates.
-					LoggedOutIndex(apiKey.UID, apiKey.RedirectUri).
+					LoggedOutIndex(apiKey.UID, apiKey.RedirectUri, needsLogin).
 					Render(r.Context(), w)
 			}
 		}
