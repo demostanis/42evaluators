@@ -21,6 +21,29 @@ import (
 
 var allClusters []clusters.Cluster
 
+func OpenClustersData() error {
+	file, err := os.Open("assets/clusters.json")
+	if err != nil {
+		return err
+	}
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(bytes, &allClusters)
+	if err != nil {
+		return err
+	}
+	for i, c := range allClusters {
+		allClusters[i].DisplayName = fmt.Sprintf(
+			"%s - %s", c.Campus.Name, c.Name)
+	}
+	slices.SortFunc(allClusters, func(a, b clusters.Cluster) int {
+		return cmp.Compare(a.DisplayName, b.DisplayName)
+	})
+	return nil
+}
+
 func fetchSvg(cluster *clusters.Cluster) error {
 	resp, err := http.Get(cluster.Image)
 	if err != nil {
@@ -37,20 +60,6 @@ func fetchSvg(cluster *clusters.Cluster) error {
 
 func handleClusters() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if allClusters == nil {
-			// TODO: open this file on startup and handle errors there
-			file, _ := os.Open("assets/clusters.json")
-			bytes, _ := io.ReadAll(file)
-			_ = json.Unmarshal(bytes, &allClusters)
-			for i, c := range allClusters {
-				allClusters[i].DisplayName = fmt.Sprintf(
-					"%s - %s", c.Campus.Name, c.Name)
-			}
-			slices.SortFunc(allClusters, func(a, b clusters.Cluster) int {
-				return cmp.Compare(a.DisplayName, b.DisplayName)
-			})
-		}
-
 		defaultClusterId := 199
 		campusId := getLoggedInUser(r).them.Campus[0].ID
 		for _, cluster := range allClusters {

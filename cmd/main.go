@@ -114,8 +114,15 @@ func setupCron(ctx context.Context, db *gorm.DB, errstream chan error) error {
 }
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	err := godotenv.Load()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "error loading .env:", err)
+		return
+	}
+
+	err = web.OpenClustersData()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error opening clusters data:", err)
 		return
 	}
 
