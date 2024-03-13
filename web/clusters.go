@@ -54,7 +54,7 @@ func fetchSvg(cluster *clusters.Cluster) error {
 	if err != nil {
 		return err
 	}
-	(*cluster).Svg = strings.Replace(string(body), "<svg", "<svg width=\"100%\" height=\"90%\" class=\"mt-1 mr-8\"", 1)
+	(*cluster).Svg = strings.Replace(string(body), "<svg", "<svg width=\"100%\" height=\"90%\" class=\"p-5 absolute\"", 1)
 	return nil
 }
 
