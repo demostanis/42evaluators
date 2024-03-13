@@ -38,7 +38,7 @@ func getIsActiveClass(isActive bool) string {
 }
 
 func urlWithPage(url *url.URL, page int) templ.SafeURL {
-	params := (*url).Query()
+	params := url.Query()
 	params.Del("page")
 	if page != 1 {
 		params.Add("page", strconv.Itoa(page))
@@ -86,11 +86,11 @@ templ pagination(url *url.URL, page int, totalPages int) {
 		@pageButton(url, 1, "<<", Inactive, page == 1)
 		@pageButton(url,
 			page - 1, "<", Inactive,
-			isDisabled(page-1, totalPages + 1))
+			isDisabled(page-1, totalPages))
 		if page > 4 {
 			@pageButton(url, 0, "...", Inactive, Disabled)
 		}
-		for i := max(1, page - 3); i <= min(page + 3, totalPages + 1); i++ {
+		for i := max(1, page - 3); i <= min(page + 3, totalPages); i++ {
 			@pageButton(url, i, strconv.Itoa(i), i == page, Enabled)
 		}
 		if page < totalPages - 3 {
@@ -98,8 +98,8 @@ templ pagination(url *url.URL, page int, totalPages int) {
 		}
 		@pageButton(url,
 			 page + 1, ">", Inactive,
-			 isDisabled(page+1, totalPages + 1))
-		@pageButton(url, totalPages + 1, ">>", Inactive, page == totalPages + 1)
+			 isDisabled(page+1, totalPages))
+		@pageButton(url, totalPages + 1, ">>", Inactive, page == totalPages)
 	</div>
 }
 
@@ -118,7 +118,7 @@ func getBgUrl(user models.User) string {
 }
 
 func urlWithSorting(myUrl *url.URL, sort string) templ.SafeURL {
-	params := (*myUrl).Query()
+	params := myUrl.Query()
 	params.Del("sort")
 	if sort != "level" { // since that's the default
 		params.Add("sort", sort)
@@ -129,6 +129,7 @@ func urlWithSorting(myUrl *url.URL, sort string) templ.SafeURL {
 }
 
 script fallbackImages(src string) {
+	// TODO: this doesn't work on my phone...
 	[].__proto__.slice.call(document.querySelectorAll("img")).forEach(img =>
 		(img.onerror = () => img.src = src));
 }
@@ -205,7 +206,7 @@ func getDisplayName(user models.User) string {
 
 templ Leaderboard(users []models.User,
 	promos []Promo, campuses []models.Campus, activeCampus int,
-	url *url.URL, page int, totalPages int64, shownFields map[string]Field,
+	url *url.URL, page int, totalPages int, shownFields map[string]Field,
 	offset int) {
 	@header()
 
@@ -238,7 +239,7 @@ templ Leaderboard(users []models.User,
 		if len(users) == 0 && page == 0 {
 			<div class="text-center pt-5">No users in this campus...</div>
 		} else {
-			@pagination(url, page, int(totalPages))
+			@pagination(url, page, totalPages)
 			<table class="table">
 				<thead class="sticky top-0 bg-gray-700 z-10">
 					<tr class="text-2xl">
@@ -307,7 +308,7 @@ templ Leaderboard(users []models.User,
 					}
 				</tbody>
 			</table>
-			@pagination(url, page, int(totalPages))
+			@pagination(url, page, totalPages)
 		}
 	</div>
 
