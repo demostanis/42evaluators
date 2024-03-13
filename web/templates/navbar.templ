@@ -1,13 +1,13 @@
 package templates
 
 templ links() {
-	<li><a href="/leaderboard" class="text-xl">
+	<li><a href="/leaderboard" class="text-4xl lg:text-xl">
 		Leaderboard
 	</a></li>
-	<li><a href="/blackhole" class="text-xl">
+	<li><a href="/blackhole" class="text-4xl lg:text-xl">
 		Blackhole map
 	</a></li>
-	<li><a href="/clusters" class="text-xl">
+	<li><a href="/clusters" class="text-4xl lg:text-xl">
 		Clusters map
 	</a></li>
 }
@@ -19,7 +19,7 @@ templ navbar() {
 				<div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
 					☰
 				</div>
-				<ul tabindex="0" class="menu menu-sm dropdown-content bg-gray-800 rounded-box shadow-xl w-52">
+				<ul tabindex="0" class="menu menu-sm dropdown-content bg-gray-800 rounded-box shadow-xl w-72">
 					@links()
 				</ul>
 			</div>

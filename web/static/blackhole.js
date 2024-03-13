@@ -9,7 +9,13 @@ const lucky = Math.random() > 0.995;
 const navbarHeight = document.querySelector(".navbar").getBoundingClientRect().height;
 
 let rendererHeight = innerHeight - navbarHeight;
-document.querySelector("#blackholes").style.height = rendererHeight + "px";
+function resizeBlackholes(rendererHeight) {
+	if (window.innerWidth >= 1024)
+		document.querySelector("#blackholes").style.height = rendererHeight + "px";
+	else
+		document.querySelector("#blackholes").style.height = "160px";
+}
+resizeBlackholes(rendererHeight)
 
 const createUserElem = user => {
 	const cardImage = document.createElement("figure");
@@ -177,11 +183,18 @@ function renderBlackholeMap(blackholeMap) {
 		scene.add(circle);
 	}
 
+	let startY = 0;
+	window.addEventListener("touchstart", function(event) {
+		startY = event.touches[0].pageY;
+	});
+
 	let scrollY = 0;
 	let previousMaterial = stages[smallestDiff].material;
-	window.addEventListener("wheel", event => {
+	const handleScroll = event => {
 		if (document.querySelector("#blackholes:hover")) return;
 
+		if (!event.deltaY)
+			event.deltaY = (startY - event.touches[0].pageY) / 10;
 		scrollY += event.deltaY;
 
 		const stage = stages[parseInt(scrollY / 114)];
@@ -214,7 +227,10 @@ function renderBlackholeMap(blackholeMap) {
 		camera.updateProjectionMatrix();
 
 		camera.position.z += event.deltaY / 50;
-	});
+	}
+
+	window.addEventListener("wheel", handleScroll);
+	window.addEventListener("touchmove", handleScroll);
 
 	let previousTarget;
 	const raycaster = new three.Raycaster();
@@ -258,7 +274,7 @@ function renderBlackholeMap(blackholeMap) {
 		camera.aspect = window.innerWidth / rendererHeight;
 		camera.updateProjectionMatrix();
 		renderer.setSize(innerWidth, rendererHeight);
-		document.querySelector("#blackholes").style.height = rendererHeight + "px";
+		resizeBlackholes(rendererHeight);
 	});
 
 	renderer.setSize(innerWidth, rendererHeight);
