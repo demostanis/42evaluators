@@ -13,16 +13,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	SortableFields = []templates.Field{
-		{"level", "Level", false},
-		{"weekly_logtime", "Weekly logtime", false},
-		{"correction_points", "Correction points", false},
-		{"campus", "Campus", false},
-		{"coalition", "Coalition", false},
-	}
-)
-
 func handleLeaderboard(db *gorm.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		page, err := strconv.Atoi(r.URL.Query().Get("page"))
@@ -44,7 +34,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			shownFieldsRaw = []string{"level", "campus"}
 		}
 		shownFields := make(map[string]templates.Field, 0)
-		for _, field := range SortableFields {
+		for _, field := range templates.ToggleableFields {
 			found := false
 			for _, allowedField := range shownFieldsRaw {
 				if field.Name == allowedField {

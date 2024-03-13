@@ -19,6 +19,16 @@ type Field struct {
 	Checked    bool
 }
 
+var (
+	ToggleableFields = []Field{
+		{Name: "level", PrettyName: "Level"},
+		{Name: "weekly_logtime", PrettyName: "Weekly logtime"},
+		{Name: "correction_points", PrettyName: "Correction points"},
+		{Name: "campus", PrettyName: "Campus"},
+		{Name: "coalition", PrettyName: "Coalition"},
+	}
+)
+
 func getIsActiveClass(isActive bool) string {
 	var isActiveClass string
 	if isActive {
@@ -307,7 +317,7 @@ templ Leaderboard(users []models.User,
 			<h1 class="text-center text-bold">Fields to show:</h1>
 			<form id="fields-settings-form" class="modal-action flex flex-col">
 				<div></div>
-				for _, field := range shownFields {
+				for _, field := range ToggleableFields {
 					<div class="flex align-center grow py-1 whitespace-nowrap">
 						<label for={ field.Name }>{ field.PrettyName }</label>
 						<span class="w-full"></span>
