@@ -180,42 +180,6 @@
     }
   },
   {
-    "id": 218,
-    "name": "made-f0D",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/218/MADE-f0D.svg",
-    "campus": {
-      "id": 54,
-      "name": "42 Central"
-    }
-  },
-  {
-    "id": 217,
-    "name": "made-f0C",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/217/MADE-f0C.svg",
-    "campus": {
-      "id": 54,
-      "name": "42 Central"
-    }
-  },
-  {
-    "id": 216,
-    "name": "made-f0B",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/216/MADE-f0B.svg",
-    "campus": {
-      "id": 54,
-      "name": "42 Central"
-    }
-  },
-  {
-    "id": 215,
-    "name": "made-f0A",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/215/MADE-f0A.svg",
-    "campus": {
-      "id": 54,
-      "name": "42 Central"
-    }
-  },
-  {
     "id": 208,
     "name": "c1H",
     "cdn_link": "https://cdn.intra.42.fr/cluster/image/208/c1.svg",
@@ -1037,7 +1001,7 @@
   {
     "id": 54,
     "name": "mi",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/54/mi23.svg",
+    "cdn_link": "https://cdn.intra.42.fr/cluster/image/54/mi26.svg",
     "campus": {
       "id": 12,
       "name": "19"
@@ -1289,7 +1253,7 @@
   {
     "id": 21,
     "name": "fu",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/21/fu21.svg",
+    "cdn_link": "https://cdn.intra.42.fr/cluster/image/21/fu27.svg",
     "campus": {
       "id": 12,
       "name": "19"
@@ -1298,7 +1262,7 @@
   {
     "id": 20,
     "name": "shi",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/20/shi21.svg",
+    "cdn_link": "https://cdn.intra.42.fr/cluster/image/20/shi29.svg",
     "campus": {
       "id": 12,
       "name": "19"
@@ -1419,33 +1383,6 @@
     "campus": {
       "id": 16,
       "name": "Khouribga"
-    }
-  },
-  {
-    "id": 3,
-    "name": "e3",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/3/e3-paris.svg",
-    "campus": {
-      "id": 54,
-      "name": "42 Central"
-    }
-  },
-  {
-    "id": 2,
-    "name": "e2",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/2/e2-paris.svg",
-    "campus": {
-      "id": 54,
-      "name": "42 Central"
-    }
-  },
-  {
-    "id": 1,
-    "name": "e1",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/1/e1-paris.svg",
-    "campus": {
-      "id": 54,
-      "name": "42 Central"
     }
   }
 ]
