@@ -6,8 +6,9 @@ import (
 )
 
 type Me struct {
+	ID          int `json:"id"`
 	DisplayName string `json:"usual_full_name"`
-	Campus []struct {
+	Campus      []struct {
 		ID int `json:"id"`
 	} `json:"campus"`
 }

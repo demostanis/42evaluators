@@ -40,6 +40,7 @@ func getIsActiveClass(isActive bool) string {
 func urlWithPage(url *url.URL, page int) templ.SafeURL {
 	params := url.Query()
 	params.Del("page")
+	params.Del("me")
 	if page != 1 {
 		params.Add("page", strconv.Itoa(page))
 	}
@@ -82,7 +83,7 @@ func isDisabled(targetedPage int, totalPage int) bool {
 }
 
 templ pagination(url *url.URL, page int, totalPages int) {
-	<div class="join justify-center flex py-4">
+	<div class="join justify-center flex pt-3">
 		@pageButton(url, 1, "<<", Inactive, page == 1)
 		@pageButton(url,
 			page - 1, "<", Inactive,
@@ -107,25 +108,46 @@ func getProfileUrl(user models.User) templ.SafeURL {
 	return templ.SafeURL("https://profile.intra.42.fr/users/" + user.Login)
 }
 
-func getBgUrl(user models.User) string {
+func getBgUrl(user models.User, currentUserId int) string {
 	// TODO: stick the coalition cover somewhere prettier
 	//if user.Coalition.CoverUrl == "" {
 	//	return "bg-[url(https://profile.intra.42.fr/assets/background_login-a4e0666f73c02f025f590b474b394fd86e1cae20e95261a6e4862c2d0faa1b04.jpg)] bg-cover bg-center"
 	//} else {
 	//	return "bg-[url(" + user.Coalition.CoverUrl + ")] bg-cover bg-center"
 	//}
+	if user.ID == currentUserId {
+		return "bg-blue-900 me scroll-mt-[58px]"
+	}
 	return ""
 }
 
 func urlWithSorting(myUrl *url.URL, sort string) templ.SafeURL {
 	params := myUrl.Query()
 	params.Del("sort")
+	params.Del("me")
 	if sort != "level" { // since that's the default
 		params.Add("sort", sort)
 	}
 	newUrl := *myUrl
 	newUrl.RawQuery = params.Encode()
 	return templ.SafeURL(newUrl.String())
+}
+
+func urlForMe(myUrl *url.URL) templ.SafeURL {
+	params := myUrl.Query()
+	params.Del("me")
+	params.Add("me", "1")
+	newUrl := *myUrl
+	newUrl.RawQuery = params.Encode()
+	return templ.SafeURL(newUrl.String())
+}
+
+script jumpToMe() {
+	if (new URLSearchParams(window.location.search).get("me")) {
+		document.querySelector(".me").scrollIntoView({
+			behavior: "smooth"
+		})
+	}
 }
 
 script fallbackImages(src string) {
@@ -140,6 +162,7 @@ script updateLeaderboardWhenNeeded(campusIds []int) {
 		const selected = e.target.selectedOptions[0];
 
 		params.delete("page");
+		params.delete("me");
 		if (selected.textContent != "Any promo") {
 			params.delete("promo");
 			params.append("promo", selected.textContent.replace(/promo in /, ""));
@@ -152,6 +175,7 @@ script updateLeaderboardWhenNeeded(campusIds []int) {
 		const selected = e.target.selectedOptions[0];
 
 		params.delete("page");
+		params.delete("me");
 		params.delete("promo");
 		if (selected.textContent != "Any campus") {
 			params.delete("campus");
@@ -197,6 +221,13 @@ func getCampusIds(campuses []models.Campus) []int {
 	return ids
 }
 
+func getTableClass(gotoMyPositionShown bool) string {
+	if !gotoMyPositionShown {
+		return "mt-3"
+	}
+	return ""
+}
+
 func getDisplayName(user models.User) string {
 	if user.Title.Name == "" {
 		return user.Login
@@ -207,7 +238,7 @@ func getDisplayName(user models.User) string {
 templ Leaderboard(users []models.User,
 	promos []Promo, campuses []models.Campus, activeCampus int,
 	url *url.URL, page int, totalPages int, shownFields map[string]Field,
-	offset int) {
+	currentUserId int, offset int, gotoMyPositionShown bool) {
 	@header()
 
 	<div id="main" class="mt-[17px]">
@@ -240,7 +271,10 @@ templ Leaderboard(users []models.User,
 			<div class="text-center pt-5">No users in this campus...</div>
 		} else {
 			@pagination(url, page, totalPages)
-			<table class="table">
+			if gotoMyPositionShown {
+				<a class="block text-center py-3" href={ urlForMe(url) }>Go to my position</a>
+			}
+			<table class={ "table", getTableClass(gotoMyPositionShown) }>
 				<thead class="sticky top-0 bg-gray-700 z-10">
 					<tr class="text-2xl">
 						<th>Position</th>
@@ -267,15 +301,16 @@ templ Leaderboard(users []models.User,
 							<th>Coalition</th>
 						}
 						if shownFields["campus"].Checked {
-							<th><a href={ urlWithSorting(url, "campus_id") }>
-								Campus
-							</a></th>
+							<th>Campus</th>
 						}
 					</tr>
 				</thead>
 				<tbody>
 					for i, user := range users {
-						<tr class={ "text-white", "text-xl", getBgUrl(user) }>
+						<tr class={
+							"text-white", "text-xl",
+							getBgUrl(user, currentUserId)
+							}>
 							<td>{ strconv.Itoa(i + offset + 1) }.</td>
 							<td class="flex">
 								<div class="avatar placeholder w-24 h-24 object-contain">
@@ -309,6 +344,7 @@ templ Leaderboard(users []models.User,
 				</tbody>
 			</table>
 			@pagination(url, page, totalPages)
+			<div class="pt-3"></div>
 		}
 	</div>
 
@@ -340,4 +376,5 @@ templ Leaderboard(users []models.User,
 	@fallbackImages(models.DefaultImageLink)
 	@updateLeaderboardWhenNeeded(getCampusIds(campuses))
 	@fieldsSettingsHandler()
+	@jumpToMe()
 }

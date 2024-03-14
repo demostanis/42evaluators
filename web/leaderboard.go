@@ -42,8 +42,10 @@ func getShownFields(wantedFieldsRaw string) map[string]templates.Field {
 }
 
 func canSortOn(field string) bool {
-	_ = field
-	return true
+	return field == "login" ||
+		field == "level" ||
+		field == "weekly_logtime" ||
+		field == "correction_points"
 }
 
 func getPromosForCampus(
@@ -105,6 +107,7 @@ func getAllCampuses(db *gorm.DB) ([]models.Campus, error) {
 }
 
 func internalServerError(w http.ResponseWriter, err error) {
+	fmt.Println(err)
 	_ = err
 	w.WriteHeader(http.StatusInternalServerError)
 }
@@ -123,6 +126,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 
 		promo := r.URL.Query().Get("promo")
 		campus := r.URL.Query().Get("campus")
+		showMyself := r.URL.Query().Get("me") != ""
 		shownFields := getShownFields(r.URL.Query().Get("fields"))
 
 		campuses, err := getAllCampuses(db)
@@ -152,8 +156,32 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 		}
 		totalPages := 1 + (int(totalUsers)-1)/UsersPerPage
 		page = min(page, totalPages)
-
 		offset := (page - 1) * UsersPerPage
+
+		var user models.User
+		id := getLoggedInUser(r).them.ID
+		err = db.
+			Where("id = ?", id).
+			First(&user).Error
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+
+		if showMyself {
+			var myPosition int64
+			db.
+				Model(&models.User{}).
+				Order(sorting+" DESC").
+				Scopes(database.OnlyRealUsers()).
+				Scopes(database.WithCampus(campus)).
+				Scopes(database.WithPromo(promo)).
+				Where("level > ?", user.Level).
+				Count(&myPosition)
+			offset = int(myPosition) - (int(myPosition) % UsersPerPage)
+			page = offset/UsersPerPage + 1
+		}
+
 		err = db.
 			Preload("Coalition").
 			Preload("Title").
@@ -165,16 +193,25 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Scopes(database.WithCampus(campus)).
 			Scopes(database.WithPromo(promo)).
 			Find(&users).Error
-
 		if err != nil {
 			internalServerError(w, err)
 			return
 		}
 
 		activeCampusId, _ := strconv.Atoi(campus)
+		userPromo := fmt.Sprintf("%02d/%d",
+			user.BeginAt.Month(),
+			user.BeginAt.Year())
+		gotoMyPositionShown := (campus == "" && promo == "") ||
+			(promo == "" && user.CampusID == activeCampusId) ||
+			(promo != "" && campus == "" && userPromo == promo) ||
+			(user.CampusID == activeCampusId && userPromo == promo)
+
 		templates.Leaderboard(users,
 			promos, campuses, activeCampusId,
 			r.URL, page, totalPages, shownFields,
-			offset).Render(r.Context(), w)
+			getLoggedInUser(r).them.ID,
+			offset, gotoMyPositionShown,
+		).Render(r.Context(), w)
 	})
 }
