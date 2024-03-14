@@ -77,8 +77,9 @@ func GetKeys(x int, db *gorm.DB) error {
 	var wg sync.WaitGroup
 	for i := 0; i < x; i++ {
 		wg.Add(1)
-		if err = sem.Acquire(context.TODO(), 1); err != nil {
-
+		err = sem.Acquire(context.TODO(), 1)
+		if err != nil {
+			return err
 		}
 		go func(i int) {
 			defer sem.Release(1)
@@ -247,10 +248,13 @@ func (s *Session) DeleteAllApplications() error {
 		return err
 	}
 
+	sem := semaphore.NewWeighted(ConcurrentFetch)
 	var wg sync.WaitGroup
 	for i, key := range keys {
 		wg.Add(1)
+		err = sem.Acquire(context.TODO(), 1)
 		go func(i int, key string) {
+			defer sem.Release(1)
 			defer wg.Done()
 			err = s.DeleteApplication(key)
 			if err != nil {
