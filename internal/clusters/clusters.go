@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	ConcurrentLocationsFetch = 20
+	ConcurrentLocationsFetch = 40
 )
 
 var (
@@ -59,6 +59,7 @@ func getParams(lastFetch time.Time, field string) map[string]string {
 	} else {
 		params["filter[active]"] = "true"
 	}
+	params["page[size]"] = "100"
 	lastFetch = time.Now().UTC()
 	return params
 }
@@ -109,7 +110,7 @@ func fetchOnePage(lastFetch time.Time, field string, page int, db *gorm.DB) erro
 	isUpdate := !lastFetch.IsZero()
 
 	params := getParams(lastFetch, field)
-	params["page"] = strconv.Itoa(page)
+	params["page[number]"] = strconv.Itoa(page)
 
 	locations, err := api.Do[[]Location](
 		api.NewRequest("/v2/locations").

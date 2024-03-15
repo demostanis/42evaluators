@@ -22,14 +22,20 @@ func blackholeMap(db *gorm.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		result := make([]Blackhole, 0)
 
-		// TODO: what if the user has multiple campuses?
-		campusId := strconv.Itoa(getLoggedInUser(r).them.Campus[0].ID)
-		_ = campusId
+		campusId := r.URL.Query().Get("campus")
+		if campusId == "" {
+			// TODO: what if the user has multiple campuses?
+			campusId = strconv.Itoa(getLoggedInUser(r).them.Campus[0].ID)
+		}
 		var users []models.User
-		db.
+		err := db.
 			Scopes(database.OnlyRealUsers()).
 			Scopes(database.WithCampus(campusId)).
-			Find(&users)
+			Find(&users).Error
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
 
 		for _, user := range users {
 			if !user.BlackholedAt.IsZero() {

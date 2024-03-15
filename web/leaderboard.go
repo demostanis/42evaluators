@@ -170,16 +170,37 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 
 		if showMyself {
 			var myPosition int64
-			db.
+
+			// We create a SQL query abusing .Select, specifying
+			// a ROW_NUMBER() statement instead of fields,
+			// to then insert it as a table in the next query,
+			// while hiding erroneous GORM-generated stuff with
+			// a self-SQL-injection using Where()
+			sql := db.ToSQL(func(db *gorm.DB) *gorm.DB {
+				return db.
+					Model(&models.User{}).
+					Select(fmt.Sprintf(
+						`*, ROW_NUMBER() OVER (ORDER BY %s DESC) pos`,
+						sorting)).
+					Scopes(database.OnlyRealUsers()).
+					Scopes(database.WithCampus(campus)).
+					Scopes(database.WithPromo(promo)).
+					Find(nil)
+			})
+			err = db.
 				Model(&models.User{}).
-				Order(sorting+" DESC").
-				Scopes(database.OnlyRealUsers()).
-				Scopes(database.WithCampus(campus)).
-				Scopes(database.WithPromo(promo)).
-				Where("level > ?", user.Level).
-				Count(&myPosition)
+				Table(fmt.Sprintf(`(%s)`, sql)).
+				Where("id = ?", user.ID).
+				Where("1=1 --"). // That's hideous lmfao
+				Select("pos").
+				Scan(&myPosition).Error
+			if err != nil {
+				internalServerError(w, err)
+				return
+			}
+
 			offset = int(myPosition) - (int(myPosition) % UsersPerPage)
-			page = offset/UsersPerPage + 1
+			page = 2 + (offset-1)/UsersPerPage
 		}
 
 		err = db.

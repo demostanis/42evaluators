@@ -22,9 +22,10 @@ var (
 	DefaultParams = map[string]string{
 		"sort":              "-level",
 		"filter[cursus_id]": "21",
+		"page[size]":        "100",
 	}
 	ConcurrentCampusesFetch = int64(5)
-	ConcurrentPagesFetch    = int64(20)
+	ConcurrentPagesFetch    = int64(40)
 	ConcurrentUsersFetch    = int64(10)
 )
 
@@ -48,7 +49,7 @@ func fetchOnePage(
 	db *gorm.DB, errstream chan error,
 ) {
 	params := maps.Clone(DefaultParams)
-	params["page"] = strconv.Itoa(page)
+	params["page[number]"] = strconv.Itoa(page)
 	params["filter[campus_id]"] = campusId
 
 	users, err := api.Do[[]models.User](

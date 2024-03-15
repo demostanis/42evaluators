@@ -303,7 +303,11 @@ function renderBlackholeMap(blackholeMap) {
 	render();
 }
 
-fetch("/blackhole.json").
+const campusId = new URLSearchParams(location.search).get("campus")
+let params = `?campus=${campusId}`;
+if (!campusId)
+	params = "";
+fetch(`/blackhole.json${params}`).
 	then(res => res.json().
 	then(blackholeMap => {
 		blackholeMap.

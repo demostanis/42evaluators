@@ -203,6 +203,7 @@ script fieldsSettingsHandler() {
 
 		const params = new URLSearchParams(window.location.search);
 		params.delete("fields");
+		params.delete("me");
 		if (fields.length) {
 			params.append("fields", fields);
 		}
@@ -233,6 +234,14 @@ func getDisplayName(user models.User) string {
 		return user.Login
 	}
 	return strings.Replace(user.Title.Name, "%login", user.Login, -1)
+}
+
+func sort(shownFields map[string]Field) []Field {
+	sortedFields := make([]Field, 0)
+	for _, field := range ToggleableFields {
+		sortedFields = append(sortedFields, shownFields[field.Name])
+	}
+	return sortedFields
 }
 
 templ Leaderboard(users []models.User,
@@ -354,7 +363,7 @@ templ Leaderboard(users []models.User,
 			<h1 class="text-center text-bold">Fields to show:</h1>
 			<form id="fields-settings-form" class="modal-action flex flex-col">
 				<div></div>
-				for _, field := range ToggleableFields {
+				for _, field := range sort(shownFields) {
 					<div class="flex align-center grow py-1 whitespace-nowrap">
 						<label for={ field.Name }>{ field.PrettyName }</label>
 						<span class="w-full"></span>
