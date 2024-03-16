@@ -26,6 +26,7 @@ func getTitle(user models.User, db *gorm.DB) (*models.Title, error) {
 		if title.Selected {
 			var cachedTitle models.Title
 			err := db.
+				Session(&gorm.Session{}).
 				Model(&models.Title{}).
 				Where("id = ?", title.Id).
 				First(&cachedTitle).Error
@@ -38,7 +39,6 @@ func getTitle(user models.User, db *gorm.DB) (*models.Title, error) {
 					return nil, err
 				}
 
-				db.Error = nil // That fucking sucks
 				// We ignore the error since it could happen
 				// that another goroutine, since the last time
 				// we checked whether the record already existed

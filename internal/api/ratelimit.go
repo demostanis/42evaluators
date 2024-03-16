@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -20,12 +21,25 @@ const (
 var mu sync.Mutex
 
 type RLHTTPClient struct {
+	sync.Mutex
 	client              *http.Client
 	secondlyRateLimiter *rate.Limiter
 	hourlyRateLimiter   *rate.Limiter
 	isRateLimited       bool
 	accessToken         string
 	apiKey              models.ApiKey
+}
+
+func (c *RLHTTPClient) setIsRateLimited(isRateLimited bool) {
+	c.Lock()
+	c.isRateLimited = isRateLimited
+	c.Unlock()
+}
+
+func (c *RLHTTPClient) getIsRateLimited() bool {
+	c.Lock()
+	defer c.Unlock()
+	return c.isRateLimited
 }
 
 func RateLimitedClient(accessToken string, apiKey models.ApiKey) *RLHTTPClient {
@@ -52,22 +66,22 @@ func (c *RLHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	resp, err := c.client.Do(req)
-	c.isRateLimited = false
+	c.setIsRateLimited(false)
 	return resp, err
 }
 
 func findNonRateLimitedClient() *RLHTTPClient {
 	mu.Lock()
 	for _, potentialClient := range clients {
-		if !potentialClient.isRateLimited {
-			potentialClient.isRateLimited = true
+		if !potentialClient.getIsRateLimited() {
+			potentialClient.setIsRateLimited(true)
 			mu.Unlock()
 			return potentialClient
 		}
 	}
 	mu.Unlock()
 
-	fmt.Println("all clients rate limited, waiting to find a new one...")
+	fmt.Fprintln(os.Stderr, "all clients rate limited, waiting to find a new one...")
 	time.Sleep(SleepBetweenTries)
 	return findNonRateLimitedClient()
 }

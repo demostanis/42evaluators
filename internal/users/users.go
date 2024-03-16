@@ -78,6 +78,7 @@ func fetchOnePage(
 			start := time.Now()
 
 			err := db.
+				Session(&gorm.Session{}).
 				Model(&models.User{}).
 				Where("id = ?", user.ID).
 				First(nil).Error

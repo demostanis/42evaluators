@@ -82,12 +82,14 @@ func UpdateLocationInDB(location models.Location, db *gorm.DB) error {
 	defer mu.Unlock()
 
 	var newLocation models.Location
-	err := db.Where("id = ?", location.ID).First(&newLocation).Error
+	err := db.
+		Session(&gorm.Session{}).
+		Where("id = ?", location.ID).
+		First(&newLocation).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return db.Create(&location).Error
 	}
-	db.Error = nil
 	if location.EndAt != "" {
 		return db.Delete(&location).Error
 	}

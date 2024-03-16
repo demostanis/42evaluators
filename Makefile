@@ -11,7 +11,7 @@ web/templates/%_templ.go: web/templates/%.templ
 templates: $(TEMPLATES)
 
 dev: deps templates
-	$(GO) run cmd/main.go
+	$(GO) run -race cmd/main.go
 
 42evaluators: templates
 	$(GO) build cmd/main.go -o $@

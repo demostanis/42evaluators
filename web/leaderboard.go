@@ -107,9 +107,8 @@ func getAllCampuses(db *gorm.DB) ([]models.Campus, error) {
 }
 
 func internalServerError(w http.ResponseWriter, err error) {
-	fmt.Println(err)
-	_ = err
 	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte(fmt.Sprintf("an error occured: %w", err)))
 }
 
 func handleLeaderboard(db *gorm.DB) http.Handler {
