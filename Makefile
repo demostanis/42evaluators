@@ -11,12 +11,18 @@ web/templates/%_templ.go: web/templates/%.templ
 templates: $(TEMPLATES)
 
 dev: deps templates
-	$(GO) run -race cmd/main.go
+	env $(FLAGS) $(GO) run $(GOFLAGS) cmd/main.go
+
+nojobs: FLAGS=disabledjobs=campuses,users,locations
+nojobs: dev
+
+race: GOFLAGS=-race
+race: dev
 
 42evaluators: templates
 	$(GO) build cmd/main.go -o $@
 
-build: 42evaluators
+build: deps 42evaluators
 
 clean:
 	$(RM) $(TEMPLATES)

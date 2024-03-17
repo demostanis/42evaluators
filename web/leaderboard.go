@@ -108,7 +108,7 @@ func getAllCampuses(db *gorm.DB) ([]models.Campus, error) {
 
 func internalServerError(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
-	w.Write([]byte(fmt.Sprintf("an error occured: %w", err)))
+	w.Write([]byte(fmt.Sprintf("an error occured: %v", err)))
 }
 
 func handleLeaderboard(db *gorm.DB) http.Handler {
@@ -130,13 +130,13 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 
 		campuses, err := getAllCampuses(db)
 		if err != nil {
-			internalServerError(w, err)
+			internalServerError(w, fmt.Errorf("could not fetch campuses: %w", err))
 			return
 		}
 
 		promos, err := getPromosForCampus(db, campus, promo)
 		if err != nil {
-			internalServerError(w, err)
+			internalServerError(w, fmt.Errorf("could not list promos: %w", err))
 			return
 		}
 
@@ -150,7 +150,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Scopes(database.WithPromo(promo)).
 			Count(&totalUsers).Error
 		if err != nil {
-			internalServerError(w, err)
+			internalServerError(w, fmt.Errorf("could not get user count: %w", err))
 			return
 		}
 		totalPages := 1 + (int(totalUsers)-1)/UsersPerPage
@@ -163,7 +163,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Where("id = ?", id).
 			First(&user).Error
 		if err != nil {
-			internalServerError(w, err)
+			internalServerError(w, fmt.Errorf("user is not in db: %d: %w", id, err))
 			return
 		}
 
@@ -194,7 +194,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 				Select("pos").
 				Scan(&myPosition).Error
 			if err != nil {
-				internalServerError(w, err)
+				internalServerError(w, fmt.Errorf("failed to find user in db: %w", err))
 				return
 			}
 
@@ -214,7 +214,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Scopes(database.WithPromo(promo)).
 			Find(&users).Error
 		if err != nil {
-			internalServerError(w, err)
+			internalServerError(w, fmt.Errorf("failed to list users: %w", err))
 			return
 		}
 
