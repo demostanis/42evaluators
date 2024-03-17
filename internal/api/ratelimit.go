@@ -2,9 +2,7 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -81,7 +79,6 @@ func findNonRateLimitedClient() *RLHTTPClient {
 	}
 	mu.Unlock()
 
-	fmt.Fprintln(os.Stderr, "all clients rate limited, waiting to find a new one...")
 	time.Sleep(SleepBetweenTries)
 	return findNonRateLimitedClient()
 }
