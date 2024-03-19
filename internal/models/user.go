@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"time"
 
@@ -30,6 +31,7 @@ type CursusUser struct {
 			} `json:"versions"`
 		} `json:"image"`
 		CorrectionPoints int `json:"correction_point"`
+		Wallets          int `json:"wallet"`
 	} `json:"user"`
 	Level        float64 `json:"level"`
 	BlackholedAt string  `json:"blackholed_at"`
@@ -38,6 +40,7 @@ type CursusUser struct {
 
 type User struct {
 	gorm.Model
+
 	ID               int
 	Login            string
 	DisplayName      string
@@ -45,6 +48,7 @@ type User struct {
 	BlackholedAt     time.Time
 	BeginAt          time.Time
 	CorrectionPoints int
+	Wallets          int
 
 	ImageLink      string
 	ImageLinkSmall string
@@ -74,6 +78,7 @@ func (user *User) UnmarshalJSON(data []byte) error {
 	user.BlackholedAt, _ = time.Parse(DateFormat, cursusUser.BlackholedAt)
 	user.CorrectionPoints = cursusUser.User.CorrectionPoints
 	user.BeginAt, _ = time.Parse(DateFormat, cursusUser.BeginAt)
+	user.Wallets = cursusUser.User.Wallets
 
 	user.ImageLinkSmall = cursusUser.User.Image.Versions.Small
 	if user.ImageLinkSmall == "" {
@@ -89,8 +94,24 @@ func (user *User) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (user *User) CreateIfNeeded(db *gorm.DB) error {
+	if user.ID == 0 {
+		return errors.New("user may not have ID 0")
+	}
+
+	err := db.
+		Session(&gorm.Session{}).
+		Model(&User{}).
+		Where("id = ?", user.ID).
+		First(nil).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return db.Create(&user).Error
+	}
+	return nil
+}
+
 func (user *User) UpdateFields(db *gorm.DB) error {
-	return db.Model(user).Updates(map[string]any{
+	return db.Model(&User{}).Updates(map[string]any{
 		"ID":               user.ID,
 		"Login":            user.Login,
 		"DisplayName":      user.DisplayName,
@@ -101,5 +122,59 @@ func (user *User) UpdateFields(db *gorm.DB) error {
 		"ImageLinkSmall":   user.ImageLinkSmall,
 		"Level":            user.Level,
 		"BeginAt":          user.BeginAt,
+		"Wallets":          user.Wallets,
 	}).Error
+}
+
+func (user *User) YesItsATestAccount(db *gorm.DB) error {
+	user.IsTest = true
+	return db.Model(&User{}).
+		Where("id = ?", user.ID).
+		Updates(map[string]any{
+			"IsTest": true,
+		}).Error
+}
+
+func (user *User) SetCampus(campusId int, db *gorm.DB) error {
+	var campus Campus
+	err := db.Model(&Campus{}).
+		Where("id = ?", campusId).
+		First(&campus).Error
+	if err != nil {
+		return err
+	}
+
+	user.Campus = campus
+	return db.Model(&user).
+		Where("id = ?", user.ID).
+		Updates(map[string]any{
+			"CampusID": campusId,
+		}).Error
+}
+
+func (user *User) SetCoalition(coalition Coalition, db *gorm.DB) error {
+	user.Coalition = coalition
+	return db.Model(&User{}).
+		Where("id = ?", user.ID).
+		Updates(map[string]any{
+			"CoalitionID": coalition.ID,
+		}).Error
+}
+
+func (user *User) SetTitle(title Title, db *gorm.DB) error {
+	user.Title = title
+	return db.Model(&User{}).
+		Where("id = ?", user.ID).
+		Updates(map[string]any{
+			"TitleID": title.ID,
+		}).Error
+}
+
+func (user *User) SetWeeklyLogtime(logtime time.Duration, db *gorm.DB) error {
+	user.WeeklyLogtime = logtime
+	return db.Model(&User{}).
+		Where("id = ?", user.ID).
+		Updates(map[string]any{
+			"WeeklyLogtime": logtime,
+		}).Error
 }

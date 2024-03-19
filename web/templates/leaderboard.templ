@@ -24,6 +24,7 @@ var (
 		{Name: "level", PrettyName: "Level"},
 		{Name: "weekly_logtime", PrettyName: "Weekly logtime"},
 		{Name: "correction_points", PrettyName: "Correction points"},
+		{Name: "wallets", PrettyName: "Wallets"},
 		{Name: "campus", PrettyName: "Campus"},
 		{Name: "coalition", PrettyName: "Coalition"},
 	}
@@ -82,7 +83,7 @@ func isDisabled(targetedPage int, totalPage int) bool {
 	return targetedPage < 1 || targetedPage > totalPage
 }
 
-templ pagination(url *url.URL, page int, totalPages int) {
+templ pagination(url *url.URL, page int, totalPages int, gotoMyPositionShown bool) {
 	<div class="join justify-center flex pt-3">
 		@pageButton(url, 1, "<<", Inactive, page == 1)
 		@pageButton(url,
@@ -101,6 +102,9 @@ templ pagination(url *url.URL, page int, totalPages int) {
 			 page + 1, ">", Inactive,
 			 isDisabled(page+1, totalPages))
 		@pageButton(url, totalPages + 1, ">>", Inactive, page == totalPages)
+		if gotoMyPositionShown {
+			<a class="btn btn-md join-item text-center" href={ urlForMe(url) }>Go to my position...</a>
+		}
 	</div>
 }
 
@@ -222,13 +226,6 @@ func getCampusIds(campuses []models.Campus) []int {
 	return ids
 }
 
-func getTableClass(gotoMyPositionShown bool) string {
-	if !gotoMyPositionShown {
-		return "mt-3"
-	}
-	return ""
-}
-
 func getDisplayName(user models.User) string {
 	if user.Title.Name == "" {
 		return user.Login
@@ -279,11 +276,8 @@ templ Leaderboard(users []models.User,
 		if len(users) == 0 && page == 0 {
 			<div class="text-center pt-5">No users in this campus...</div>
 		} else {
-			@pagination(url, page, totalPages)
-			if gotoMyPositionShown {
-				<a class="block text-center py-3" href={ urlForMe(url) }>Go to my position</a>
-			}
-			<table class={ "table", getTableClass(gotoMyPositionShown) }>
+			@pagination(url, page, totalPages, gotoMyPositionShown)
+			<table class={ "table", "mt-4" }>
 				<thead class="sticky top-0 bg-gray-700 z-10">
 					<tr class="text-2xl">
 						<th>Position</th>
@@ -304,6 +298,11 @@ templ Leaderboard(users []models.User,
 						if shownFields["correction_points"].Checked {
 							<th><a href={ urlWithSorting(url, "correction_points") }>
 								Correction points
+							</a></th>
+						}
+						if shownFields["wallets"].Checked {
+							<th><a href={ urlWithSorting(url, "wallets") }>
+								Wallets
 							</a></th>
 						}
 						if shownFields["coalition"].Checked {
@@ -342,6 +341,9 @@ templ Leaderboard(users []models.User,
 							if shownFields["correction_points"].Checked {
 								<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>
 							}
+							if shownFields["wallets"].Checked {
+								<td>{ fmt.Sprintf("%d", user.Wallets) }</td>
+							}
 							if shownFields["coalition"].Checked {
 								<td>{ user.Coalition.Name }</td>
 							}
@@ -352,7 +354,7 @@ templ Leaderboard(users []models.User,
 					}
 				</tbody>
 			</table>
-			@pagination(url, page, totalPages)
+			@pagination(url, page, totalPages, gotoMyPositionShown)
 			<div class="pt-3"></div>
 		}
 	</div>

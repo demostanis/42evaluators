@@ -6,6 +6,14 @@ import (
 	"github.com/demostanis/42evaluators/internal/models"
 )
 
+type Target struct {
+	URLs    []string
+	Percent float32
+	ID      int
+}
+
+var clients map[int][]*RLHTTPClient
+
 type OauthTokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
@@ -36,12 +44,22 @@ func OauthToken(apiKey models.ApiKey, code string) (string, error) {
 }
 
 func InitClients(apiKeys []models.ApiKey) error {
+	clients = make(map[int][]*RLHTTPClient)
+
 	for _, apiKey := range apiKeys {
 		accessToken, err := OauthToken(apiKey, "")
 		if err != nil {
 			continue
 		}
-		clients = append(clients, RateLimitedClient(accessToken, apiKey))
+		var targetInNeed int
+		for _, target := range targets {
+			if len(clients[target.ID]) < max(1, int(float32(len(apiKeys))*target.Percent)) {
+				targetInNeed = target.ID
+				break
+			}
+		}
+		clients[targetInNeed] = append(clients[targetInNeed],
+			RateLimitedClient(accessToken, apiKey))
 	}
 	return nil
 }

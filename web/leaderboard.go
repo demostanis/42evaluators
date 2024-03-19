@@ -41,11 +41,13 @@ func getShownFields(wantedFieldsRaw string) map[string]templates.Field {
 	return shownFields
 }
 
+// TODO: this should probably use ToggleableFields
 func canSortOn(field string) bool {
 	return field == "login" ||
 		field == "level" ||
 		field == "weekly_logtime" ||
-		field == "correction_points"
+		field == "correction_points" ||
+		field == "wallets"
 }
 
 func getPromosForCampus(
@@ -162,10 +164,10 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 		err = db.
 			Where("id = ?", id).
 			First(&user).Error
-		if err != nil {
-			internalServerError(w, fmt.Errorf("user is not in db: %d: %w", id, err))
-			return
-		}
+		//if err != nil {
+		//	internalServerError(w, fmt.Errorf("user is not in db: %d: %w", id, err))
+		//	return
+		//}
 
 		if showMyself {
 			var myPosition int64

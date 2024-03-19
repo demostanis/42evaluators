@@ -1,7 +1,7 @@
 package users
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 
 	"github.com/demostanis/42evaluators/internal/api"
@@ -9,55 +9,38 @@ import (
 	"gorm.io/gorm"
 )
 
-type GroupUsers struct {
+type Group struct {
 	Group struct {
 		Name string `json:"name"`
 	} `json:"group"`
+	UserID int `json:"user_id"`
 }
 
-type Group struct {
-	Name string
-}
-
-func (group *Group) UnmarshalJSON(data []byte) error {
-	var groupUsers GroupUsers
-
-	if err := json.Unmarshal(data, &groupUsers); err != nil {
-		return err
+func GetTests(ctx context.Context, db *gorm.DB, errstream chan error) {
+	groups, err := api.DoPaginated[[]Group](
+		api.NewRequest("/v2/groups_users").
+			Authenticated().
+			WithPageSize(100).
+			WithMaxConcurrentFetches(ConcurrentPagesFetch))
+	if err != nil {
+		errstream <- err
+		return
 	}
 
-	group.Name = groupUsers.Group.Name
-	return nil
-}
+	for {
+		group, err := (<-groups)()
+		if err != nil {
+			errstream <- fmt.Errorf("error while fetching groups: %w", err)
+			continue
+		}
+		if group == nil {
+			break
+		}
 
-func isTest(user models.User) bool {
-	whether := false
-
-	groups, err := api.Do[[]Group](
-		api.NewRequest(fmt.Sprintf("/v2/users/%d/groups_users", user.ID)).
-			Authenticated())
-	if err == nil {
-		for _, group := range *groups {
-			if group.Name == "Test account" {
-				whether = true
-				break
-			}
+		if group.Group.Name == "Test account" {
+			user := models.User{ID: group.UserID}
+			user.CreateIfNeeded(db)
+			user.YesItsATestAccount(db)
 		}
 	}
-
-	return whether
-}
-
-func setIsTest(user models.User, db *gorm.DB) error {
-	// No need to update, it never changes...
-	// Actually, this condition will fetch if
-	// IsTest has already been fetched but that
-	// it's false... TODO: find something better
-	if user.IsTest {
-		return nil
-	}
-
-	return db.Model(&user).Updates(map[string]any{
-		"IsTest": isTest(user),
-	}).Error
 }

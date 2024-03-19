@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -45,6 +46,7 @@ func handleIndex(db *gorm.DB) http.Handler {
 		if code != "" {
 			accessToken, err := api.OauthToken(*apiKey, code)
 			if err != nil {
+				fmt.Println(err)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -53,7 +55,7 @@ func handleIndex(db *gorm.DB) http.Handler {
 				AuthenticatedAs(accessToken))
 
 			if err == nil {
-				w.Header().Add("Set-Cookie", "token="+accessToken)
+				w.Header().Add("Set-Cookie", "token="+accessToken+"; HttpOnly")
 				mu.Lock()
 				loggedInUsers = append(loggedInUsers, LoggedInUser{
 					accessToken,

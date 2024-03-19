@@ -2,10 +2,8 @@ package users
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
-	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,47 +12,28 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"github.com/demostanis/42evaluators/internal/api"
+	"github.com/demostanis/42evaluators/internal/campus"
 	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/gorm"
 )
 
 var (
 	DefaultParams = map[string]string{
-		"sort":              "-level",
 		"filter[cursus_id]": "21",
-		"page[size]":        "100",
 	}
 	ConcurrentCampusesFetch = int64(5)
-	ConcurrentPagesFetch    = int64(40)
-	ConcurrentUsersFetch    = int64(10)
+	ConcurrentPagesFetch    = int64(100)
 )
 
-func getPageCount(campusId string) (int, error) {
+func fetchOneCampus(ctx context.Context, campusId int, db *gorm.DB, errstream chan error) {
 	params := maps.Clone(DefaultParams)
-	params["filter[campus_id]"] = campusId
+	params["filter[campus_id]"] = strconv.Itoa(campusId)
 
-	var headers *http.Header
-	_, err := api.Do[any](
+	users, err := api.DoPaginated[[]models.User](
 		api.NewRequest("/v2/cursus_users").
 			Authenticated().
-			WithMethod("HEAD").
-			WithParams(params).
-			OutputHeadersIn(&headers))
-
-	return api.GetPageCount(headers, err)
-}
-
-func fetchOnePage(
-	ctx context.Context, page int, campusId string,
-	db *gorm.DB, errstream chan error,
-) {
-	params := maps.Clone(DefaultParams)
-	params["page[number]"] = strconv.Itoa(page)
-	params["filter[campus_id]"] = campusId
-
-	users, err := api.Do[[]models.User](
-		api.NewRequest("/v2/cursus_users").
-			Authenticated().
+			WithPageSize(100).
+			WithMaxConcurrentFetches(ConcurrentPagesFetch).
 			WithParams(params))
 	if err != nil {
 		errstream <- err
@@ -62,132 +41,57 @@ func fetchOnePage(
 	}
 
 	var wg sync.WaitGroup
-	weights := semaphore.NewWeighted(ConcurrentUsersFetch)
-
-	for _, user := range *users {
+	for {
+		user, err := (<-users)()
+		if err != nil {
+			errstream <- err
+			continue
+		}
+		if user == nil {
+			break
+		}
 		if strings.HasPrefix(user.Login, "3b3-") {
 			continue
 		}
 
-		campusId, _ := strconv.Atoi(campusId)
-
-		weights.Acquire(ctx, 1)
 		wg.Add(1)
-
-		go func(user models.User) {
-			start := time.Now()
-
-			err := db.
-				Session(&gorm.Session{}).
-				Model(&models.User{}).
-				Where("id = ?", user.ID).
-				First(nil).Error
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				db.Error = nil
-				db.Create(&user)
-			}
-
-			var userWg sync.WaitGroup
-
-			userWg.Add(6)
-			go func() {
-				if err = setIsTest(user, db); err != nil {
-					errstream <- fmt.Errorf("users.setIsTest: %w", err)
-				}
-				userWg.Done()
-			}()
-			go func() {
-				if err = setTitle(user, db); err != nil {
-					errstream <- fmt.Errorf("users.setTitle: %w", err)
-				}
-				userWg.Done()
-			}()
-			go func() {
-				if err = setCoalition(user, db); err != nil {
-					errstream <- fmt.Errorf("users.setCoalition: %w", err)
-				}
-				userWg.Done()
-			}()
-			go func() {
-				if err = setCampus(user, campusId, db); err != nil {
-					errstream <- fmt.Errorf("users.setCampus: %w", err)
-				}
-				userWg.Done()
-			}()
-			go func() {
-				if err = user.UpdateFields(db); err != nil {
-					errstream <- fmt.Errorf("users.UpdateFields: %w", err)
-				}
-				userWg.Done()
-			}()
-			go func() {
-				if err = setWeeklyLogtime(user, db); err != nil {
-					errstream <- fmt.Errorf("users.setWeeklyLogTime: %w", err)
-				}
-				userWg.Done()
-			}()
-
-			userWg.Wait()
+		go func() {
+			user.CreateIfNeeded(db)
+			user.UpdateFields(db)
+			user.SetCampus(campusId, db)
 			wg.Done()
-			weights.Release(1)
-			fmt.Printf("took %dms\n", time.Now().Sub(start).Milliseconds())
-		}(user)
+		}()
 	}
-
 	wg.Wait()
-	fmt.Printf("fetched page %d...\n", page)
 }
 
 func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
+	<-campus.WaitForCampuses
+	var campuses []models.Campus
+	db.Find(&campuses)
+
+	go GetTests(ctx, db, errstream)
+	go GetCoalitions(ctx, db, errstream)
+	go GetTitles(ctx, db, errstream)
+	go GetLogtimes(ctx, db, errstream)
+
+	// TODO: should show the time for requests above too
 	start := time.Now()
-	campusesWeights := semaphore.NewWeighted(ConcurrentCampusesFetch)
+	weights := semaphore.NewWeighted(ConcurrentCampusesFetch)
 
-	var campusesToFetch []models.Campus
-	db.Find(&campusesToFetch)
-	if len(campusesToFetch) == 0 {
-		time.Sleep(100) // wait some time for campuses to be fetched...
-		GetUsers(ctx, db, errstream)
-		return
-	}
-	fmt.Printf("fetching %d campuses...\n", len(campusesToFetch))
+	var wg sync.WaitGroup
+	for _, campus := range campuses {
+		weights.Acquire(ctx, 1)
+		wg.Add(1)
 
-	var wgForTimeTaken sync.WaitGroup
-	for _, campus := range campusesToFetch {
-		campusId := strconv.Itoa(campus.ID)
-
-		wgForTimeTaken.Add(1)
-		campusesWeights.Acquire(ctx, 1)
-
-		go func(campusId string) {
-			pageCount, err := getPageCount(campusId)
-			if err != nil {
-				errstream <- fmt.Errorf("failed to get page count for users: %v", err)
-				return
-			}
-
-			fmt.Printf("fetching %d user pages...\n", pageCount)
-
-			var wg sync.WaitGroup
-			pagesWeights := semaphore.NewWeighted(ConcurrentCampusesFetch)
-
-			for page := 1; page <= pageCount; page++ {
-				pagesWeights.Acquire(ctx, 1)
-				wg.Add(1)
-
-				go func(page int) {
-					fetchOnePage(ctx, page, campusId, db, errstream)
-					pagesWeights.Release(1)
-					wg.Done()
-				}(page)
-			}
-
-			wg.Wait()
-			wgForTimeTaken.Done()
-			campusesWeights.Release(1)
-		}(campusId)
+		go func(campusId int) {
+			fetchOneCampus(ctx, campusId, db, errstream)
+			weights.Release(1)
+			wg.Done()
+		}(campus.ID)
 	}
 
-	wgForTimeTaken.Wait()
+	wg.Wait()
 	fmt.Printf("took %.2f minutes to fetch all users\n",
 		time.Now().Sub(start).Minutes())
 }

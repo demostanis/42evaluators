@@ -5,12 +5,30 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"strings"
 )
 
-const DEBUG_VAR = "httpdebug"
+const DebugVar = "httpdebug"
+
+func selectedEndpoint(endpoint string) bool {
+	wantedEndpointsRaw := os.Getenv(DebugVar)
+	if wantedEndpointsRaw == "" {
+		return false
+	}
+	if wantedEndpointsRaw == "*" {
+		return true
+	}
+	wantedEndpoints := strings.Split(wantedEndpointsRaw, ",")
+	for _, wantedEndpoint := range wantedEndpoints {
+		if strings.HasPrefix(endpoint, wantedEndpoint) {
+			return true
+		}
+	}
+	return false
+}
 
 func DebugRequest(req *http.Request) {
-	if os.Getenv(DEBUG_VAR) != "" {
+	if selectedEndpoint(req.URL.Path) {
 		output, err := httputil.DumpRequestOut(req, true)
 		if err == nil {
 			fmt.Printf("\n\n%s\n\n", output)
@@ -20,8 +38,8 @@ func DebugRequest(req *http.Request) {
 	}
 }
 
-func DebugResponse(res *http.Response) {
-	if os.Getenv(DEBUG_VAR) != "" {
+func DebugResponse(req *http.Request, res *http.Response) {
+	if selectedEndpoint(req.URL.Path) {
 		output, err := httputil.DumpResponse(res, true)
 		if err == nil {
 			fmt.Printf("\n\n%s\n\n", output)

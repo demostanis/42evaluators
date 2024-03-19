@@ -31,6 +31,10 @@ func reportErrors(errstream chan error) {
 }
 
 func getDisabledJobs() (bool, bool, bool) {
+	if os.Getenv("disabledjobs") == "*" {
+		return true, true, true
+	}
+
 	disabledJobs := strings.Split(os.Getenv("disabledjobs"), ",")
 	disableCampusesJob := false
 	disableUsersJob := false

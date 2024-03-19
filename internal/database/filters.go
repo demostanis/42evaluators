@@ -23,7 +23,7 @@ func WithCampus(campusId string) func(db *gorm.DB) *gorm.DB {
 
 func OnlyRealUsers() func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("is_staff = false AND is_test = false")
+		return db.Where("is_staff = false AND is_test = false AND login != ''")
 	}
 }
 

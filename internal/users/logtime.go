@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -14,11 +15,15 @@ import (
 type LogtimeRaw struct {
 	EndAt   string `json:"end_at"`
 	BeginAt string `json:"begin_at"`
+	User    struct {
+		ID int `json:"id"`
+	} `json:"user"`
 }
 
 type Logtime struct {
 	EndAt   time.Time
 	BeginAt time.Time
+	UserID  int
 }
 
 func (logtime *Logtime) UnmarshalJSON(data []byte) error {
@@ -34,43 +39,24 @@ func (logtime *Logtime) UnmarshalJSON(data []byte) error {
 		endAt = time.Now()
 	}
 	beginAt, _ := time.Parse(time.RFC3339, logtimeRaw.BeginAt)
-	logtime.BeginAt = beginAt
+
 	logtime.EndAt = endAt
+	logtime.BeginAt = beginAt
+	logtime.UserID = logtimeRaw.User.ID
 	return nil
 }
 
-func getWeeklyLogtime(user models.User) (*time.Duration, error) {
-	day := time.Hour * 24
-	currentDay := int(time.Now().UTC().Weekday() - 1)
-	daysSinceMonday := time.Duration(currentDay) * day
-	monday := time.Now().UTC().Add(-daysSinceMonday).Truncate(day)
-	sunday := monday.Add(day * 7)
-
-	params := make(map[string]string)
-	params["range[begin_at]"] = fmt.Sprintf("%s,%s",
-		monday.Format(time.RFC3339),
-		sunday.Format(time.RFC3339))
-	// TODO: fetch all pages?
-	params["page[size]"] = "100"
-
-	logtime, err := api.Do[[]Logtime](api.NewRequest(fmt.Sprintf(
-		"/v2/users/%d/locations", user.ID)).
-		Authenticated().
-		WithParams(params))
-	if err != nil {
-		return nil, err
-	}
-
+func calcWeeklyLogtime(logtime []Logtime) time.Duration {
 	// Some people in some campuses sometimes are
 	// in multiples locations at once, so don't count
 	// their logtimes twice...
-	slices.SortFunc(*logtime, func(a, b Logtime) int {
+	slices.SortFunc(logtime, func(a, b Logtime) int {
 		return int(a.BeginAt.Unix()+a.EndAt.Unix()) -
 			int(b.BeginAt.Unix()+b.EndAt.Unix())
 	})
 	var previousLocation *Logtime
-	for i := range *logtime {
-		location := &(*logtime)[i]
+	for i := range logtime {
+		location := &(logtime)[i]
 		if previousLocation == nil {
 			previousLocation = location
 			continue
@@ -82,21 +68,57 @@ func getWeeklyLogtime(user models.User) (*time.Duration, error) {
 	}
 
 	var total time.Duration
-	for _, location := range *logtime {
+	for _, location := range logtime {
 		total += location.EndAt.Sub(location.BeginAt)
 	}
 	total = total.Truncate(time.Minute)
-	return &total, nil
+	return total
 }
 
-func setWeeklyLogtime(user models.User, db *gorm.DB) error {
-	logtime, err := getWeeklyLogtime(user)
+func GetLogtimes(ctx context.Context, db *gorm.DB, errstream chan error) {
+	day := time.Hour * 24
+	currentDay := int(time.Now().UTC().Weekday() - 1)
+	daysSinceMonday := time.Duration(currentDay) * day
+	monday := time.Now().UTC().Add(-daysSinceMonday).Truncate(day)
+	sunday := monday.Add(day * 7)
+
+	params := make(map[string]string)
+	params["range[begin_at]"] = fmt.Sprintf("%s,%s",
+		monday.Format(time.RFC3339),
+		sunday.Format(time.RFC3339))
+
+	logtimes, err := api.DoPaginated[[]Logtime](
+		api.NewRequest("/v2/locations").
+			Authenticated().
+			WithPageSize(100).
+			WithParams(params).
+			WithMaxConcurrentFetches(ConcurrentPagesFetch))
 	if err != nil {
-		return err
+		errstream <- err
+		return
 	}
 
-	user.WeeklyLogtime = *logtime
-	return db.Model(&user).Updates(models.User{
-		WeeklyLogtime: user.WeeklyLogtime,
-	}).Error
+	totalWeeklyLogtimes := make(map[int][]Logtime)
+
+	for {
+		logtime, err := (<-logtimes)()
+		if err != nil {
+			errstream <- fmt.Errorf("error while fetching locations: %w", err)
+			continue
+		}
+		if logtime == nil {
+			break
+		}
+
+		totalWeeklyLogtimes[logtime.UserID] = append(
+			totalWeeklyLogtimes[logtime.UserID], *logtime)
+	}
+
+	for userId, logtime := range totalWeeklyLogtimes {
+		weeklyLogtime := calcWeeklyLogtime(logtime)
+
+		user := models.User{ID: userId}
+		user.CreateIfNeeded(db)
+		user.SetWeeklyLogtime(weeklyLogtime, db)
+	}
 }

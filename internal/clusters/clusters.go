@@ -4,14 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/models"
-	"golang.org/x/sync/semaphore"
 	"gorm.io/gorm"
 )
 
@@ -54,7 +51,8 @@ type Cluster struct {
 func getParams(lastFetch time.Time, field string) map[string]string {
 	params := make(map[string]string)
 	if !lastFetch.IsZero() {
-		r := lastFetch.Format(time.RFC3339) + "," + time.Now().UTC().Format(time.RFC3339)
+		r := lastFetch.Format(time.RFC3339) + "," +
+			time.Now().UTC().Format(time.RFC3339)
 		params[fmt.Sprintf("range[%s]", field)] = r
 	} else {
 		params["filter[active]"] = "true"
@@ -62,17 +60,6 @@ func getParams(lastFetch time.Time, field string) map[string]string {
 	params["page[size]"] = "100"
 	lastFetch = time.Now().UTC()
 	return params
-}
-
-func getPageCount(lastFetch time.Time, field string) (int, error) {
-	var headers *http.Header
-	_, err := api.Do[any](
-		api.NewRequest("/v2/locations").
-			Authenticated().
-			WithParams(getParams(lastFetch, field)).
-			WithMethod("HEAD").
-			OutputHeadersIn(&headers))
-	return api.GetPageCount(headers, err)
 }
 
 var mu sync.Mutex
@@ -88,7 +75,9 @@ func UpdateLocationInDB(location models.Location, db *gorm.DB) error {
 		First(&newLocation).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return db.Create(&location).Error
+		// Sometimes the location gets created at the same
+		// time by another goroutine, so ignore the error
+		db.Create(&location)
 	}
 	if location.EndAt != "" {
 		return db.Delete(&location).Error
@@ -108,21 +97,32 @@ func UpdateLocationInDB(location models.Location, db *gorm.DB) error {
 		}).Error
 }
 
-func fetchOnePage(lastFetch time.Time, field string, page int, db *gorm.DB) error {
-	isUpdate := !lastFetch.IsZero()
-
-	params := getParams(lastFetch, field)
-	params["page[number]"] = strconv.Itoa(page)
-
-	locations, err := api.Do[[]Location](
+func getLocationsForField(
+	lastFetch time.Time,
+	field string,
+	ctx context.Context,
+	db *gorm.DB,
+	errstream chan error,
+) {
+	locations, err := api.DoPaginated[[]Location](
 		api.NewRequest("/v2/locations").
-			WithParams(params).
+			WithMaxConcurrentFetches(ConcurrentLocationsFetch).
+			WithParams(getParams(lastFetch, field)).
 			Authenticated())
 	if err != nil {
-		return err
+		errstream <- err
+		return
 	}
 
-	for _, location := range *locations {
+	for {
+		location, err := (<-locations)()
+		if err != nil {
+			errstream <- err
+			continue
+		}
+		if location == nil {
+			break
+		}
 		dbLocation := models.Location{
 			ID:       location.ID,
 			UserId:   location.User.ID,
@@ -132,52 +132,15 @@ func fetchOnePage(lastFetch time.Time, field string, page int, db *gorm.DB) erro
 			Image:    location.User.Image.Versions.Small,
 			EndAt:    location.EndAt,
 		}
-		err := UpdateLocationInDB(dbLocation, db)
+		err = UpdateLocationInDB(dbLocation, db)
 		if err != nil {
-			return err
+			errstream <- err
+			continue
 		}
-		if isUpdate {
+		if !lastFetch.IsZero() {
 			LocationChannel <- dbLocation
 		}
 	}
-	return nil
-}
-
-func getLocationsForField(
-	lastFetch time.Time,
-	field string,
-	ctx context.Context,
-	db *gorm.DB,
-	errstream chan error,
-) {
-	pageCount, err := getPageCount(lastFetch, field)
-	if err != nil {
-		errstream <- fmt.Errorf("failed to get page count for locations: %v", err)
-		return
-	}
-
-	if pageCount == 0 {
-		return
-	}
-	if lastFetch.IsZero() {
-		fmt.Printf("fetching %d location pages...\n", pageCount)
-	}
-
-	var wg sync.WaitGroup
-	weights := semaphore.NewWeighted(ConcurrentLocationsFetch)
-	for page := 1; page <= pageCount; page++ {
-		weights.Acquire(ctx, 1)
-		wg.Add(1)
-
-		go func(page int) {
-			if err := fetchOnePage(lastFetch, field, page, db); err != nil {
-				errstream <- fmt.Errorf("failed to get one location page: %v", err)
-			}
-			weights.Release(1)
-			wg.Done()
-		}(page)
-	}
-	wg.Wait()
 }
 
 func GetLocations(

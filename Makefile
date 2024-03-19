@@ -13,11 +13,14 @@ templates: $(TEMPLATES)
 dev: deps templates
 	env $(FLAGS) $(GO) run $(GOFLAGS) cmd/main.go
 
-nojobs: FLAGS=disabledjobs=campuses,users,locations
+nojobs: FLAGS=disabledjobs=*
 nojobs: dev
 
 race: GOFLAGS=-race
 race: dev
+
+debug: FLAGS=httpdebug=*
+debug: dev
 
 42evaluators: templates
 	$(GO) build cmd/main.go -o $@

@@ -16,6 +16,47 @@ const (
 	SleepBetweenTries = 100 * time.Millisecond
 )
 
+var id = 0
+
+func newTarget(urls []string, percent float32) Target {
+	id++
+	return Target{
+		urls,
+		percent,
+		id,
+	}
+}
+
+var (
+	oauthTarget = newTarget(
+		[]string{
+			"/oauth/client",
+		},
+		1./30.,
+	)
+	targets = []Target{
+		oauthTarget,
+		newTarget(
+			[]string{
+				"/v2/campus",
+				"/v2/cursus_users",
+				"/v2/groups_users",
+				"/v2/coalitions_users",
+				"/v2/coalitions",
+				"/v2/titles_users",
+				"/v2/titles",
+			},
+			3./5.,
+		),
+		newTarget(
+			[]string{
+				"/v2/locations",
+			},
+			1./3.,
+		),
+	}
+)
+
 var mu sync.Mutex
 
 type RLHTTPClient struct {
@@ -68,9 +109,9 @@ func (c *RLHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func findNonRateLimitedClient() *RLHTTPClient {
+func findNonRateLimitedClientFor(target Target) *RLHTTPClient {
 	mu.Lock()
-	for _, potentialClient := range clients {
+	for _, potentialClient := range clients[target.ID] {
 		if !potentialClient.getIsRateLimited() {
 			potentialClient.setIsRateLimited(true)
 			mu.Unlock()
@@ -80,12 +121,9 @@ func findNonRateLimitedClient() *RLHTTPClient {
 	mu.Unlock()
 
 	time.Sleep(SleepBetweenTries)
-	return findNonRateLimitedClient()
+	return findNonRateLimitedClientFor(target)
 }
 
 func OauthApiKey() *models.ApiKey {
-	if len(clients) < 1 {
-		return nil
-	}
-	return &clients[0].apiKey
+	return &clients[oauthTarget.ID][0].apiKey
 }
