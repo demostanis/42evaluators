@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/demostanis/42evaluators/internal/api"
@@ -75,7 +76,14 @@ func calcWeeklyLogtime(logtime []Logtime) time.Duration {
 	return total
 }
 
-func GetLogtimes(ctx context.Context, db *gorm.DB, errstream chan error) {
+func GetLogtimes(
+	ctx context.Context,
+	db *gorm.DB,
+	errstream chan error,
+	wg sync.WaitGroup,
+) {
+	wg.Add(1)
+
 	day := time.Hour * 24
 	currentDay := int(time.Now().UTC().Weekday() - 1)
 	daysSinceMonday := time.Duration(currentDay) * day
@@ -90,9 +98,7 @@ func GetLogtimes(ctx context.Context, db *gorm.DB, errstream chan error) {
 	logtimes, err := api.DoPaginated[[]Logtime](
 		api.NewRequest("/v2/locations").
 			Authenticated().
-			WithPageSize(100).
-			WithParams(params).
-			WithMaxConcurrentFetches(ConcurrentPagesFetch))
+			WithParams(params))
 	if err != nil {
 		errstream <- err
 		return
@@ -121,4 +127,6 @@ func GetLogtimes(ctx context.Context, db *gorm.DB, errstream chan error) {
 		user.CreateIfNeeded(db)
 		user.SetWeeklyLogtime(weeklyLogtime, db)
 	}
+
+	wg.Done()
 }

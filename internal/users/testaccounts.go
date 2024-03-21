@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/models"
@@ -16,12 +17,17 @@ type Group struct {
 	UserID int `json:"user_id"`
 }
 
-func GetTests(ctx context.Context, db *gorm.DB, errstream chan error) {
+func GetTests(
+	ctx context.Context,
+	db *gorm.DB,
+	errstream chan error,
+	wg sync.WaitGroup,
+) {
+	wg.Add(1)
+
 	groups, err := api.DoPaginated[[]Group](
 		api.NewRequest("/v2/groups_users").
-			Authenticated().
-			WithPageSize(100).
-			WithMaxConcurrentFetches(ConcurrentPagesFetch))
+			Authenticated())
 	if err != nil {
 		errstream <- err
 		return
@@ -43,4 +49,6 @@ func GetTests(ctx context.Context, db *gorm.DB, errstream chan error) {
 			user.YesItsATestAccount(db)
 		}
 	}
+
+	wg.Done()
 }

@@ -22,7 +22,6 @@ var (
 		"filter[cursus_id]": "21",
 	}
 	ConcurrentCampusesFetch = int64(5)
-	ConcurrentPagesFetch    = int64(100)
 )
 
 func fetchOneCampus(ctx context.Context, campusId int, db *gorm.DB, errstream chan error) {
@@ -32,8 +31,6 @@ func fetchOneCampus(ctx context.Context, campusId int, db *gorm.DB, errstream ch
 	users, err := api.DoPaginated[[]models.User](
 		api.NewRequest("/v2/cursus_users").
 			Authenticated().
-			WithPageSize(100).
-			WithMaxConcurrentFetches(ConcurrentPagesFetch).
 			WithParams(params))
 	if err != nil {
 		errstream <- err
@@ -70,16 +67,15 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 	var campuses []models.Campus
 	db.Find(&campuses)
 
-	go GetTests(ctx, db, errstream)
-	go GetCoalitions(ctx, db, errstream)
-	go GetTitles(ctx, db, errstream)
-	go GetLogtimes(ctx, db, errstream)
+	var wg sync.WaitGroup
+	go GetTests(ctx, db, errstream, wg)
+	go GetCoalitions(ctx, db, errstream, wg)
+	go GetTitles(ctx, db, errstream, wg)
+	go GetLogtimes(ctx, db, errstream, wg)
 
-	// TODO: should show the time for requests above too
 	start := time.Now()
 	weights := semaphore.NewWeighted(ConcurrentCampusesFetch)
 
-	var wg sync.WaitGroup
 	for _, campus := range campuses {
 		weights.Acquire(ctx, 1)
 		wg.Add(1)

@@ -162,12 +162,13 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 		var user models.User
 		id := getLoggedInUser(r).them.ID
 		err = db.
+			Preload("Campus").
 			Where("id = ?", id).
 			First(&user).Error
-		//if err != nil {
-		//	internalServerError(w, fmt.Errorf("user is not in db: %d: %w", id, err))
-		//	return
-		//}
+		if err != nil {
+			internalServerError(w, fmt.Errorf("user is not in db: %d: %w", id, err))
+			return
+		}
 
 		if showMyself {
 			var myPosition int64
@@ -201,7 +202,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			}
 
 			offset = int(myPosition) - (int(myPosition) % UsersPerPage)
-			page = 2 + (offset-1)/UsersPerPage
+			page = 1 + offset/UsersPerPage
 		}
 
 		err = db.
@@ -225,9 +226,9 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			user.BeginAt.Month(),
 			user.BeginAt.Year())
 		gotoMyPositionShown := (campus == "" && promo == "") ||
-			(promo == "" && user.CampusID == activeCampusId) ||
+			(promo == "" && user.Campus.ID == activeCampusId) ||
 			(promo != "" && campus == "" && userPromo == promo) ||
-			(user.CampusID == activeCampusId && userPromo == promo)
+			(user.Campus.ID == activeCampusId && userPromo == promo)
 
 		templates.Leaderboard(users,
 			promos, campuses, activeCampusId,

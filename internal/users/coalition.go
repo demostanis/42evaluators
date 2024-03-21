@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"sync"
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/models"
@@ -45,13 +46,18 @@ func getCoalition(coalitionId int, db *gorm.DB) (*models.Coalition, error) {
 	return &cachedCoalition, err
 }
 
-func GetCoalitions(ctx context.Context, db *gorm.DB, errstream chan error) {
+func GetCoalitions(
+	ctx context.Context,
+	db *gorm.DB,
+	errstream chan error,
+	wg sync.WaitGroup,
+) {
+	wg.Add(1)
+
 	coalitions, err := api.DoPaginated[[]CoalitionID](
 		api.NewRequest("/v2/coalitions_users").
 			Authenticated().
-			WithPageSize(100).
-			WithParams(maps.Clone(ActiveCoalitions)).
-			WithMaxConcurrentFetches(ConcurrentPagesFetch))
+			WithParams(maps.Clone(ActiveCoalitions)))
 	if err != nil {
 		errstream <- err
 		return
@@ -78,4 +84,6 @@ func GetCoalitions(ctx context.Context, db *gorm.DB, errstream chan error) {
 			user.SetCoalition(*actualCoalition, db)
 		}(coalition.ID)
 	}
+
+	wg.Done()
 }

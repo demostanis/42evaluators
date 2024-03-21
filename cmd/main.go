@@ -94,8 +94,13 @@ func setupCron(ctx context.Context, db *gorm.DB, errstream chan error) error {
 			gocron.DurationJob(time.Minute*1),
 			gocron.NewTask(
 				func(ctx context.Context, db *gorm.DB, errstream chan error) {
-					clusters.GetLocations(lastFetch, ctx, db, errstream)
+					if !lastFetch.IsZero() && !clusters.FirstFetchDone {
+						return
+					}
+
+					previousLastFetch := lastFetch
 					lastFetch = time.Now().UTC()
+					clusters.GetLocations(previousLastFetch, ctx, db, errstream)
 				},
 				ctx, db, errstream,
 			),

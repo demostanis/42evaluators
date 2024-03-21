@@ -125,5 +125,10 @@ func findNonRateLimitedClientFor(target Target) *RLHTTPClient {
 }
 
 func OauthApiKey() *models.ApiKey {
-	return &clients[oauthTarget.ID][0].apiKey
+	oauthClients := clients[oauthTarget.ID]
+	if len(oauthClients) < 1 {
+		time.Sleep(SleepBetweenTries)
+		return OauthApiKey()
+	}
+	return &oauthClients[0].apiKey
 }

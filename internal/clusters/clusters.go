@@ -18,6 +18,7 @@ const (
 
 var (
 	LocationChannel = make(chan models.Location)
+	FirstFetchDone  = false
 )
 
 type Location struct {
@@ -57,7 +58,6 @@ func getParams(lastFetch time.Time, field string) map[string]string {
 	} else {
 		params["filter[active]"] = "true"
 	}
-	params["page[size]"] = "100"
 	lastFetch = time.Now().UTC()
 	return params
 }
@@ -106,9 +106,8 @@ func getLocationsForField(
 ) {
 	locations, err := api.DoPaginated[[]Location](
 		api.NewRequest("/v2/locations").
-			WithMaxConcurrentFetches(ConcurrentLocationsFetch).
-			WithParams(getParams(lastFetch, field)).
-			Authenticated())
+			Authenticated().
+			WithParams(getParams(lastFetch, field)))
 	if err != nil {
 		errstream <- err
 		return
@@ -159,4 +158,5 @@ func GetLocations(
 	if !lastFetch.IsZero() {
 		getLocationsForField(lastFetch, "end_at", ctx, db, errstream)
 	}
+	FirstFetchDone = true
 }

@@ -101,7 +101,7 @@ templ pagination(url *url.URL, page int, totalPages int, gotoMyPositionShown boo
 		@pageButton(url,
 			 page + 1, ">", Inactive,
 			 isDisabled(page+1, totalPages))
-		@pageButton(url, totalPages + 1, ">>", Inactive, page == totalPages)
+		@pageButton(url, totalPages, ">>", Inactive, page == totalPages)
 		if gotoMyPositionShown {
 			<a class="btn btn-md join-item text-center" href={ urlForMe(url) }>Go to my position...</a>
 		}
@@ -120,7 +120,7 @@ func getBgUrl(user models.User, currentUserId int) string {
 	//	return "bg-[url(" + user.Coalition.CoverUrl + ")] bg-cover bg-center"
 	//}
 	if user.ID == currentUserId {
-		return "bg-blue-900 me scroll-mt-[58px]"
+		return "bg-blue-900 me"
 	}
 	return ""
 }
@@ -149,7 +149,8 @@ func urlForMe(myUrl *url.URL) templ.SafeURL {
 script jumpToMe() {
 	if (new URLSearchParams(window.location.search).get("me")) {
 		document.querySelector(".me").scrollIntoView({
-			behavior: "smooth"
+			behavior: "smooth",
+			block: "center",
 		})
 	}
 }
@@ -273,8 +274,8 @@ templ Leaderboard(users []models.User,
 			</select>
 			<label for="fields-settings" class="btn">Show fields...</label>
 		</div>
-		if len(users) == 0 && page == 0 {
-			<div class="text-center pt-5">No users in this campus...</div>
+		if len(users) == 0 && page == 1 {
+			<div class="text-center pt-3">No users in this campus...</div>
 		} else {
 			@pagination(url, page, totalPages, gotoMyPositionShown)
 			<table class={ "table", "mt-4" }>

@@ -40,8 +40,8 @@ func NewRequest(endpoint string) *ApiRequest {
 		nil,
 		false,
 		"",
-		0,
-		"",
+		30,
+		"100",
 	}
 }
 
@@ -218,7 +218,9 @@ func DoPaginated[T []E, E any](apiReq *ApiRequest) (chan func() (*E, error), err
 				newReq := *apiReq
 				newReq.params = maps.Clone(newReq.params)
 				newReq.params["page[number]"] = strconv.Itoa(i)
-				newReq.params["page[size]"] = apiReq.pageSize
+				if apiReq.pageSize != "" {
+					newReq.params["page[size]"] = apiReq.pageSize
+				}
 
 				elems, err := Do[T](&newReq)
 				if err != nil {

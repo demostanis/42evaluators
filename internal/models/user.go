@@ -111,7 +111,9 @@ func (user *User) CreateIfNeeded(db *gorm.DB) error {
 }
 
 func (user *User) UpdateFields(db *gorm.DB) error {
-	return db.Model(&User{}).Updates(map[string]any{
+	return db.
+		Where("id = ?", user.ID).
+		Model(&User{}).Updates(map[string]any{
 		"ID":               user.ID,
 		"Login":            user.Login,
 		"DisplayName":      user.DisplayName,

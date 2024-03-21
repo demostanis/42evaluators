@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/models"
@@ -43,12 +44,17 @@ func getTitle(titleId int, db *gorm.DB) (*models.Title, error) {
 	return &cachedTitle, err
 }
 
-func GetTitles(ctx context.Context, db *gorm.DB, errstream chan error) {
+func GetTitles(
+	ctx context.Context,
+	db *gorm.DB,
+	errstream chan error,
+	wg sync.WaitGroup,
+) {
+	wg.Add(1)
+
 	titles, err := api.DoPaginated[[]TitleId](
 		api.NewRequest("/v2/titles_users").
-			Authenticated().
-			WithPageSize(100).
-			WithMaxConcurrentFetches(ConcurrentPagesFetch))
+			Authenticated())
 	if err != nil {
 		errstream <- err
 		return
@@ -78,4 +84,6 @@ func GetTitles(ctx context.Context, db *gorm.DB, errstream chan error) {
 			user.SetTitle(*actualTitle, db)
 		}(title.ID)
 	}
+
+	wg.Done()
 }
