@@ -39,6 +39,9 @@ func blackholeMap(db *gorm.DB) http.Handler {
 
 		for _, user := range users {
 			if !user.BlackholedAt.IsZero() {
+				if user.ImageLinkSmall == "" {
+					user.ImageLinkSmall = models.DefaultImageLink
+				}
 				result = append(result, Blackhole{
 					user.Login,
 					user.BlackholedAt,

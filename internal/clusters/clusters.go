@@ -58,7 +58,6 @@ func getParams(lastFetch time.Time, field string) map[string]string {
 	} else {
 		params["filter[active]"] = "true"
 	}
-	lastFetch = time.Now().UTC()
 	return params
 }
 

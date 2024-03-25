@@ -52,7 +52,13 @@ var (
 			[]string{
 				"/v2/locations",
 			},
-			1./3.,
+			1./5.,
+		),
+		newTarget(
+			[]string{
+				"/v2/projects_users",
+			},
+			1./6.,
 		),
 	}
 )

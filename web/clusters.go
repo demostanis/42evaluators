@@ -2,7 +2,6 @@ package web
 
 import (
 	"cmp"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -178,7 +177,6 @@ func clustersWs(db *gorm.DB) http.Handler {
 
 		var stopSendingLocationsForPreviousCluster func()
 		var wantedClusterId int
-		ctx := context.TODO()
 
 		for {
 			select {
@@ -205,8 +203,6 @@ func clustersWs(db *gorm.DB) http.Handler {
 					break
 				}
 
-				ctx, stopSendingLocationsForPreviousCluster = context.WithCancel(context.Background())
-
 			case location := <-clusters.LocationChannel:
 				campusId := findCampusIdForCluster(wantedClusterId)
 				if location.CampusId == campusId {
@@ -217,9 +213,6 @@ func clustersWs(db *gorm.DB) http.Handler {
 					// tell this)
 					sendResponse(c, location, db)
 				}
-
-			case <-ctx.Done():
-				break
 			}
 		}
 	})

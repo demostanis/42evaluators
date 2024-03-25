@@ -35,5 +35,6 @@ func GetCampuses(db *gorm.DB, errstream chan error) {
 			errstream <- err
 		}
 	}
+	// TODO: don't
 	close(WaitForCampuses)
 }

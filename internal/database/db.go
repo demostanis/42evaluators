@@ -2,11 +2,10 @@ package database
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/demostanis/42evaluators/internal/models"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -50,39 +49,44 @@ func newDb(dialector gorm.Dialector) (*gorm.DB, error) {
 	if err = db.AutoMigrate(models.Campus{}); err != nil {
 		return nil, err
 	}
+	if err = db.AutoMigrate(models.Subject{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(models.TeamUser{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(models.Team{}); err != nil {
+		return nil, err
+	}
+	if err = db.AutoMigrate(models.Project{}); err != nil {
+		return nil, err
+	}
 
 	return db, nil
 }
 
-func OpenDb(databaseType DatabaseType) (*gorm.DB, error) {
+func openDbWithType(databaseType DatabaseType) (*gorm.DB, error) {
 	if databaseType == Production {
-		psqlUsername, ok := os.LookupEnv("PSQL_USERNAME")
+		tidbDsn, ok := os.LookupEnv("TIDB_DSN")
 		if !ok {
-			return nil, errors.New("no PSQL_USERNAME found in .env")
+			return nil, errors.New("no TIDB_DSN found in .env")
 		}
-
-		psqlPassword, ok := os.LookupEnv("PSQL_PASSWORD")
-		if !ok {
-			return nil, errors.New("no PSQL_PASSWORD found in .env")
+		db, err := newDb(mysql.Open(tidbDsn + "?parseTime=True"))
+		if err != nil {
+			return nil, err
 		}
-
-		psqlPort, ok := os.LookupEnv("PSQL_PORT")
-		if !ok {
-			return nil, errors.New("no PSQL_PORT found in .env")
-		}
-
-		psqlDbName, ok := os.LookupEnv("PSQL_DB_NAME")
-		if !ok {
-			return nil, errors.New("no PSQL_DB_NAME found in .env")
-		}
-
-		return newDb(postgres.Open(fmt.Sprintf("postgres://%s:%s@localhost:%s/%s",
-			psqlUsername,
-			psqlPassword,
-			psqlPort,
-			psqlDbName,
-		)))
+		db.Exec("SET SESSION sql_mode=''")
+		return db, err
 	} else {
 		return newDb(sqlite.Open("db/42evaluators-dev.sqlite3"))
 	}
+}
+
+func OpenDb() (*gorm.DB, error) {
+	dbType := Development
+	isProd := os.Getenv("PRODUCTION")
+	if isProd != "" {
+		dbType = Production
+	}
+	return openDbWithType(dbType)
 }

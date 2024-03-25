@@ -1,0 +1,63 @@
+package templates
+
+import (
+	"fmt"
+	"strconv"
+	"github.com/demostanis/42evaluators/internal/models"
+)
+
+func urlForProject(project models.Project) templ.SafeURL {
+	return templ.SafeURL(fmt.Sprintf("https://projects.intra.42.fr/projects/%s/projects_users/%d",
+		project.Subject.Slug, project.ID))
+}
+
+templ Project(project models.Project) {
+	<a href={ urlForProject(project) }>
+		<div class="flex items-center w-32 flex-col">
+			<div class="avatar-group -space-x-6">
+				for _, teamUser := range project.Teams[0].Users {
+					<div class="avatar">
+						<div class="w-16 rounded-full">
+							<img src={ teamUser.User.ImageLink } />
+						</div>
+					</div>
+				}
+			</div>
+			<p class="text-center">{ project.Teams[0].Name } 
+				if len(project.Teams) > 1 {
+					({ strconv.Itoa(len(project.Teams)) } retries)
+				}
+			</p>
+		</div>
+	</a>
+}
+
+func calcGap(projects []models.Project) string {
+	maxUsers := 1
+	for _, project := range projects {
+		if len(project.Teams[0].Users) > maxUsers {
+			maxUsers = len(project.Teams[0].Users)
+		}
+	}
+	return fmt.Sprintf("gap-y-[1rem] gap-x-[%drem]", maxUsers * 2)
+}
+
+templ PeerFinder(subjects []models.Subject, projects map[int][]models.Project) {
+	@header()
+
+	<style>html,body{overflow-x:hidden;}</style>
+	<div class="flex items-center flex-col m-5">
+		for _, subject := range subjects {
+			if len(projects[subject.ID]) > 0 {
+				<p class="text-8xl m-8">{ subject.Name }</p>
+				<div class={ "flex flex-wrap justify-evenly w-[90%]", calcGap(projects[subject.ID]) }>
+					for _, project := range projects[subject.ID] {
+						@Project(project)
+					}
+				</div>
+			}
+		}
+	</div>
+
+	@footer()
+}

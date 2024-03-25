@@ -155,12 +155,6 @@ script jumpToMe() {
 	}
 }
 
-script fallbackImages(src string) {
-	// TODO: this doesn't work on my phone...
-	[].__proto__.slice.call(document.querySelectorAll("img")).forEach(img =>
-		(img.onerror = () => img.src = src));
-}
-
 script updateLeaderboardWhenNeeded(campusIds []int) {
 	function updatePromo(e) {
 		const params = new URLSearchParams(window.location.search);
@@ -385,8 +379,8 @@ templ Leaderboard(users []models.User,
 		</div>
 		<label class="modal-backdrop" for="fields-settings"></label>
 	</div>
-	@fallbackImages(models.DefaultImageLink)
 	@updateLeaderboardWhenNeeded(getCampusIds(campuses))
 	@fieldsSettingsHandler()
 	@jumpToMe()
+	@footer()
 }

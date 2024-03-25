@@ -37,7 +37,7 @@ func OauthToken(apiKey models.ApiKey, code string) (string, error) {
 		return "", err
 	}
 	if resp.AccessToken == "" {
-		return "", errors.New("No access token in response")
+		return "", errors.New("no access token in response")
 	}
 
 	return resp.AccessToken, nil
@@ -45,6 +45,14 @@ func OauthToken(apiKey models.ApiKey, code string) (string, error) {
 
 func InitClients(apiKeys []models.ApiKey) error {
 	clients = make(map[int][]*RLHTTPClient)
+
+	var total float32
+	for _, target := range targets {
+		total += target.Percent
+	}
+	if total > 1 {
+		return errors.New("total percentage of targets is bigger than 1")
+	}
 
 	for _, apiKey := range apiKeys {
 		accessToken, err := OauthToken(apiKey, "")

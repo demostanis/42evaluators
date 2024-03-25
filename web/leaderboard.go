@@ -191,7 +191,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			})
 			err = db.
 				Model(&models.User{}).
-				Table(fmt.Sprintf(`(%s)`, sql)).
+				Table(fmt.Sprintf(`(%s) boobs`, sql)).
 				Where("id = ?", user.ID).
 				Where("1=1 --"). // That's hideous lmfao
 				Select("pos").

@@ -12,6 +12,7 @@ import (
 	"github.com/demostanis/42evaluators/internal/clusters"
 	"github.com/demostanis/42evaluators/internal/database"
 	"github.com/demostanis/42evaluators/internal/models"
+	"github.com/demostanis/42evaluators/internal/projects"
 	"github.com/demostanis/42evaluators/internal/users"
 	"github.com/joho/godotenv"
 	"gorm.io/gorm"
@@ -30,15 +31,16 @@ func reportErrors(errstream chan error) {
 	}
 }
 
-func getDisabledJobs() (bool, bool, bool) {
+func getDisabledJobs() (bool, bool, bool, bool) {
 	if os.Getenv("disabledjobs") == "*" {
-		return true, true, true
+		return true, true, true, true
 	}
 
 	disabledJobs := strings.Split(os.Getenv("disabledjobs"), ",")
 	disableCampusesJob := false
 	disableUsersJob := false
 	disableLocationsJob := false
+	disableProjectsJob := false
 
 	for _, job := range disabledJobs {
 		if job == "campuses" {
@@ -50,14 +52,23 @@ func getDisabledJobs() (bool, bool, bool) {
 		if job == "locations" {
 			disableLocationsJob = true
 		}
+		if job == "projects" {
+			disableProjectsJob = true
+		}
 	}
 
-	return disableCampusesJob, disableUsersJob, disableLocationsJob
+	return disableCampusesJob,
+		disableUsersJob,
+		disableLocationsJob,
+		disableProjectsJob
 }
 
 func setupCron(ctx context.Context, db *gorm.DB, errstream chan error) error {
-	var job1, job2, job3 gocron.Job
-	disableCampusesJob, disableUsersJob, disableLocationsJob := getDisabledJobs()
+	var job1, job2, job3, job4 gocron.Job
+	disableCampusesJob,
+		disableUsersJob,
+		disableLocationsJob,
+		disableProjectsJob := getDisabledJobs()
 
 	s, err := gocron.NewScheduler()
 	if err != nil {
@@ -109,6 +120,18 @@ func setupCron(ctx context.Context, db *gorm.DB, errstream chan error) error {
 			return err
 		}
 	}
+	if !disableProjectsJob {
+		job4, err = s.NewJob(
+			gocron.DurationJob(time.Hour*24),
+			gocron.NewTask(
+				projects.GetProjects,
+				ctx, db, errstream,
+			),
+		)
+		if err != nil {
+			return err
+		}
+	}
 	s.Start()
 	if !disableCampusesJob {
 		_ = job1.RunNow()
@@ -118,6 +141,9 @@ func setupCron(ctx context.Context, db *gorm.DB, errstream chan error) error {
 	}
 	if !disableLocationsJob {
 		_ = job3.RunNow()
+	}
+	if !disableProjectsJob {
+		_ = job4.RunNow()
 	}
 	return nil
 }
@@ -135,7 +161,7 @@ func main() {
 		return
 	}
 
-	db, err := database.OpenDb(database.Development)
+	db, err := database.OpenDb()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error opening database:", err)
 		return

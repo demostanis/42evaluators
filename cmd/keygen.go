@@ -16,7 +16,7 @@ func main() {
 		return
 	}
 
-	db, err := database.OpenDb(database.Development)
+	db, err := database.OpenDb()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error opening database:", err)
 		return

@@ -89,5 +89,5 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 
 	wg.Wait()
 	fmt.Printf("took %.2f minutes to fetch all users\n",
-		time.Now().Sub(start).Minutes())
+		time.Since(start).Minutes())
 }

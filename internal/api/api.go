@@ -40,7 +40,7 @@ func NewRequest(endpoint string) *ApiRequest {
 		nil,
 		false,
 		"",
-		30,
+		50,
 		"100",
 	}
 }

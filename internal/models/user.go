@@ -56,11 +56,11 @@ type User struct {
 	Level          float64
 	WeeklyLogtime  time.Duration
 
-	CoalitionID int
+	CoalitionID int `gorm:"default:null"`
 	Coalition   Coalition
-	TitleID     int
+	TitleID     int `gorm:"default:null"`
 	Title       Title
-	CampusID    int
+	CampusID    int `gorm:"default:null"`
 	Campus      Campus
 }
 
