@@ -24,6 +24,17 @@ var (
 	ConcurrentCampusesFetch = int64(5)
 )
 
+var (
+	waitForUsers       = make(chan bool)
+	waitForUsersClosed = false
+)
+
+func WaitForUsers() {
+	if !waitForUsersClosed {
+		<-waitForUsers
+	}
+}
+
 func fetchOneCampus(ctx context.Context, campusId int, db *gorm.DB, errstream chan error) {
 	params := maps.Clone(DefaultParams)
 	params["filter[campus_id]"] = strconv.Itoa(campusId)
@@ -63,7 +74,7 @@ func fetchOneCampus(ctx context.Context, campusId int, db *gorm.DB, errstream ch
 }
 
 func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
-	<-campus.WaitForCampuses
+	campus.WaitForCampuses()
 	var campuses []models.Campus
 	db.Find(&campuses)
 
@@ -90,4 +101,9 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 	wg.Wait()
 	fmt.Printf("took %.2f minutes to fetch all users\n",
 		time.Since(start).Minutes())
+
+	if !waitForUsersClosed {
+		close(waitForUsers)
+		waitForUsersClosed = true
+	}
 }

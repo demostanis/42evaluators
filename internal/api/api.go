@@ -29,6 +29,7 @@ type ApiRequest struct {
 	authenticatedAs      string
 	maxConcurrentFetches int64
 	pageSize             string
+	startingPage         int
 }
 
 func NewRequest(endpoint string) *ApiRequest {
@@ -42,6 +43,7 @@ func NewRequest(endpoint string) *ApiRequest {
 		"",
 		50,
 		"100",
+		1,
 	}
 }
 
@@ -77,6 +79,13 @@ func (apiReq *ApiRequest) WithMaxConcurrentFetches(n int64) *ApiRequest {
 
 func (apiReq *ApiRequest) WithPageSize(n int) *ApiRequest {
 	apiReq.pageSize = strconv.Itoa(n)
+	return apiReq
+}
+
+func (apiReq *ApiRequest) FromPage(n int) *ApiRequest {
+	if n > 0 {
+		apiReq.startingPage = n
+	}
 	return apiReq
 }
 
@@ -201,7 +210,8 @@ func DoPaginated[T []E, E any](apiReq *ApiRequest) (chan func() (*E, error), err
 		return resps, err
 	}
 
-	fmt.Printf("fetching %d pages in %s...\n", pageCount, apiReq.endpoint)
+	fmt.Printf("fetching %d pages in %s...\n",
+		pageCount-apiReq.startingPage+1, apiReq.endpoint)
 
 	var weights *semaphore.Weighted
 	if apiReq.maxConcurrentFetches != 0 {
@@ -209,7 +219,7 @@ func DoPaginated[T []E, E any](apiReq *ApiRequest) (chan func() (*E, error), err
 	}
 	go func() {
 		var wg sync.WaitGroup
-		for i := 1; i <= pageCount; i++ {
+		for i := apiReq.startingPage; i <= pageCount; i++ {
 			if weights != nil {
 				weights.Acquire(context.Background(), 1)
 			}

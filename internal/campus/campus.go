@@ -9,8 +9,15 @@ import (
 )
 
 var (
-	WaitForCampuses = make(chan bool)
+	waitForCampuses       = make(chan bool)
+	waitForCampusesClosed = false
 )
+
+func WaitForCampuses() {
+	if !waitForCampusesClosed {
+		<-waitForCampuses
+	}
+}
 
 func GetCampuses(db *gorm.DB, errstream chan error) {
 	campuses, err := api.DoPaginated[[]models.Campus](
@@ -35,6 +42,8 @@ func GetCampuses(db *gorm.DB, errstream chan error) {
 			errstream <- err
 		}
 	}
-	// TODO: don't
-	close(WaitForCampuses)
+	if !waitForCampusesClosed {
+		close(waitForCampuses)
+		waitForCampusesClosed = true
+	}
 }

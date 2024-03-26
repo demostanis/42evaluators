@@ -1,6 +1,8 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type TeamUser struct {
 	TeamID int  `gorm:"primaryKey"`
@@ -13,7 +15,7 @@ type Team struct {
 	// this musn't be a gorm.Model, because GORM is so
 	// fucking drunk and will put two ids in INSERT statements,
 	// making the DB complain that there are two fucking ids.
-	ID        int        `json:"team_id"`
+	ID        int        `json:"id"`
 	Name      string     `json:"name"`
 	Users     []TeamUser `json:"users"`
 	ProjectID int
@@ -33,6 +35,7 @@ type Project struct {
 	FinalMark int    `json:"final_mark"`
 	Status    string `json:"status"`
 	Teams     []Team `gorm:"foreignKey:ProjectID" json:"teams"`
+	Page      int
 
 	SubjectID int     `gorm:"default:null"`
 	Subject   Subject `json:"project"`

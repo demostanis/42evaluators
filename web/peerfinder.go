@@ -9,6 +9,10 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	usersPerQuery = 10000
+)
+
 func handlePeerFinder(db *gorm.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var subjects []models.Subject
@@ -24,6 +28,8 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 		i := 0
 		var totalProjects []models.Project
 		for {
+			// We need to fetch by batches of users, else GORM
+			// generates way too large queries...
 			campusId := 62
 			var projects []models.Project
 			db.
@@ -32,8 +38,8 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 					"campus_id = ? AND "+database.OnlyRealUsersCondition,
 					campusId).
 				Preload("Subject").
-				Limit(10000).
-				Offset(10000 * i).
+				Limit(usersPerQuery).
+				Offset(usersPerQuery * i).
 				Model(&models.Project{}).
 				Find(&projects)
 			if len(projects) == 0 {
