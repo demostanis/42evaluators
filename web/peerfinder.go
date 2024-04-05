@@ -39,7 +39,8 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 					"campus_id = ? AND "+database.OnlyRealUsersCondition,
 					campusId).
 				Preload("Subject",
-					"name NOT LIKE 'Day %'").
+					`name NOT LIKE 'Day %' AND
+					 name NOT LIKE '%DEPRECATED%'`).
 				Limit(usersPerQuery).
 				Offset(usersPerQuery * i).
 				Model(&models.Project{}).
