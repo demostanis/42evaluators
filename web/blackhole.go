@@ -24,8 +24,7 @@ func blackholeMap(db *gorm.DB) http.Handler {
 
 		campusId := r.URL.Query().Get("campus")
 		if campusId == "" {
-			// TODO: what if the user has multiple campuses?
-			campusId = strconv.Itoa(getLoggedInUser(r).them.Campus[0].ID)
+			campusId = strconv.Itoa(getLoggedInUser(r).them.CampusID)
 		}
 		var users []models.User
 		err := db.

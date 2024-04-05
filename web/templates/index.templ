@@ -3,14 +3,42 @@ package templates
 import (
 	"fmt"
 	"net/url"
+	"encoding/json"
 )
 
-type Me struct {
+type MeRaw struct {
 	ID          int `json:"id"`
 	DisplayName string `json:"usual_full_name"`
-	Campus      []struct {
-		ID int `json:"id"`
-	} `json:"campus"`
+	Campuses    []struct {
+		ID        int `json:"campus_id"`
+		IsPrimary bool `json:"is_primary"`
+	} `json:"campus_users"`
+}
+
+type Me struct {
+	ID          int
+	DisplayName string
+	CampusID    int
+}
+
+func (me *Me) UnmarshalJSON(data []byte) error {
+	var meRaw MeRaw
+
+	err := json.Unmarshal(data, &meRaw)
+	if err != nil {
+		return err
+	}
+
+	me.ID = meRaw.ID
+	me.DisplayName = meRaw.DisplayName
+
+	for _, campus := range meRaw.Campuses {
+		if campus.IsPrimary {
+			me.CampusID = campus.ID
+			break
+		}
+	}
+	return nil
 }
 
 func getOauthUrl(clientId string, redirectUri string) templ.SafeURL {

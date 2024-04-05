@@ -31,16 +31,14 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 		for {
 			// We need to fetch by batches of users, else GORM
 			// generates way too large queries...
-			campusId := 62
+			campusId := getLoggedInUser(r).them.CampusID
 			var projects []models.Project
 			db.
 				Where("status != 'finished'").
 				Preload("Teams.Users.User",
 					"campus_id = ? AND "+database.OnlyRealUsersCondition,
 					campusId).
-				Preload("Subject",
-					`name NOT LIKE 'Day %' AND
-					 name NOT LIKE '%DEPRECATED%'`).
+				Preload("Subject", database.UnwantedSubjectsCondition).
 				Limit(usersPerQuery).
 				Offset(usersPerQuery * i).
 				Model(&models.Project{}).
@@ -54,7 +52,8 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 
 		projectsMap := make(map[int][]models.Project)
 		for _, project := range totalProjects {
-			// filter by projects for which the preload condition succeeded
+			// we need this bunch of conditions since GORM will give us
+			// zeroed projects which don't meet the preload condition...
 			if len(project.Teams) > 0 &&
 				len(project.Teams) > project.ActiveTeam &&
 				len(project.Teams[project.ActiveTeam].Users) > 0 &&

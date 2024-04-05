@@ -60,7 +60,7 @@ func fetchSvg(cluster *clusters.Cluster) error {
 func handleClusters() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defaultClusterId := 199
-		campusId := getLoggedInUser(r).them.Campus[0].ID
+		campusId := getLoggedInUser(r).them.CampusID
 		for _, cluster := range allClusters {
 			if cluster.Campus.Id == campusId {
 				defaultClusterId = cluster.Id

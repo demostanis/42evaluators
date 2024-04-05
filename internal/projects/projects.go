@@ -119,7 +119,6 @@ func GetProjects(ctx context.Context, db *gorm.DB, errstream chan error) {
 
 			// TODO: we should update...
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				fmt.Printf("saving project with id %d in page %d to db\n", project.ID, project.Page)
 				prepareProjectForDb(db, project)
 				err = db.Save(&project).Error
 				if err != nil {

@@ -201,7 +201,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 				return
 			}
 
-			offset = int(myPosition) - (int(myPosition) % UsersPerPage)
+			offset = int(myPosition-1) - (int(myPosition-1) % UsersPerPage)
 			page = 1 + offset/UsersPerPage
 		}
 

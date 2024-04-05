@@ -26,8 +26,7 @@ func loggedInUsersOnly(handler http.Handler) http.Handler {
 func Run(db *gorm.DB) {
 	http.Handle("/", handleIndex(db))
 	http.Handle("/leaderboard", loggedInUsersOnly(handleLeaderboard(db)))
-	//http.Handle("/peerfinder", loggedInUsersOnly(handlePeerFinder(db)))
-	http.Handle("/peerfinder", handlePeerFinder(db))
+	http.Handle("/peerfinder", loggedInUsersOnly(handlePeerFinder(db)))
 	http.Handle("/blackhole", loggedInUsersOnly(templ.Handler(templates.Blackhole())))
 	http.Handle("/blackhole.json", loggedInUsersOnly(blackholeMap(db)))
 	http.Handle("/clusters", loggedInUsersOnly(handleClusters()))
