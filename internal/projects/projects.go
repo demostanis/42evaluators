@@ -18,9 +18,12 @@ import (
 const cursus21Begin = "2019-07-29T08:45:17.896Z"
 
 type ProjectData struct {
-	X         float64 `json:"x"`
-	Y         float64 `json:"y"`
-	ProjectID int     `json:"project_id"`
+	X           float64 `json:"x"`
+	Y           float64 `json:"y"`
+	ProjectID   int     `json:"project_id"`
+	Description string  `json:"description"`
+	Duration    string  `json:"duration"`
+	Rules       string  `json:"rules"`
 }
 
 var allProjectData []ProjectData
@@ -53,6 +56,10 @@ func setPositionInGraph(
 	subject.Position = 99999
 	for _, projectData := range allProjectData {
 		if projectData.ProjectID == subject.ID {
+			subject.Description = projectData.Description
+			subject.Duration = projectData.Duration
+			subject.Rules = projectData.Rules
+
 			subject.Position =
 				int(math.Hypot(
 					projectData.X-libft.X,

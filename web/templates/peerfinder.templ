@@ -49,7 +49,13 @@ templ PeerFinder(subjects []models.Subject, projects map[int][]models.Project) {
 	<div class="flex items-center flex-col m-5">
 		for _, subject := range subjects {
 			if len(projects[subject.ID]) > 0 {
-				<p class="text-8xl m-8">{ subject.Name }</p>
+				<div class="relative group inline-block flex">
+					<p class="text-8xl">{ subject.Name } </p>
+					<div
+						class="opacity-0 invisible group-hover:opacity-100 transition-all ease-in-out group-hover:visible w-48 mt-2 bg-white text-gray-800 border border-gray-300 rounded-lg shadow-lg py-2 z-10 right-100">
+						<p class="px-4 py-2"> { subject.Description } </p>
+					</div>
+				</div>
 				<div class={ "flex flex-wrap justify-evenly w-[90%]", calcGap(projects[subject.ID]) }>
 					for _, project := range projects[subject.ID] {
 						@Project(project)

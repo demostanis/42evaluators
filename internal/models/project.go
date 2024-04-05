@@ -28,7 +28,10 @@ type Subject struct {
 	Slug string `json:"slug"`
 	// Calculated from the distance from the center
 	// using Holy Graph coordinates
-	Position int
+	Position    int
+	Description string
+	Duration    string
+	Rules       string
 }
 
 type Project struct {
