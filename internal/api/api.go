@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,16 +9,32 @@ import (
 	"io"
 	"maps"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/demostanis/42evaluators/internal/models"
+
 	"golang.org/x/sync/semaphore"
 )
 
-const ApiUrl = "https://api.intra.42.fr"
+const (
+	defaultPageSize             = 100
+	defaultMaxConcurrentFetches = 50
+	apiUrl                      = "https://api.intra.42.fr"
+)
+
+type ParseError struct {
+	err  error
+	body []byte
+}
+
+func (parseError ParseError) Error() string {
+	return fmt.Sprintf("failed to parse body: %v (%s)",
+		parseError.err, parseError.body)
+}
 
 type ApiRequest struct {
 	method               string
@@ -34,16 +51,16 @@ type ApiRequest struct {
 
 func NewRequest(endpoint string) *ApiRequest {
 	return &ApiRequest{
-		"GET",
-		endpoint,
-		map[string]string{},
-		map[string]string{},
-		nil,
-		false,
-		"",
-		50,
-		"100",
-		1,
+		method:               "GET",
+		endpoint:             endpoint,
+		headers:              map[string]string{},
+		params:               map[string]string{},
+		outputHeadersIn:      nil,
+		authenticated:        false,
+		authenticatedAs:      "",
+		maxConcurrentFetches: defaultMaxConcurrentFetches,
+		pageSize:             strconv.Itoa(defaultPageSize),
+		startingPage:         1,
 	}
 }
 
@@ -119,7 +136,7 @@ func Do[T any](apiReq *ApiRequest) (*T, error) {
 		client = RateLimitedClient("", models.ApiKey{})
 	}
 
-	req, err := http.NewRequest(apiReq.method, ApiUrl+apiReq.endpoint, nil)
+	req, err := http.NewRequest(apiReq.method, apiUrl+apiReq.endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -136,8 +153,7 @@ func Do[T any](apiReq *ApiRequest) (*T, error) {
 
 	if apiReq.authenticated {
 		req.Header.Add("Authorization", "Bearer "+client.accessToken)
-	}
-	if apiReq.authenticatedAs != "" {
+	} else if apiReq.authenticatedAs != "" {
 		req.Header.Add("Authorization", "Bearer "+apiReq.authenticatedAs)
 	}
 
@@ -147,7 +163,7 @@ func Do[T any](apiReq *ApiRequest) (*T, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	DebugResponse(req, resp)
+	DebugResponse(resp)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -161,13 +177,21 @@ func Do[T any](apiReq *ApiRequest) (*T, error) {
 	var result T
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		if strings.HasPrefix(string(body), "429") {
+		if bytes.HasPrefix(body, []byte("429")) {
 			time.Sleep(1 * time.Second)
 			return Do[T](apiReq)
 		}
-		return nil, fmt.Errorf("failed to parse body: %w (%s)", err, string(body))
+		return nil, &ParseError{err, body}
 	}
 	return &result, nil
+}
+
+type PageCountError struct {
+	err error
+}
+
+func (pageCountErr PageCountError) Error() string {
+	return fmt.Sprintf("failed to get page count: %v", pageCountErr.err)
 }
 
 func getPageCount(apiReq *ApiRequest) (int, error) {
@@ -183,22 +207,22 @@ func getPageCount(apiReq *ApiRequest) (int, error) {
 		OutputHeadersIn(&headers)
 	_, err := Do[any](newReq)
 
-	var syntaxErrorCheck *json.SyntaxError
+	var parseError *ParseError
 	// we don't care about JSON parsing errors, since
 	// since HEAD requests aren't supposed to have content
-	if err != nil && !errors.As(err, &syntaxErrorCheck) {
-		return 0, err
+	if err != nil && !errors.As(err, &parseError) {
+		return 0, PageCountError{err}
 	}
 	if headers == nil {
-		return 0, errors.New("response did not contain any headers")
+		return 0, PageCountError{errors.New("response did not contain any headers")}
 	}
 	total, err := strconv.Atoi(headers.Get("X-Total"))
 	if err != nil {
-		return 0, err
+		return 0, PageCountError{err}
 	}
 	perPage, err := strconv.Atoi(headers.Get("X-Per-Page"))
 	if err != nil {
-		return 0, err
+		return 0, PageCountError{err}
 	}
 	return 1 + (total-1)/perPage, nil
 }
@@ -238,6 +262,15 @@ func DoPaginated[T []E, E any](apiReq *ApiRequest) (chan func() (*E, error), err
 				} else {
 					for _, elem := range *elems {
 						func(elem E) {
+							value := reflect.ValueOf(&elem).Elem()
+							if value.Kind() == reflect.Struct {
+								field := value.FieldByName("Page")
+								if field.IsValid() &&
+									field.CanSet() &&
+									field.Kind() == reflect.Int {
+									field.Set(reflect.ValueOf(i))
+								}
+							}
 							resps <- func() (*E, error) { return &elem, nil }
 						}(elem)
 					}

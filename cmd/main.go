@@ -161,6 +161,12 @@ func main() {
 		return
 	}
 
+	err = projects.OpenProjectData()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error opening projects data:", err)
+		return
+	}
+
 	db, err := database.OpenDb()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error opening database:", err)

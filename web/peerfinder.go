@@ -19,6 +19,7 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 
 		err := db.
 			Model(&models.Subject{}).
+			Order("position").
 			Find(&subjects).Error
 		if err != nil {
 			internalServerError(w, err)
@@ -37,7 +38,8 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 				Preload("Teams.Users.User",
 					"campus_id = ? AND "+database.OnlyRealUsersCondition,
 					campusId).
-				Preload("Subject").
+				Preload("Subject",
+					"name NOT LIKE 'Day %'").
 				Limit(usersPerQuery).
 				Offset(usersPerQuery * i).
 				Model(&models.Project{}).
@@ -52,8 +54,10 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 		projectsMap := make(map[int][]models.Project)
 		for _, project := range totalProjects {
 			// filter by projects for which the preload condition succeeded
-			if len(project.Teams) > 0 && len(project.Teams[0].Users) > 0 &&
-				project.Teams[0].Users[0].User.ID != 0 {
+			if len(project.Teams) > 0 &&
+				len(project.Teams) > project.ActiveTeam &&
+				len(project.Teams[project.ActiveTeam].Users) > 0 &&
+				project.Teams[project.ActiveTeam].Users[0].User.ID != 0 {
 				projectsMap[project.Subject.ID] = append(
 					projectsMap[project.Subject.ID], project)
 			}

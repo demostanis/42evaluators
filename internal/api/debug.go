@@ -38,8 +38,8 @@ func DebugRequest(req *http.Request) {
 	}
 }
 
-func DebugResponse(req *http.Request, res *http.Response) {
-	if selectedEndpoint(req.URL.Path) {
+func DebugResponse(res *http.Response) {
+	if selectedEndpoint(res.Request.URL.Path) {
 		output, err := httputil.DumpResponse(res, true)
 		if err == nil {
 			fmt.Printf("\n\n%s\n\n", output)

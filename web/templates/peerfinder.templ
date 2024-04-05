@@ -15,7 +15,7 @@ templ Project(project models.Project) {
 	<a href={ urlForProject(project) }>
 		<div class="flex items-center w-32 flex-col">
 			<div class="avatar-group -space-x-6">
-				for _, teamUser := range project.Teams[0].Users {
+				for _, teamUser := range project.Teams[project.ActiveTeam].Users {
 					<div class="avatar">
 						<div class="w-16 rounded-full">
 							<img src={ teamUser.User.ImageLink } />
@@ -23,7 +23,7 @@ templ Project(project models.Project) {
 					</div>
 				}
 			</div>
-			<p class="text-center">{ project.Teams[0].Name } 
+			<p class="text-center">{ project.Teams[project.ActiveTeam].Name }
 				if len(project.Teams) > 1 {
 					({ strconv.Itoa(len(project.Teams)) } retries)
 				}

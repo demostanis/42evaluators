@@ -2,38 +2,78 @@ package projects
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"math"
+	"os"
 	"time"
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/models"
-	"github.com/demostanis/42evaluators/internal/users"
 	"gorm.io/gorm"
 )
 
-var cursus21Begin = "2019-07-29T08:45:17.896Z"
+const cursus21Begin = "2019-07-29T08:45:17.896Z"
 
-func getLatestPageFetched(db *gorm.DB) int {
-	var latestPageFetched int
+type ProjectData struct {
+	X         float64 `json:"x"`
+	Y         float64 `json:"y"`
+	ProjectID int     `json:"project_id"`
+}
 
-	db.
-		Raw(`SELECT IFNULL(MAX(page), 1)
-			FROM projects
-			WHERE page + 1
-			NOT IN (
-				SELECT page
-				FROM projects
-			)`).
-		Scan(&latestPageFetched)
-	return latestPageFetched
+var allProjectData []ProjectData
+
+func OpenProjectData() error {
+	file, err := os.Open("assets/project_data.json")
+	if err != nil {
+		return err
+	}
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(bytes, &allProjectData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func setPositionInGraph(
+	db *gorm.DB,
+	subject *models.Subject,
+) {
+	libft := struct {
+		X float64
+		Y float64
+	}{2999., 2999.}
+
+	subject.Position = 99999
+	for _, projectData := range allProjectData {
+		if projectData.ProjectID == subject.ID {
+			subject.Position =
+				int(math.Hypot(
+					projectData.X-libft.X,
+					projectData.Y-libft.Y))
+			break
+		}
+	}
 }
 
 func prepareProjectForDb(db *gorm.DB, project *models.Project) {
 	project.SubjectID = project.Subject.ID
+
 	for i := range project.Teams {
 		team := &project.Teams[i]
 		team.ProjectID = i
+
+		if team.ID == project.CurrentTeamID {
+			project.ActiveTeam = i
+
+			setPositionInGraph(db, &project.Subject)
+		}
 
 		for j := range team.Users {
 			user := &team.Users[j]
@@ -43,15 +83,15 @@ func prepareProjectForDb(db *gorm.DB, project *models.Project) {
 }
 
 func GetProjects(ctx context.Context, db *gorm.DB, errstream chan error) {
-	users.WaitForUsers()
-
-	page := getLatestPageFetched(db)
+	// TODO: only fetch what's changed
+	updatedAt := cursus21Begin
 	projects, err := api.DoPaginated[[]models.Project](
 		api.NewRequest("/v2/projects_users").
 			WithParams(map[string]string{
-				"range[created_at]": cursus21Begin + "," + time.Now().Format(time.RFC3339),
+				"range[updated_at]": updatedAt + "," + time.Now().Format(time.RFC3339),
+				"filter[campus]":    "62",
 			}).
-			FromPage(page).
+			WithMaxConcurrentFetches(100).
 			Authenticated())
 	if err != nil {
 		errstream <- err
@@ -59,7 +99,6 @@ func GetProjects(ctx context.Context, db *gorm.DB, errstream chan error) {
 
 	start := time.Now()
 
-	projectsFetched := 1
 	for {
 		project, err := (<-projects)()
 		if err != nil {
@@ -71,28 +110,22 @@ func GetProjects(ctx context.Context, db *gorm.DB, errstream chan error) {
 
 		if len(project.CursusIds) > 0 && project.CursusIds[0] == 21 &&
 			len(project.Teams) > 0 && len(project.Teams[0].Users) > 0 {
-			// TODO: might not take the right team
 			var exists models.Team
 			err = db.
 				Session(&gorm.Session{}).
-				Where("id = ?", project.Teams[0].ID).
+				Where("id = ?", project.Teams[project.ActiveTeam].ID).
 				Model(&models.Team{}).
 				First(&exists).Error
 
+			// TODO: we should update...
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				project.Page = page
+				fmt.Printf("saving project with id %d in page %d to db\n", project.ID, project.Page)
 				prepareProjectForDb(db, project)
 				err = db.Save(&project).Error
 				if err != nil {
 					errstream <- err
 				}
 			}
-		}
-
-		projectsFetched++
-		if projectsFetched == 100 {
-			projectsFetched = 1
-			page++
 		}
 	}
 

@@ -26,16 +26,22 @@ type Subject struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 	Slug string `json:"slug"`
+	// Calculated from the distance from the center
+	// using Holy Graph coordinates
+	Position int
 }
 
 type Project struct {
 	gorm.Model
-	ID        int    `json:"id"`
-	CursusIds []int  `gorm:"-" json:"cursus_ids"`
-	FinalMark int    `json:"final_mark"`
-	Status    string `json:"status"`
-	Teams     []Team `gorm:"foreignKey:ProjectID" json:"teams"`
-	Page      int
+	ID            int    `json:"id"`
+	CursusIds     []int  `gorm:"-" json:"cursus_ids"`
+	FinalMark     int    `json:"final_mark"`
+	Status        string `json:"status"`
+	Teams         []Team `gorm:"foreignKey:ProjectID" json:"teams"`
+	CurrentTeamID int    `gorm:"-" json:"current_team_id"`
+	UpdatedAt     string `json:"updated_at"`
+	ActiveTeam    int
+	Page          int
 
 	SubjectID int     `gorm:"default:null"`
 	Subject   Subject `json:"project"`
