@@ -60,10 +60,10 @@ const (
 )
 
 templ pageButton(
-	url        *url.URL,
-	page       int,
-	text       string,
-	isActive   bool,
+	url *url.URL,
+	page int,
+	text string,
+	isActive bool,
 	isDisabled bool,
 ) {
 	<a
@@ -71,12 +71,13 @@ templ pageButton(
 			href={ urlWithPage(url, page) }
 		}
 	>
-	<button
-		if isDisabled {
-			disabled
-		}
-		class={ "join-item", "btn", "btn-md", getIsActiveClass(isActive) }
-	>{ text }</button></a>
+		<button
+			if isDisabled {
+				disabled
+			}
+			class={ "join-item", "btn", "btn-md", getIsActiveClass(isActive) }
+		>{ text }</button>
+	</a>
 }
 
 func isDisabled(targetedPage int, totalPage int) bool {
@@ -87,7 +88,7 @@ templ pagination(url *url.URL, page int, totalPages int, gotoMyPositionShown boo
 	<div class="join justify-center flex pt-3">
 		@pageButton(url, 1, "<<", Inactive, page == 1)
 		@pageButton(url,
-			page - 1, "<", Inactive,
+			page-1, "<", Inactive,
 			isDisabled(page-1, totalPages))
 		if page > 4 {
 			@pageButton(url, 0, "...", Inactive, Disabled)
@@ -99,8 +100,8 @@ templ pagination(url *url.URL, page int, totalPages int, gotoMyPositionShown boo
 			@pageButton(url, 0, "...", Inactive, Disabled)
 		}
 		@pageButton(url,
-			 page + 1, ">", Inactive,
-			 isDisabled(page+1, totalPages))
+			page+1, ">", Inactive,
+			isDisabled(page+1, totalPages))
 		@pageButton(url, totalPages, ">>", Inactive, page == totalPages)
 		if gotoMyPositionShown {
 			<a class="btn btn-md join-item text-center" href={ urlForMe(url) }>Go to my position...</a>
@@ -241,7 +242,6 @@ templ Leaderboard(users []models.User,
 	url *url.URL, page int, totalPages int, shownFields map[string]Field,
 	currentUserId int, offset int, gotoMyPositionShown bool) {
 	@header()
-
 	<div id="main" class="mt-[17px]">
 		<div class="flex justify-center items-center space-x-4">
 			<span>Filter by: </span>
@@ -277,28 +277,38 @@ templ Leaderboard(users []models.User,
 					<tr class="text-2xl">
 						<th>Position</th>
 						<th>Profile picture</th>
-						<th><a href={ urlWithSorting(url, "login") }>
-							User
-						</a></th>
+						<th>
+							<a href={ urlWithSorting(url, "login") }>
+								User
+							</a>
+						</th>
 						if shownFields["level"].Checked {
-							<th><a href={ urlWithSorting(url, "level") }>
-								Level
-							</a></th>
+							<th>
+								<a href={ urlWithSorting(url, "level") }>
+									Level
+								</a>
+							</th>
 						}
 						if shownFields["weekly_logtime"].Checked {
-							<th><a href={ urlWithSorting(url, "weekly_logtime") }>
-								Weekly logtime
-							</a></th>
+							<th>
+								<a href={ urlWithSorting(url, "weekly_logtime") }>
+									Weekly logtime
+								</a>
+							</th>
 						}
 						if shownFields["correction_points"].Checked {
-							<th><a href={ urlWithSorting(url, "correction_points") }>
-								Correction points
-							</a></th>
+							<th>
+								<a href={ urlWithSorting(url, "correction_points") }>
+									Correction points
+								</a>
+							</th>
 						}
 						if shownFields["wallets"].Checked {
-							<th><a href={ urlWithSorting(url, "wallets") }>
-								Wallets
-							</a></th>
+							<th>
+								<a href={ urlWithSorting(url, "wallets") }>
+									Wallets
+								</a>
+							</th>
 						}
 						if shownFields["coalition"].Checked {
 							<th>Coalition</th>
@@ -310,14 +320,14 @@ templ Leaderboard(users []models.User,
 				</thead>
 				<tbody>
 					for i, user := range users {
-						<tr class={
-							"text-white", "text-xl",
-							getBgUrl(user, currentUserId)
-							}>
+						<tr
+							class={ "text-white", "text-xl",
+							getBgUrl(user, currentUserId) }
+						>
 							<td>{ strconv.Itoa(i + offset + 1) }.</td>
 							<td class="flex">
 								<div class="avatar placeholder w-24 h-24 object-contain">
-									<img class="rounded-full" src={ user.ImageLink } />
+									<img class="rounded-full" src={ user.ImageLink }/>
 								</div>
 							</td>
 							<td>
@@ -329,9 +339,11 @@ templ Leaderboard(users []models.User,
 								<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
 							}
 							if shownFields["weekly_logtime"].Checked {
-								<td>{ fmt.Sprintf("%02dh%02d",
+								<td>
+									{ fmt.Sprintf("%02dh%02d",
 										int(user.WeeklyLogtime.Hours()),
-										int(user.WeeklyLogtime.Seconds()/60)%60) }</td>
+										int(user.WeeklyLogtime.Seconds()/60)%60) }
+								</td>
 							}
 							if shownFields["correction_points"].Checked {
 								<td>{ fmt.Sprintf("%d", user.CorrectionPoints) }</td>
@@ -353,8 +365,7 @@ templ Leaderboard(users []models.User,
 			<div class="pt-3"></div>
 		}
 	</div>
-
-	<input type="checkbox" id="fields-settings" class="modal-toggle" />
+	<input type="checkbox" id="fields-settings" class="modal-toggle"/>
 	<div class="modal" role="dialog">
 		<div class="modal-box">
 			<h1 class="text-center text-bold">Fields to show:</h1>
@@ -364,10 +375,11 @@ templ Leaderboard(users []models.User,
 					<div class="flex align-center grow py-1 whitespace-nowrap">
 						<label for={ field.Name }>{ field.PrettyName }</label>
 						<span class="w-full"></span>
-						<input id={ field.Name }
-							   type="checkbox"
-							   autocomplete="off"
-							   class="checkbox"
+						<input
+							id={ field.Name }
+							type="checkbox"
+							autocomplete="off"
+							class="checkbox"
 							if field.Checked {
 								checked
 							}

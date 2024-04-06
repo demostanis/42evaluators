@@ -2,7 +2,6 @@ package templates
 
 templ Blackhole() {
 	@header()
-
 	<!-- TODO: bundle these deps with rollup or alike -->
 	<script type="importmap">
 		{
@@ -15,6 +14,5 @@ templ Blackhole() {
 	<script type="module" src="static/blackhole.js"></script>
 	<div id="blackholes" class="right-0 absolute w-full lg:w-96 h-96 lg:h-full bottom-0 bg-gray-950 bg-opacity-50 overflow-y-scroll pb-1"></div>
 	<style>html,body{overflow:hidden;}</style>
-
 	@footer()
 }

@@ -7,10 +7,10 @@ import (
 )
 
 type MeRaw struct {
-	ID          int `json:"id"`
+	ID          int    `json:"id"`
 	DisplayName string `json:"usual_full_name"`
 	Campuses    []struct {
-		ID        int `json:"campus_id"`
+		ID        int  `json:"campus_id"`
 		IsPrimary bool `json:"is_primary"`
 	} `json:"campus_users"`
 }
@@ -43,8 +43,8 @@ func (me *Me) UnmarshalJSON(data []byte) error {
 
 func getOauthUrl(clientId string, redirectUri string) templ.SafeURL {
 	return templ.SafeURL(fmt.Sprintf(
-		   "https://api.intra.42.fr/oauth/authorize?client_id=%s&redirect_uri=%s&scope=public&response_type=code",
-		   clientId, url.QueryEscape(redirectUri),
+		"https://api.intra.42.fr/oauth/authorize?client_id=%s&redirect_uri=%s&scope=public&response_type=code",
+		clientId, url.QueryEscape(redirectUri),
 	))
 }
 
@@ -65,7 +65,7 @@ templ LoggedOutIndex(clientId string, redirectUri string, needsLogin bool) {
 	<div class="grid place-items-center h-[85%]">
 		<span>
 			<a class="text-4xl lg:text-7xl inline" href={ getOauthUrl(clientId, redirectUri) }>
-				Login with <img class="w-28 inline" src="https://meta.intra.42.fr/assets/42_logo-7dfc9110a5319a308863b96bda33cea995046d1731cebb735e41b16255106c12.svg" />
+				Login with <img class="w-28 inline" src="https://meta.intra.42.fr/assets/42_logo-7dfc9110a5319a308863b96bda33cea995046d1731cebb735e41b16255106c12.svg"/>
 			</a>
 		</span>
 	</div>

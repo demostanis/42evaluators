@@ -18,12 +18,13 @@ templ Project(project models.Project) {
 				for _, teamUser := range project.Teams[project.ActiveTeam].Users {
 					<div class="avatar">
 						<div class="w-16 rounded-full">
-							<img src={ teamUser.User.ImageLink } />
+							<img src={ teamUser.User.ImageLink }/>
 						</div>
 					</div>
 				}
 			</div>
-			<p class="text-center">{ project.Teams[project.ActiveTeam].Name }
+			<p class="text-center">
+				{ project.Teams[project.ActiveTeam].Name }
 				if len(project.Teams) > 1 {
 					({ strconv.Itoa(len(project.Teams)) } retries)
 				}
@@ -39,12 +40,11 @@ func calcGap(projects []models.Project) string {
 			maxUsers = len(project.Teams[0].Users)
 		}
 	}
-	return fmt.Sprintf("gap-y-[1rem] gap-x-[%drem]", maxUsers * 2)
+	return fmt.Sprintf("gap-y-[1rem] gap-x-[%drem]", maxUsers*2)
 }
 
 templ PeerFinder(subjects []models.Subject, projects map[int][]models.Project) {
 	@header()
-
 	<style>html,body{overflow-x:hidden;}</style>
 	<div class="flex items-center flex-col m-5">
 		for _, subject := range subjects {
@@ -58,6 +58,5 @@ templ PeerFinder(subjects []models.Subject, projects map[int][]models.Project) {
 			}
 		}
 	</div>
-
 	@footer()
 }

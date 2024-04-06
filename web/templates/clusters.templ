@@ -31,7 +31,6 @@ script selectHandler() {
 
 templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Cluster) {
 	@header()
-
 	<style>body{overflow:hidden}</style>
 	<script src="static/clusters.js"></script>
 	<div id="main" class="flex place-content-center w-full h-full mt-1">
@@ -40,7 +39,8 @@ templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Clust
 			for _, cluster := range allClusters {
 				<option
 					if selectedCluster.Id == cluster.Id {
-						disabled selected
+						disabled
+						selected
 					}
 					value={ strconv.Itoa(cluster.Id) }
 				>{ cluster.DisplayName }</option>
@@ -49,6 +49,5 @@ templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Clust
 		@cropToContent()
 		@selectHandler()
 	</div>
-
 	@footer()
 }
