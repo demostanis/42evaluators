@@ -96,7 +96,7 @@ func getPromosForCampus(
 		monthA, yearA := parseDate(a)
 		monthB, yearB := parseDate(b)
 
-		return (monthA | yearA<<5) - (monthB | yearB<<5)
+		return (monthB | yearB<<5) - (monthA | yearA<<5)
 	})
 
 	return promos, nil
