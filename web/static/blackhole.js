@@ -95,7 +95,6 @@ function renderBlackholeMap(blackholeMap) {
 	gltfLoader.load("static/assets/blackhole/blackhole.glb", gltf => {
 		blackholeModel = gltf.scene;
 		blackholeModel.rotation.x = -5;
-		// why the fuck does the model have weird lines now?
 		blackholeModel.scale.set(0.7, 0.7, 0.7);
 		scene.add(blackholeModel);
 	});
@@ -237,6 +236,7 @@ function renderBlackholeMap(blackholeMap) {
 
 	let previousTarget;
 	let currentTarget;
+	let lastButtons;
 	const raycaster = new three.Raycaster();
 	const mouse = new three.Vector2();
 	const handleMouse = event => {
@@ -245,21 +245,24 @@ function renderBlackholeMap(blackholeMap) {
 		mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
 		mouse.y = - ((event.clientY - navbarHeight) / renderer.domElement.clientHeight) * 2 + 1;
 
-		if (currentTarget) {
-			if (event.buttons == 4) {
+		if (currentTarget && event.buttons == 0) {
+			if (lastButtons == 4) {
 				const a = document.createElement("a");
 				a.href = "https://profile.intra.42.fr/users/"
 					+ currentTarget.object.user.login;
-				a.currentTarget = "_blank";
+				a.target = "_blank";
 				a.click();
-			} else if (event.buttons == 1) {
+			} else if (lastButtons == 1) {
 				window.location.href = "https://profile.intra.42.fr/users/"
 					+ currentTarget.object.user.login;
 			}
 		}
+
+		lastButtons = event.buttons;
 	}
 	renderer.domElement.addEventListener("mousemove", handleMouse);
 	renderer.domElement.addEventListener("mousedown", handleMouse);
+	renderer.domElement.addEventListener("mouseup", handleMouse);
 
 	const processObjectsAtMouse = () => {
 		raycaster.setFromCamera(mouse, camera);
