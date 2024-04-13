@@ -63,7 +63,10 @@ const showBlackholes = stage => {
 		weeks.textContent = `this week`;
 	blackholes.appendChild(weeks);
 
-	for (const user of stage.users.slice().reverse()) {
+	const users = stage.users.slice();
+	if (!stage.blackholed)
+		users.reverse();
+	for (const user of users) {
 		blackholes.appendChild(createUserElem(user));
 	}
 }
@@ -233,6 +236,7 @@ function renderBlackholeMap(blackholeMap) {
 	window.addEventListener("touchmove", handleScroll);
 
 	let previousTarget;
+	let currentTarget;
 	const raycaster = new three.Raycaster();
 	const mouse = new three.Vector2();
 	const handleMouse = event => {
@@ -240,34 +244,40 @@ function renderBlackholeMap(blackholeMap) {
 
 		mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
 		mouse.y = - ((event.clientY - navbarHeight) / renderer.domElement.clientHeight) * 2 + 1;
-		raycaster.setFromCamera(mouse, camera);
 
-		if (previousTarget) {
-			previousTarget.object.scale.set(1, 1, 1);
-			previousTarget.object.renderOrder = 1;
-		}
-
-		const [target] = raycaster.intersectObjects(circles);
-		if (target) {
+		if (currentTarget) {
 			if (event.buttons == 4) {
 				const a = document.createElement("a");
 				a.href = "https://profile.intra.42.fr/users/"
-					+ target.object.user.login;
-				a.target = "_blank";
+					+ currentTarget.object.user.login;
+				a.currentTarget = "_blank";
 				a.click();
 			} else if (event.buttons == 1) {
 				window.location.href = "https://profile.intra.42.fr/users/"
-					+ target.object.user.login;
+					+ currentTarget.object.user.login;
 			}
+		}
+	}
+	renderer.domElement.addEventListener("mousemove", handleMouse);
+	renderer.domElement.addEventListener("mousedown", handleMouse);
+
+	const processObjectsAtMouse = () => {
+		raycaster.setFromCamera(mouse, camera);
+
+		const [target] = raycaster.intersectObjects(circles);
+		if (previousTarget && target != previousTarget) {
+			previousTarget.object.scale.set(1, 1, 1);
+			previousTarget.object.renderOrder = 1;
+		}
+		if (target) {
 			const stage = parseInt(scrollY / 114) / 3 + 1;
 			if (stage < 1) return;
 			target.object.scale.set(stage, stage, stage);
 			target.object.renderOrder = 2;
 			previousTarget = target;
 		}
+		currentTarget = target;
 	}
-	renderer.domElement.addEventListener("mousemove", handleMouse);
-	renderer.domElement.addEventListener("mousedown", handleMouse);
 
 	window.addEventListener("resize", () => {
 		rendererHeight = innerHeight - navbarHeight;
@@ -275,6 +285,8 @@ function renderBlackholeMap(blackholeMap) {
 		camera.updateProjectionMatrix();
 		renderer.setSize(innerWidth, rendererHeight);
 		resizeBlackholes(rendererHeight);
+		mouse.x = -1;
+		mouse.y = -1;
 	});
 
 	renderer.setSize(innerWidth, rendererHeight);
@@ -297,6 +309,8 @@ function renderBlackholeMap(blackholeMap) {
 			stages[stage].material?.resolution.set(innerWidth, rendererHeight);
 		if (blackholeModel)
 			blackholeModel.rotation.y -= 0.01;
+
+		processObjectsAtMouse();
 
 		renderer.render(scene, camera);
 	}
