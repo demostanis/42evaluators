@@ -45,4 +45,5 @@ func WithPromo(promo string) func(db *gorm.DB) *gorm.DB {
 }
 
 const UnwantedSubjectsCondition = `name NOT LIKE 'Day %' AND
-	name NOT LIKE '%DEPRECATED%'`
+	name NOT LIKE '%DEPRECATED%' AND
+	name NOT LIKE 'Rush %'`
