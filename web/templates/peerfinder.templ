@@ -26,7 +26,7 @@ templ Project(project models.Project) {
 			<p class="text-center">
 				{ project.Teams[project.ActiveTeam].Name }
 				if len(project.Teams) > 1 {
-					({ strconv.Itoa(len(project.Teams)) } retries)
+					({ strconv.Itoa(len(project.Teams) - 1) } retries)
 				}
 			</p>
 		</div>
@@ -43,9 +43,52 @@ func calcGap(projects []models.Project) string {
 	return fmt.Sprintf("gap-y-[1rem] gap-x-[%drem]", maxUsers*2)
 }
 
-templ PeerFinder(subjects []models.Subject, projects map[int][]models.Project) {
+script projectsSettingsHandler() {
+	function handle(e) {
+		e.preventDefault();
+
+		const fields = [];
+		[].__proto__.slice.call(
+			document.querySelectorAll("#projects-settings-form input")).
+			filter(field => field.checked).
+			forEach(field => fields.push(field.id));
+
+		const params = new URLSearchParams(window.location.search);
+		params.delete("subjects");
+		params.delete("me");
+		if (fields.length) {
+			params.append("subjects", fields);
+		}
+		window.location.search = params;
+	}
+
+	document.querySelector("#projects-settings-form label")
+		.addEventListener("click", handle);
+}
+
+script deselectAllHandler() {
+	let active = true;
+	const elem = document.querySelector("#deselect-all")
+	elem.indeterminate = true;
+	elem.addEventListener("click", () => {
+		active = !active;
+		elem.checked = active;
+		elem.indeterminate = active;
+		document.querySelectorAll("#projects-settings-form input").
+			forEach(elem => elem.checked = active);
+	});
+}
+
+templ PeerFinder(
+	subjects []models.Subject,
+	projects map[int][]models.Project,
+	checkedSubjects map[string]bool,
+) {
 	@header()
 	<style>html,body{overflow-x:hidden;}</style>
+	<div class="flex justify-center mt-5">
+		<label for="projects-settings" class="btn">Show projects...</label>
+	</div>
 	<div class="flex items-center flex-col m-5">
 		for _, subject := range subjects {
 			if len(projects[subject.ID]) > 0 {
@@ -58,5 +101,33 @@ templ PeerFinder(subjects []models.Subject, projects map[int][]models.Project) {
 			}
 		}
 	</div>
+	<input type="checkbox" id="projects-settings" class="modal-toggle"/>
+	<div class="modal" id="projects-settings-form" role="dialog">
+		<form class="modal-box">
+			<div class="flex">
+				<h1 class="text-center font-black grow">Projects to show:</h1>
+				<input class="checkbox" id="deselect-all" type="checkbox" />
+			</div>
+			<div class="py-3"></div>
+			for _, subject := range subjects {
+				<div class="flex align-center py-1">
+					<p class="grow">{ subject.Name }</p>
+					<input
+						id={ subject.Name }
+						type="checkbox"
+						autocomplete="off"
+						class="checkbox"
+						if checkedSubjects[subject.Name] {
+							checked
+						}
+					/>
+				</div>
+			}
+			<label for="projects-settings" class="btn mt-4 flex">Save</label>
+		</form>
+		<label class="modal-backdrop" for="projects-settings"></label>
+	</div>
+	@projectsSettingsHandler()
+	@deselectAllHandler()
 	@footer()
 }

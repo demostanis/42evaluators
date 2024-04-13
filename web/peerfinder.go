@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/demostanis/42evaluators/internal/database"
 	"github.com/demostanis/42evaluators/internal/models"
@@ -20,10 +21,26 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 		err := db.
 			Model(&models.Subject{}).
 			Order("position").
+			Where(database.UnwantedSubjectsCondition).
 			Find(&subjects).Error
 		if err != nil {
 			internalServerError(w, err)
 			return
+		}
+
+		var wantedSubjects []string
+		wantedSubjectsRaw := r.URL.Query().Get("subjects")
+		if wantedSubjectsRaw != "" {
+			wantedSubjects = strings.Split(wantedSubjectsRaw, ",")
+		} else {
+			for _, subject := range subjects {
+				wantedSubjects = append(wantedSubjects, subject.Name)
+			}
+		}
+
+		checkedSubjects := make(map[string]bool)
+		for _, subject := range wantedSubjects {
+			checkedSubjects[subject] = true
 		}
 
 		i := 0
@@ -38,7 +55,8 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 				Preload("Teams.Users.User",
 					"campus_id = ? AND "+database.OnlyRealUsersCondition,
 					campusId).
-				Preload("Subject", database.UnwantedSubjectsCondition).
+				Preload("Subject", "name IN ? AND "+database.UnwantedSubjectsCondition,
+					wantedSubjects).
 				Limit(usersPerQuery).
 				Offset(usersPerQuery * i).
 				Model(&models.Project{}).
@@ -63,7 +81,7 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 			}
 		}
 
-		templates.PeerFinder(subjects, projectsMap).
+		templates.PeerFinder(subjects, projectsMap, checkedSubjects).
 			Render(r.Context(), w)
 	})
 }
