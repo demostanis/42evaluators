@@ -199,7 +199,10 @@ function renderBlackholeMap(blackholeMap) {
 			event.deltaY = (startY - event.touches[0].pageY) / 10;
 		scrollY += event.deltaY;
 
-		const stage = stages[parseInt(scrollY / 114)];
+		let stage = stages[parseInt(scrollY / 114)];
+		const farthestStage = Object.keys(stages)[Object.keys(stages).length-1];
+		if (!stage && parseInt(scrollY / 114) > farthestStage)
+			stage = stages[farthestStage];
 		const material = stage?.material;
 		if (material && previousMaterial)
 			previousMaterial.linewidth = 1;
