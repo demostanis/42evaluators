@@ -1,7 +1,6 @@
 package web
 
 import (
-	"fmt"
 	"net/http"
 	"sync"
 
@@ -46,7 +45,6 @@ func handleIndex(db *gorm.DB) http.Handler {
 		if code != "" {
 			accessToken, err := api.OauthToken(*apiKey, code)
 			if err != nil {
-				fmt.Println(err)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
