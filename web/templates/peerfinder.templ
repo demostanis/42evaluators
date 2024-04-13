@@ -26,7 +26,12 @@ templ Project(project models.Project) {
 			<p class="text-center">
 				{ project.Teams[project.ActiveTeam].Name }
 				if len(project.Teams) > 1 {
-					({ strconv.Itoa(len(project.Teams) - 1) } retries)
+					({ strconv.Itoa(len(project.Teams) - 1) } 
+				}
+				if len(project.Teams) > 2 {
+					retries)
+				} else if len(project.Teams) == 2 {
+					retry)
 				}
 			</p>
 		</div>
@@ -86,13 +91,18 @@ templ PeerFinder(
 ) {
 	@header()
 	<style>html,body{overflow-x:hidden;}</style>
+
 	<div class="flex justify-center mt-5">
+		<p>Show teams with status</p>
+		<select class="select">
+			<option>searching_for_a_group</option>
+		</select>
 		<label for="projects-settings" class="btn">Show projects...</label>
 	</div>
 	<div class="flex items-center flex-col m-5">
 		for _, subject := range subjects {
 			if len(projects[subject.ID]) > 0 {
-				<p class="text-8xl m-8">{ subject.Name }</p>
+				<p class="text-8xl m-8 text-center">{ subject.Name }</p>
 				<div class={ "flex flex-wrap justify-evenly w-[90%]", calcGap(projects[subject.ID]) }>
 					for _, project := range projects[subject.ID] {
 						@Project(project)
