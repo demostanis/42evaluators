@@ -3,7 +3,6 @@ package projects
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -110,20 +109,10 @@ func GetProjects(ctx context.Context, db *gorm.DB, errstream chan error) {
 
 		if len(project.CursusIds) > 0 && project.CursusIds[0] == 21 &&
 			len(project.Teams) > 0 && len(project.Teams[0].Users) > 0 {
-			var exists models.Team
-			err = db.
-				Session(&gorm.Session{}).
-				Where("id = ?", project.Teams[project.ActiveTeam].ID).
-				Model(&models.Team{}).
-				First(&exists).Error
-
-			// TODO: we should update...
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				prepareProjectForDb(db, project)
-				err = db.Save(&project).Error
-				if err != nil {
-					errstream <- err
-				}
+			prepareProjectForDb(db, project)
+			err = db.Save(&project).Error
+			if err != nil {
+				errstream <- err
 			}
 		}
 	}

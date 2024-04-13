@@ -39,9 +39,7 @@ type Project struct {
 	Status        string `json:"status"`
 	Teams         []Team `gorm:"foreignKey:ProjectID" json:"teams"`
 	CurrentTeamID int    `gorm:"-" json:"current_team_id"`
-	UpdatedAt     string `json:"updated_at"`
 	ActiveTeam    int
-	Page          int
 
 	SubjectID int     `gorm:"default:null"`
 	Subject   Subject `json:"project"`
