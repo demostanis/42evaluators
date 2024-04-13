@@ -58,7 +58,7 @@ script removeUselessParams() {
 templ LoggedOutIndex(clientId string, redirectUri string, needsLogin bool) {
 	@header()
 	if needsLogin {
-		<div class="bg-gray-900 w-full h-12 flex items-center justify-center">
+		<div class="bg-base-300 w-full h-12 flex items-center justify-center">
 			<span>You need to be logged-in to access this page.</span>
 		</div>
 	}
@@ -74,11 +74,26 @@ templ LoggedOutIndex(clientId string, redirectUri string, needsLogin bool) {
 
 templ LoggedInIndex(them *Me, err error) {
 	@header()
-	<div class="m-5 text-4xl lg:text-7xl grid place-items-center h-[85%]">
+	<div class="m-5 text-4xl lg:text-7xl grid place-items-center h-[80%]">
 		if err != nil {
 			<span>An error occurred: { fmt.Sprintf("%v", err) }</span>
 		} else {
-			<span>Welcome back, { them.DisplayName }!</span>
+			<span class="mb-8">Welcome back, { them.DisplayName }!</span>
+			<div class="flex w-full h-full gap-5">
+				<div class="w-1/2 shadow text-center bg-base-300 rounded-3xl">
+					<p class="text-3xl my-5 font-bold">Changelog</p>
+					<ul class="text-lg list-disc ml-10 mr-4">
+						<li>42evaluators has been fully rewritten in Go by students from Le Havre. It is also now open source on <a class="underline" href="https://github.com/demostanis/42evaluators">GitHub!</a></li>
+					</ul>
+				</div>
+				<div class="w-1/2 shadow text-center bg-base-300 rounded-3xl">
+					<p class="text-3xl mt-5 font-bold">Apps</p>
+					<button class="btn">Leaderboard</button>
+					<button class="btn">Peer finder</button>
+					<button class="btn">Blackhole map</button>
+					<button class="btn">Clusters map</button>
+				</div>
+			</div>
 		}
 	</div>
 	@removeUselessParams()

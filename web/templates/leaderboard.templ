@@ -85,7 +85,7 @@ func isDisabled(targetedPage int, totalPage int) bool {
 }
 
 templ pagination(url *url.URL, page int, totalPages int, gotoMyPositionShown bool) {
-	<div class="join justify-center flex pt-3">
+	<div class="join justify-center !flex pt-3">
 		@pageButton(url, 1, "<<", Inactive, page == 1)
 		@pageButton(url,
 			page-1, "<", Inactive,
@@ -273,7 +273,7 @@ templ Leaderboard(users []models.User,
 		} else {
 			@pagination(url, page, totalPages, gotoMyPositionShown)
 			<table class={ "table", "mt-4" }>
-				<thead class="sticky top-0 bg-gray-700 z-10">
+				<thead class="sticky top-0 bg-base-200 z-10">
 					<tr class="text-2xl">
 						<th>Position</th>
 						<th>Profile picture</th>

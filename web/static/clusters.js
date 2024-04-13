@@ -10,7 +10,7 @@ const handleNewImages = () => {
 			const bbox = image.getBoundingClientRect();
 			const popup = document.createElement("card");
 			popup.classList.add("card", "card-side",
-				"h-32", "bg-gray-700", "shadow-2xl");
+				"h-32", "bg-base-300", "shadow-2xl");
 
 			const popupImage = document.createElement("figure");
 			popupImage.classList.add("w-full", "h-full");

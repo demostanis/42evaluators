@@ -2,35 +2,35 @@ package templates
 
 templ links() {
 	<li>
-		<a href="/leaderboard" class="text-4xl lg:text-xl">
+		<a href="/leaderboard" class="!text-4xl lg:!text-xl">
 			Leaderboard
 		</a>
 	</li>
 	<li>
-		<a href="/peerfinder" class="text-4xl lg:text-xl">
+		<a href="/peerfinder" class="!text-4xl lg:!text-xl">
 			Peer finder
 		</a>
 	</li>
 	<li>
-		<a href="/blackhole" class="text-4xl lg:text-xl">
+		<a href="/blackhole" class="!text-4xl lg:!text-xl">
 			Blackhole map
 		</a>
 	</li>
 	<li>
-		<a href="/clusters" class="text-4xl lg:text-xl">
+		<a href="/clusters" class="!text-4xl lg:!text-xl">
 			Clusters map
 		</a>
 	</li>
 }
 
 templ navbar() {
-	<div class="navbar bg-gray-800">
+	<div class="navbar bg-base-200">
 		<div class="navbar-start">
 			<div class="dropdown z-50">
-				<div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+				<div tabindex="0" role="button" class="btn btn-ghost lg:!hidden">
 					☰
 				</div>
-				<ul tabindex="0" class="menu menu-sm dropdown-content bg-gray-800 rounded-box shadow-xl w-72">
+				<ul tabindex="0" class="menu menu-sm dropdown-content bg-base-200 rounded-box shadow-xl w-72">
 					@links()
 				</ul>
 			</div>
