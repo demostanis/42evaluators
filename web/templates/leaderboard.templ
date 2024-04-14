@@ -2,6 +2,7 @@ package templates
 
 import (
 	"github.com/demostanis/42evaluators/internal/models"
+	"time"
 	"fmt"
 	"strconv"
 	"strings"
@@ -21,12 +22,14 @@ type Field struct {
 
 var (
 	ToggleableFields = []Field{
+		{Name: "display_name", PrettyName: "Full name"},
 		{Name: "level", PrettyName: "Level"},
 		{Name: "weekly_logtime", PrettyName: "Weekly logtime"},
 		{Name: "correction_points", PrettyName: "Correction points"},
 		{Name: "wallets", PrettyName: "Wallets"},
 		{Name: "campus", PrettyName: "Campus"},
 		{Name: "coalition", PrettyName: "Coalition"},
+		{Name: "blackholed", PrettyName: "Blackholed"},
 	}
 )
 
@@ -308,6 +311,10 @@ templ Leaderboard(users []models.User,
 								User
 							</a>
 						</th>
+						// TODO: for loop????
+						if shownFields["display_name"].Checked {
+							<th>Full name</th>
+						}
 						if shownFields["level"].Checked {
 							<th>
 								<a href={ urlWithSorting(url, "level") }>
@@ -342,6 +349,9 @@ templ Leaderboard(users []models.User,
 						if shownFields["campus"].Checked {
 							<th>Campus</th>
 						}
+						if shownFields["blackholed"].Checked {
+							<th>Blackholed</th>
+						}
 					</tr>
 				</thead>
 				<tbody>
@@ -361,6 +371,9 @@ templ Leaderboard(users []models.User,
 									{ getDisplayName(user) }
 								</a>
 							</td>
+							if shownFields["display_name"].Checked {
+								<td>{ user.DisplayName }</td>
+							}
 							if shownFields["level"].Checked {
 								<td>{ fmt.Sprintf("%.2f", user.Level) }</td>
 							}
@@ -382,6 +395,15 @@ templ Leaderboard(users []models.User,
 							}
 							if shownFields["campus"].Checked {
 								<td>{ user.Campus.Name }</td>
+							}
+							if shownFields["blackholed"].Checked {
+								<td>if !user.BlackholedAt.IsZero() &&
+								   user.BlackholedAt.Compare(time.Now()) < 0 {
+								   Yes
+								} else {
+								   No
+								}
+								</td>
 							}
 						</tr>
 					}
