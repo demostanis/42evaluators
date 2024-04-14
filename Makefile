@@ -1,5 +1,6 @@
 TEMPL ?= templ
 GO ?= go
+GOFLAGS += --tags=fts5
 
 default: dev
 
@@ -16,7 +17,7 @@ dev: deps templates
 nojobs: FLAGS=disabledjobs=*
 nojobs: dev
 
-race: GOFLAGS=-race
+race: GOFLAGS+=-race
 race: dev
 
 debug: FLAGS=httpdebug=*

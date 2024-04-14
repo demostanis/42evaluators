@@ -184,11 +184,27 @@ script updateLeaderboardWhenNeeded(campusIds []int) {
 			params.delete("campus");
 		window.location.search = params;
 	}
+	function updateSearch(e) {
+		e.preventDefault();
+		const params = new URLSearchParams(window.location.search);
+		const search = document.querySelector("#search-form input");
+
+		params.delete("page");
+		params.delete("me");
+		if (search.value != "") {
+			params.delete("search");
+			params.append("search", search.value);
+		} else
+			params.delete("search");
+		window.location.search = params;
+	}
 
 	document.querySelector(".promo-selector")
 		.addEventListener("change", updatePromo)
 	document.querySelector(".campus-selector")
 		.addEventListener("change", updateCampus)
+	document.querySelector("#search-form")
+		.addEventListener("submit", updateSearch)
 }
 
 script fieldsSettingsHandler() {
@@ -240,7 +256,8 @@ func sort(shownFields map[string]Field) []Field {
 templ Leaderboard(users []models.User,
 	promos []Promo, campuses []models.Campus, activeCampus int,
 	url *url.URL, page int, totalPages int, shownFields map[string]Field,
-	currentUserId int, offset int, gotoMyPositionShown bool) {
+	currentUserId int, offset int, gotoMyPositionShown bool,
+	search string) {
 	@header()
 	<div id="main" class="mt-[17px]">
 		<div class="flex justify-center items-center space-x-4">
@@ -268,8 +285,17 @@ templ Leaderboard(users []models.User,
 			</select>
 			<label for="fields-settings" class="btn">Show fields...</label>
 		</div>
+		<div class="justify-center flex">
+			<form id="search-form" class="space-x-4">
+				<input
+					placeholder="Search..."
+					value={ search }
+					class="input mt-3 input-bordered"
+					/><button class="btn">Go</button>
+			</form>
+		</div>
 		if len(users) == 0 && page == 1 {
-			<div class="text-center pt-3">No users in this campus...</div>
+			<div class="text-center pt-3">No users found...</div>
 		} else {
 			@pagination(url, page, totalPages, gotoMyPositionShown)
 			<table class={ "table", "mt-4" }>

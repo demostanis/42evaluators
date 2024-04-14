@@ -199,8 +199,6 @@ func clustersWs(db *gorm.DB) http.Handler {
 					for _, location := range locations {
 						sendResponse(c, location, db)
 					}
-				} else {
-					break
 				}
 
 			case location := <-clusters.LocationChannel:

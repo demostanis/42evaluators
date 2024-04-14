@@ -61,7 +61,12 @@ func newDb(dialector gorm.Dialector) (*gorm.DB, error) {
 	if err = db.AutoMigrate(models.Project{}); err != nil {
 		return nil, err
 	}
-
+	if err = db.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS user_search
+						USING fts5(user_id, display_name,
+							tokenize="trigram remove_diacritics 1");
+						`).Error; err != nil {
+		return nil, err
+	}
 	return db, nil
 }
 
