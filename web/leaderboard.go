@@ -34,6 +34,7 @@ func getShownFields(wantedFieldsRaw string) map[string]templates.Field {
 		shownFields[field.Name] = templates.Field{
 			Name:       field.Name,
 			PrettyName: field.PrettyName,
+			Sortable:   field.Sortable,
 			Checked:    found,
 		}
 	}
@@ -41,13 +42,13 @@ func getShownFields(wantedFieldsRaw string) map[string]templates.Field {
 	return shownFields
 }
 
-// TODO: this should probably use ToggleableFields
 func canSortOn(field string) bool {
-	return field == "login" ||
-		field == "level" ||
-		field == "weekly_logtime" ||
-		field == "correction_points" ||
-		field == "wallets"
+	for _, toggleableField := range templates.ToggleableFields {
+		if toggleableField.Name == field && toggleableField.Sortable {
+			return true
+		}
+	}
+	return false
 }
 
 func getPromosForCampus(

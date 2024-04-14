@@ -18,18 +18,19 @@ type Field struct {
 	Name       string
 	PrettyName string
 	Checked    bool
+	Sortable   bool
 }
 
 var (
 	ToggleableFields = []Field{
-		{Name: "display_name", PrettyName: "Full name"},
-		{Name: "level", PrettyName: "Level"},
-		{Name: "weekly_logtime", PrettyName: "Weekly logtime"},
-		{Name: "correction_points", PrettyName: "Correction points"},
-		{Name: "wallets", PrettyName: "Wallets"},
-		{Name: "campus", PrettyName: "Campus"},
-		{Name: "coalition", PrettyName: "Coalition"},
-		{Name: "blackholed", PrettyName: "Blackholed"},
+		{Name: "display_name", PrettyName: "Full name", Sortable: true},
+		{Name: "level", PrettyName: "Level", Sortable: true},
+		{Name: "weekly_logtime", PrettyName: "Weekly logtime", Sortable: true},
+		{Name: "correction_points", PrettyName: "Correction points", Sortable: true},
+		{Name: "wallets", PrettyName: "Wallets", Sortable: true},
+		{Name: "campus", PrettyName: "Campus", Sortable: false},
+		{Name: "coalition", PrettyName: "Coalition", Sortable: false},
+		{Name: "blackholed", PrettyName: "Blackholed", Sortable: false},
 	}
 )
 
@@ -311,46 +312,18 @@ templ Leaderboard(users []models.User,
 								User
 							</a>
 						</th>
-						// TODO: for loop????
-						if shownFields["display_name"].Checked {
-							<th>Full name</th>
-						}
-						if shownFields["level"].Checked {
-							<th>
-								<a href={ urlWithSorting(url, "level") }>
-									Level
-								</a>
-							</th>
-						}
-						if shownFields["weekly_logtime"].Checked {
-							<th>
-								<a href={ urlWithSorting(url, "weekly_logtime") }>
-									Weekly logtime
-								</a>
-							</th>
-						}
-						if shownFields["correction_points"].Checked {
-							<th>
-								<a href={ urlWithSorting(url, "correction_points") }>
-									Correction points
-								</a>
-							</th>
-						}
-						if shownFields["wallets"].Checked {
-							<th>
-								<a href={ urlWithSorting(url, "wallets") }>
-									Wallets
-								</a>
-							</th>
-						}
-						if shownFields["coalition"].Checked {
-							<th>Coalition</th>
-						}
-						if shownFields["campus"].Checked {
-							<th>Campus</th>
-						}
-						if shownFields["blackholed"].Checked {
-							<th>Blackholed</th>
+						for _, field := range sort(shownFields) {
+							if field.Checked {
+								<th>
+									if field.Sortable {
+										<a href={ urlWithSorting(url, field.Name) }>
+											{ field.PrettyName }
+										</a>
+									} else {
+										{ field.PrettyName }
+									}
+								</th>
+							}
 						}
 					</tr>
 				</thead>
@@ -390,11 +363,11 @@ templ Leaderboard(users []models.User,
 							if shownFields["wallets"].Checked {
 								<td>{ fmt.Sprintf("%d", user.Wallets) }</td>
 							}
-							if shownFields["coalition"].Checked {
-								<td>{ user.Coalition.Name }</td>
-							}
 							if shownFields["campus"].Checked {
 								<td>{ user.Campus.Name }</td>
+							}
+							if shownFields["coalition"].Checked {
+								<td>{ user.Coalition.Name }</td>
 							}
 							if shownFields["blackholed"].Checked {
 								<td>
