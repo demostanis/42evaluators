@@ -294,7 +294,7 @@ templ Leaderboard(users []models.User,
 					placeholder="Search..."
 					value={ search }
 					class="input mt-3 input-bordered"
-					/><button class="btn">Go</button>
+				/><button class="btn">Go</button>
 			</form>
 		</div>
 		if len(users) == 0 && page == 1 {
@@ -397,12 +397,13 @@ templ Leaderboard(users []models.User,
 								<td>{ user.Campus.Name }</td>
 							}
 							if shownFields["blackholed"].Checked {
-								<td>if !user.BlackholedAt.IsZero() &&
+								<td>
+									if !user.BlackholedAt.IsZero() &&
 								   user.BlackholedAt.Compare(time.Now()) < 0 {
-								   Yes
-								} else {
-								   No
-								}
+										Yes
+									} else {
+										No
+									}
 								</td>
 							}
 						</tr>

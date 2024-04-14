@@ -26,7 +26,7 @@ templ Project(project models.Project) {
 			<p class="text-center">
 				{ project.Teams[project.ActiveTeam].Name }
 				if len(project.Teams) > 1 {
-					({ strconv.Itoa(len(project.Teams) - 1) } 
+					({ strconv.Itoa(len(project.Teams) - 1) }
 				}
 				if len(project.Teams) > 2 {
 					retries)
@@ -91,7 +91,6 @@ templ PeerFinder(
 ) {
 	@header()
 	<style>html,body{overflow-x:hidden;}</style>
-
 	<div class="flex justify-center mt-5">
 		<p>Show teams with status</p>
 		<select class="select">
@@ -116,7 +115,7 @@ templ PeerFinder(
 		<form class="modal-box">
 			<div class="flex">
 				<h1 class="text-center font-black grow">Projects to show:</h1>
-				<input class="checkbox" id="deselect-all" type="checkbox" />
+				<input class="checkbox" id="deselect-all" type="checkbox"/>
 			</div>
 			<div class="py-3"></div>
 			for _, subject := range subjects {
