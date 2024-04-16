@@ -1,26 +1,19 @@
 package templates
 
+templ Link(url string, name string) {
+	<li>
+		<a href={ templ.SafeURL(url) } class="!text-4xl lg:!text-xl">
+			{ name }
+		</a>
+	</li>
+}
+
 templ links() {
-	<li>
-		<a href="/leaderboard" class="!text-4xl lg:!text-xl">
-			Leaderboard
-		</a>
-	</li>
-	<li>
-		<a href="/peerfinder" class="!text-4xl lg:!text-xl">
-			Peer finder
-		</a>
-	</li>
-	<li>
-		<a href="/blackhole" class="!text-4xl lg:!text-xl">
-			Blackhole map
-		</a>
-	</li>
-	<li>
-		<a href="/clusters" class="!text-4xl lg:!text-xl">
-			Clusters map
-		</a>
-	</li>
+	@Link("/leaderboard", "Leaderboard")
+	@Link("/peerfinder", "Peer finder")
+	@Link("/blackhole", "Blackhole map")
+	@Link("/clusters", "Clusters map")
+	@Link("/calculator", "XP calculator")
 }
 
 templ navbar() {
