@@ -13,12 +13,13 @@ script xpCalculator(
 ) {
 	const series = [currentLevel, currentLevel];
 	const labels = ["Current level", "New level"];
+	let initialUserXP;
 	let charts;
 	let newLevel;
 
 	function addProject(number) {
 		let userXP;
-		let reason;
+		let reason = "New level";
 		const levelSelect = document.getElementsByName("level")[number];
 		const subjectSelect = document.getElementsByName("project")[number];
 		const xpSelect = document.getElementsByName("xp")[number];
@@ -30,23 +31,39 @@ script xpCalculator(
 			if (!levelData)
 				levelData = xpData[xpData.length-1];
 			userXP = levelData.xp + levelData.xpToNextLevel * (level - parseInt(level));
+			if (number == 0)
+				initialUserXP = userXP;
 		}
 		updateUserXP();
 
 		const updateLevel = () => {
-			const newXP = userXP + parseInt(xpSelect.value)*((mark.value||100)/100);
+			const newXP = userXP + parseInt(xpSelect.value||0)*((mark.value||100)/100);
+			if (newXP < 0) return;
 
 			let levelForXP;
-			for (let i in xpData) {
+			let i;
+			for (i in xpData) {
 				i = parseInt(i);
 				if (xpData[i].xp > newXP) {
 					levelForXP = xpData[i-1];
 					break;
 				}
 			}
-			if (subjectSelect.selectedOptions[0].disabled && !xpSelect.value)
-				newLevel = parseFloat(currentLevel);
-			else if (!levelForXP)
+
+			let levelForInitialXP;
+			for (let j in xpData) {
+				j = parseInt(j);
+				if (xpData[j].xp > initialUserXP) {
+					levelForInitialXP = xpData[j-1];
+					break;
+				}
+			}
+
+			const xpToNextLevel = parseInt(xpData[i].xp-newXP);
+			document.querySelector(".xp-required").
+				textContent = `${xpToNextLevel} XP until next level`;
+
+			if (!levelForXP)
 				newLevel = 30;
 			else
 				newLevel = levelForXP.lvl +
@@ -58,7 +75,16 @@ script xpCalculator(
 				data: series,
 			}]);
 			charts.updateOptions({ labels, });
+
+			const levelsEarned = newLevel - document.getElementsByName("level")[0].value;
+			document.querySelector(".plus-level").
+				textContent = "+" + levelsEarned.toFixed(2);
+
+			const blackholeEarned = parseInt((((newXP/49980)**0.45)-((initialUserXP/49980)**0.45))*483);
+			document.querySelector(".plus-days").
+				textContent = "+" + blackholeEarned + " days";
 		}
+		updateLevel();
 
 		levelSelect.addEventListener("input", () => {
 			currentLevel = levelSelect.value;
@@ -143,8 +169,9 @@ templ Calculator(subjects []models.Subject, level float64) {
 				<span>
 					<label for="level">Begin level</label>
 					<input
-						class="input input-bordered"
+						class="w-full input input-bordered"
 						type="number"
+						id="level"
 						name="level"
 						min="0"
 						max="30"
@@ -155,7 +182,7 @@ templ Calculator(subjects []models.Subject, level float64) {
 
 				<span>
 					<label for="project">Project</label>
-					<select class="select select-bordered w-[99%]" name="project">
+					<select class="select select-bordered w-[99%]" name="project" id="project">
 						<option disabled selected>Choose one...</option>
 						for _, subject := range subjects {
 							<option>{ subject.Name }</option>
@@ -166,8 +193,9 @@ templ Calculator(subjects []models.Subject, level float64) {
 				<span>
 					<div class="divider !mt-0 !mb-2 text-center">OR</div>
 					<input
-						class="input input-bordered"
+						class="w-full input input-bordered"
 						type="number"
+						id="xp"
 						name="xp"
 						placeholder="XP"
 					/>
@@ -176,8 +204,9 @@ templ Calculator(subjects []models.Subject, level float64) {
 				<span>
 					<label for="mark">Final mark</label>
 					<input
-						class="input input-bordered"
+						class="w-full input input-bordered"
 						type="number"
+						id="mark"
 						name="mark"
 						value="100"
 						placeholder="100"
@@ -191,6 +220,18 @@ templ Calculator(subjects []models.Subject, level float64) {
 		</div>
 
 		<div id="graph"></div>
+	</div>
+	<div class="stats">
+		<div class="stat">
+			<div class="stat-title">Levels</div>
+			<div class="plus-level stat-value">+0.00</div>
+			<div class="xp-required stat-description">Unknown XP until next level</div>
+		</div>
+		<div class="stat">
+			<div class="stat-title">Blackhole</div>
+			<div class="plus-days stat-value">+0 days</div>
+			<div class="stat-description"><a class="underline" href="https://medium.com/@benjaminmerchin/42-black-hole-deep-dive-cbc4b343c6b2">How does it work!!</a></div>
+		</div>
 	</div>
 	@xpCalculator(level, subjects, projects.XPData)
 	@footer()
