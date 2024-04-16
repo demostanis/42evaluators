@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -23,15 +24,22 @@ func loggedInUsersOnly(handler http.Handler) http.Handler {
 	})
 }
 
+func withUrl(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), "url", r.URL.Path)
+		handler.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 func Run(db *gorm.DB) {
-	http.Handle("/", handleIndex(db))
-	http.Handle("/leaderboard", loggedInUsersOnly(handleLeaderboard(db)))
-	http.Handle("/peerfinder", loggedInUsersOnly(handlePeerFinder(db)))
-	http.Handle("/calculator", loggedInUsersOnly(handleCalculator(db)))
-	http.Handle("/blackhole", loggedInUsersOnly(templ.Handler(templates.Blackhole())))
-	http.Handle("/blackhole.json", loggedInUsersOnly(blackholeMap(db)))
-	http.Handle("/clusters", loggedInUsersOnly(handleClusters()))
-	http.Handle("/clusters.live", loggedInUsersOnly(clustersWs(db)))
+	http.Handle("/", withUrl(handleIndex(db)))
+	http.Handle("/leaderboard", withUrl(loggedInUsersOnly(handleLeaderboard(db))))
+	http.Handle("/peerfinder", withUrl(loggedInUsersOnly(handlePeerFinder(db))))
+	http.Handle("/calculator", withUrl(loggedInUsersOnly(handleCalculator(db))))
+	http.Handle("/blackhole", withUrl(loggedInUsersOnly(templ.Handler(templates.Blackhole()))))
+	http.Handle("/blackhole.json", withUrl(loggedInUsersOnly(blackholeMap(db))))
+	http.Handle("/clusters", withUrl(loggedInUsersOnly(handleClusters())))
+	http.Handle("/clusters.live", withUrl(loggedInUsersOnly(clustersWs(db))))
 
 	http.Handle("/static/", handleStatic())
 

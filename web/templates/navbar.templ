@@ -1,8 +1,16 @@
 package templates
 
+func getActive(ctx context.Context, url string) string {
+	if ctx.Value("url").(string) == url {
+		return "active"
+	}
+	return ""
+}
+
 templ Link(url string, name string) {
 	<li>
-		<a href={ templ.SafeURL(url) } class="!text-4xl lg:!text-xl">
+		<a href={ templ.SafeURL(url) } class={ "!text-4xl lg:!text-xl",
+				getActive(ctx, url) }>
 			{ name }
 		</a>
 	</li>
