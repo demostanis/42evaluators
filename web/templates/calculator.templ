@@ -13,6 +13,8 @@ script xpCalculator(
 ) {
 	const series = [currentLevel, currentLevel];
 	const labels = ["Current level", "New level"];
+	const xpForSeries = [];
+	const bhDays = [];
 	let initialUserXP;
 	let charts;
 	let newLevel;
@@ -31,14 +33,17 @@ script xpCalculator(
 			if (!levelData)
 				levelData = xpData[xpData.length-1];
 			userXP = levelData.xp + levelData.xpToNextLevel * (level - parseInt(level));
-			if (number == 0)
+			if (number == 0) {
 				initialUserXP = userXP;
+				xpForSeries[0] = userXP;
+			}
 		}
 		updateUserXP();
 
 		const updateLevel = () => {
 			const newXP = userXP + parseInt(xpSelect.value||0)*((mark.value||100)/100);
 			if (levelSelect.value < 0 || mark.value < 0) return;
+			xpForSeries[number+1] = newXP;
 
 			let levelForXP;
 			let i;
@@ -76,21 +81,31 @@ script xpCalculator(
 			}]);
 			charts.updateOptions({ labels, });
 
-			const levelsEarned = newLevel - document.getElementsByName("level")[0].value;
+			const levelsEarned = series[series.length-1] - document.getElementsByName("level")[0].value;
 			let sign = "+";
 			if (levelsEarned < 0)
 				sign = "";
 			document.querySelector(".plus-level").
 				textContent = sign + levelsEarned.toFixed(2);
 
-			const blackholeEarned = parseInt((((
-				Math.min(newXP, 78880)/49980)**0.45)
-					-((initialUserXP/49980)**0.45))*483);
-			sign = "+";
-			if (blackholeEarned < 0)
-				sign = "";
+			function calcBlackhole(oldXP, newXP) {
+				const blackholeEarned = parseInt((((
+					Math.min(newXP, 78880)/49980)**0.45)
+						-((oldXP/49980)**0.45))*483);
+				if (oldXP < newXP && blackholeEarned < 0) {
+					return "+ 0 days";
+				}
+
+				sign = "+";
+				if (blackholeEarned < 0)
+					sign = "";
+				return sign + blackholeEarned + (blackholeEarned == 1 ? " day" : " days");
+			}
+			if (xpForSeries[number])
+				bhDays[number+1] = calcBlackhole(xpForSeries[number], newXP);
 			document.querySelector(".plus-days").
-				textContent = sign + blackholeEarned + " days";
+				textContent = calcBlackhole(initialUserXP,
+					xpForSeries[xpForSeries.length-1]);
 		}
 		updateLevel();
 
@@ -133,6 +148,18 @@ script xpCalculator(
 					getBoundingClientRect().width,
 			toolbar: {
 				show: false,
+			},
+		},
+		yaxis: {
+			labels: {
+				formatter: (value, index) => {
+					const level = value.toFixed(2);
+					if (!index ||
+						index.dataPointIndex == 0 ||
+						!bhDays[index.dataPointIndex])
+						return level;
+					return `${level} (${bhDays[index.dataPointIndex]})`;
+				},
 			},
 		},
 		tooltip: {
