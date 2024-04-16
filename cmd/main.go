@@ -179,6 +179,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, "error opening database:", err)
 		return
 	}
+	phyDb, _ := db.DB()
+	defer phyDb.Close()
 
 	go web.Run(db)
 

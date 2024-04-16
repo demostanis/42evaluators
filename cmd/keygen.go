@@ -21,6 +21,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, "error opening database:", err)
 		return
 	}
+	phyDb, _ := db.DB()
+	defer phyDb.Close()
 
 	if len(os.Args) != 2 {
 		fmt.Fprintln(os.Stderr, "usage: ./keygen <key count>")
