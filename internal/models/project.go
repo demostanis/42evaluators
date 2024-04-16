@@ -29,6 +29,7 @@ type Subject struct {
 	// Calculated from the distance from the center
 	// using Holy Graph coordinates
 	Position int
+	XP       int
 }
 
 type Project struct {

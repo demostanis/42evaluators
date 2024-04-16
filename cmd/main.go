@@ -167,6 +167,13 @@ func main() {
 		return
 	}
 
+	// TODO: go:embed maybe?
+	err = projects.OpenXPData()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error opening xp data:", err)
+		return
+	}
+
 	db, err := database.OpenDb()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error opening database:", err)

@@ -330,8 +330,7 @@ templ Leaderboard(users []models.User,
 				<tbody>
 					for i, user := range users {
 						<tr
-							class={ "text-white", "text-xl",
-							getBgUrl(user, currentUserId) }
+							class={ "text-xl", getBgUrl(user, currentUserId) }
 						>
 							<td>{ strconv.Itoa(i + offset + 1) }.</td>
 							<td class="flex">

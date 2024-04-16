@@ -17,9 +17,10 @@ import (
 const cursus21Begin = "2019-07-29T08:45:17.896Z"
 
 type ProjectData struct {
-	X         float64 `json:"x"`
-	Y         float64 `json:"y"`
-	ProjectID int     `json:"project_id"`
+	X          float64 `json:"x"`
+	Y          float64 `json:"y"`
+	ProjectID  int     `json:"project_id"`
+	Difficulty int     `json:"difficulty"`
 }
 
 var allProjectData []ProjectData
@@ -52,6 +53,7 @@ func setPositionInGraph(
 	subject.Position = 99999
 	for _, projectData := range allProjectData {
 		if projectData.ProjectID == subject.ID {
+			subject.XP = projectData.Difficulty
 			subject.Position =
 				int(math.Hypot(
 					projectData.X-libft.X,
@@ -110,7 +112,9 @@ func GetProjects(ctx context.Context, db *gorm.DB, errstream chan error) {
 		if len(project.CursusIds) > 0 && project.CursusIds[0] == 21 &&
 			len(project.Teams) > 0 && len(project.Teams[0].Users) > 0 {
 			prepareProjectForDb(db, project)
-			err = db.Save(&project).Error
+			err = db.
+				Session(&gorm.Session{FullSaveAssociations: true}).
+				Save(&project).Error
 			if err != nil {
 				errstream <- err
 			}

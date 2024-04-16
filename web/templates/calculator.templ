@@ -1,0 +1,197 @@
+package templates
+
+import (
+	"github.com/demostanis/42evaluators/internal/models"
+	"github.com/demostanis/42evaluators/internal/projects"
+	"fmt"
+)
+
+script xpCalculator(
+	currentLevel float64,
+	subjects []models.Subject,
+	xpData []projects.XPByLevel,
+) {
+	const series = [currentLevel, currentLevel];
+	const labels = ["Current level", "New level"];
+	let charts;
+	let newLevel;
+
+	function addProject(number) {
+		let userXP;
+		let reason;
+		const levelSelect = document.getElementsByName("level")[number];
+		const subjectSelect = document.getElementsByName("project")[number];
+		const xpSelect = document.getElementsByName("xp")[number];
+		const mark = document.getElementsByName("mark")[number];
+
+		const updateUserXP = () => {
+			const level = levelSelect.value;
+			let levelData = xpData.find(({ lvl }) => lvl == parseInt(level));
+			if (!levelData)
+				levelData = xpData[xpData.length-1];
+			userXP = levelData.xp + levelData.xpToNextLevel * (level - parseInt(level));
+		}
+		updateUserXP();
+
+		const updateLevel = () => {
+			const newXP = userXP + parseInt(xpSelect.value)*((mark.value||100)/100);
+
+			let levelForXP;
+			for (let i in xpData) {
+				i = parseInt(i);
+				if (xpData[i].xp > newXP) {
+					levelForXP = xpData[i-1];
+					break;
+				}
+			}
+			if (subjectSelect.selectedOptions[0].disabled && !xpSelect.value)
+				newLevel = parseFloat(currentLevel);
+			else if (!levelForXP)
+				newLevel = 30;
+			else
+				newLevel = levelForXP.lvl +
+					(newXP - levelForXP.xp)/levelForXP.xpToNextLevel;
+			series[number+1] = newLevel.toFixed(2);
+			labels[number+1] = reason;
+			charts.updateSeries([{
+				name: "Level",
+				data: series,
+			}]);
+			charts.updateOptions({ labels, });
+		}
+
+		levelSelect.addEventListener("input", () => {
+			currentLevel = levelSelect.value;
+			series[number] = currentLevel;
+			updateUserXP();
+			updateLevel();
+		});
+		xpSelect.addEventListener("input", () => {
+			mark.value = "100";
+			subjectSelect.selectedIndex = 0;
+			reason = `+ ${xpSelect.value} XP`;
+			updateLevel();
+		});
+		subjectSelect.addEventListener("change", () => {
+			for (const subject of subjects) {
+				if (subject.name == subjectSelect.selectedOptions[0].value) {
+					xpSelect.value = subject.XP;
+					reason = subject.name;
+					updateLevel();
+				}
+			}
+		});
+		mark.addEventListener("input", () => {
+			updateLevel(subjectSelect.selectedOptions[0].value);
+		});
+	}
+
+	charts = new ApexCharts(document.querySelector("#graph"), {
+		series: [{
+			name: "Level",
+			data: series,
+		}],
+		chart: {
+			type: "area",
+			height: 400,
+			width: window.innerWidth -
+				document.querySelector(".project-picker").
+					getBoundingClientRect().width,
+			toolbar: {
+				show: false,
+			},
+		},
+		tooltip: {
+			theme: "dark",
+		},
+		stroke: {
+			curve: "straight",
+		},
+		labels,
+	});
+	charts.render();
+
+	let nth = 1;
+	const addAnotherLevel = () => {
+		const projects = document.querySelector("#projects");
+		const projectPickers = document.querySelectorAll(".project-picker");
+		const newProjectPicker = projectPickers[projectPickers.length-1].cloneNode(true); // deep
+		if (newLevel)
+			newProjectPicker.querySelector("*[name=\"level\"]").value = newLevel.toFixed(2);
+		newProjectPicker.querySelector("*[name=\"xp\"]").value = "";
+		document.querySelector("#add-project").remove();
+		const divider = document.createElement("div");
+		divider.classList.add("divider", "!mt-6", "!mb-5");
+		projects.appendChild(divider);
+		projects.appendChild(newProjectPicker);
+		newProjectPicker.querySelector("#add-project")
+			.addEventListener("click", addAnotherLevel);
+		addProject(nth++);
+	}
+	document.querySelector("#add-project").
+		addEventListener("click", addAnotherLevel);
+	addProject(0);
+}
+
+templ Calculator(subjects []models.Subject, level float64) {
+	@header()
+	<script src="/static/assets/apexcharts.min.js"></script>
+
+	<div class="flex items-center m-10 justify-center h-[80%] overflow-x-hidden">
+		<div id="projects" class="flex flex-col h-full overflow-y-scroll overflow-x-hidden">
+			<div class="project-picker flex flex-col gap-2 grow justify-center">
+				<span>
+					<label for="level">Begin level</label>
+					<input
+						class="input input-bordered"
+						type="number"
+						name="level"
+						min="0"
+						max="30"
+						value={ fmt.Sprintf("%.2f", level) }
+						placeholder={ fmt.Sprintf("%.2f", level) }
+					/>
+				</span>
+
+				<span>
+					<label for="project">Project</label>
+					<select class="select select-bordered w-[99%]" name="project">
+						<option disabled selected>Choose one...</option>
+						for _, subject := range subjects {
+							<option>{ subject.Name }</option>
+						}
+					</select>
+				</span>
+
+				<span>
+					<div class="divider !mt-0 !mb-2 text-center">OR</div>
+					<input
+						class="input input-bordered"
+						type="number"
+						name="xp"
+						placeholder="XP"
+					/>
+				</span>
+
+				<span>
+					<label for="mark">Final mark</label>
+					<input
+						class="input input-bordered"
+						type="number"
+						name="mark"
+						value="100"
+						placeholder="100"
+						min="0"
+						max="125"
+					/>
+				</span>
+
+				<button id="add-project" class="btn mt-2">Add project...</button>
+			</div>
+		</div>
+
+		<div id="graph"></div>
+	</div>
+	@xpCalculator(level, subjects, projects.XPData)
+	@footer()
+}
