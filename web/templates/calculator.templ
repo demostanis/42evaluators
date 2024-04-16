@@ -38,7 +38,7 @@ script xpCalculator(
 
 		const updateLevel = () => {
 			const newXP = userXP + parseInt(xpSelect.value||0)*((mark.value||100)/100);
-			if (newXP < 0) return;
+			if (levelSelect.value < 0 || mark.value < 0) return;
 
 			let levelForXP;
 			let i;
@@ -77,14 +77,20 @@ script xpCalculator(
 			charts.updateOptions({ labels, });
 
 			const levelsEarned = newLevel - document.getElementsByName("level")[0].value;
+			let sign = "+";
+			if (levelsEarned < 0)
+				sign = "";
 			document.querySelector(".plus-level").
-				textContent = "+" + levelsEarned.toFixed(2);
+				textContent = sign + levelsEarned.toFixed(2);
 
 			const blackholeEarned = parseInt((((
 				Math.min(newXP, 78880)/49980)**0.45)
 					-((initialUserXP/49980)**0.45))*483);
+			sign = "+";
+			if (blackholeEarned < 0)
+				sign = "";
 			document.querySelector(".plus-days").
-				textContent = "+" + blackholeEarned + " days";
+				textContent = sign + blackholeEarned + " days";
 		}
 		updateLevel();
 
@@ -223,7 +229,7 @@ templ Calculator(subjects []models.Subject, level float64) {
 
 		<div id="graph"></div>
 	</div>
-	<div class="stats absolute bottom-0 left-0">
+	<div class="stats absolute bottom-0 right-0">
 		<div class="stat">
 			<div class="stat-title">Levels</div>
 			<div class="plus-level stat-value">+0.00</div>
