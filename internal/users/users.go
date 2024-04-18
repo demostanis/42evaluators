@@ -13,7 +13,6 @@ import (
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/campus"
-	"github.com/demostanis/42evaluators/internal/database"
 	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/gorm"
 )
@@ -34,58 +33,6 @@ func WaitForUsers() {
 	if !waitForUsersClosed {
 		<-waitForUsers
 	}
-}
-
-func storeUsersInFTS(db *gorm.DB) error {
-	var users []models.User
-	err := db.
-		Model(&models.User{}).
-		Preload("Title").
-		Scopes(database.OnlyRealUsers()).
-		Find(&users).Error
-	if err != nil {
-		return err
-	}
-
-	for _, user := range users {
-		displayName := user.Login
-		if user.Title.Name != "" {
-			displayName = strings.Replace(user.Title.Name, "%login", user.Login, -1)
-		}
-		displayName = fmt.Sprintf("%s %s", displayName, user.DisplayName)
-
-		// soo... i wanted to use UPSERT first, but apparently
-		// it doesn't support virtual tables on SQLite, so i resorted
-		// to just trying simple SQL. and now i've realized i'm using
-		// an ORM. but fuck it.
-		var count int64
-		err = db.Raw(`SELECT COUNT(*)
-						FROM user_search
-						WHERE user_id = ?`,
-			user.ID).
-			Scan(&count).Error
-		if err != nil {
-			return err
-		}
-		if count == 0 {
-			err = db.Exec(`INSERT INTO user_search(
-						user_id, display_name)
-						VALUES(?, ?)`,
-				user.ID, displayName).Error
-			if err != nil {
-				return err
-			}
-		} else {
-			err = db.Exec(`UPDATE user_search
-						SET display_name = ?
-						WHERE user_id = ?`,
-				displayName, user.ID).Error
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 func fetchOneCampus(ctx context.Context, campusId int, db *gorm.DB, errstream chan error) {
@@ -154,10 +101,6 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 	wg.Wait()
 	fmt.Printf("took %.2f minutes to fetch all users\n",
 		time.Since(start).Minutes())
-
-	go func() {
-		errstream <- storeUsersInFTS(db)
-	}()
 
 	if !waitForUsersClosed {
 		close(waitForUsers)

@@ -36,7 +36,7 @@ func WithPromo(promo string) func(db *gorm.DB) *gorm.DB {
 		if err == nil {
 			return db.
 				Model(&models.User{}).
-				Where("begin_at LIKE ?", fmt.Sprintf("%d-%02d-%%",
+				Where("begin_at::text LIKE ?", fmt.Sprintf("%d-%02d-%%",
 					promoBeginAt.Year(), promoBeginAt.Month())).
 				Scopes(OnlyRealUsers())
 		}

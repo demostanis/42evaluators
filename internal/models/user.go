@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"math"
@@ -39,8 +40,6 @@ type CursusUser struct {
 }
 
 type User struct {
-	gorm.Model
-
 	ID               int
 	Login            string
 	DisplayName      string
@@ -56,11 +55,11 @@ type User struct {
 	Level          float64
 	WeeklyLogtime  time.Duration
 
-	CoalitionID int `gorm:"default:null"`
+	CoalitionID sql.NullInt64
 	Coalition   Coalition
-	TitleID     int `gorm:"default:null"`
+	TitleID     sql.NullInt64
 	Title       Title
-	CampusID    int `gorm:"default:null"`
+	CampusID    sql.NullInt64
 	Campus      Campus
 }
 
@@ -146,7 +145,11 @@ func (user *User) SetCampus(campusId int, db *gorm.DB) error {
 		return err
 	}
 
-	user.Campus = campus
+	defer func() {
+		// If this is done before the query below, GORM
+		// will generate invalid SQL...
+		user.Campus = campus
+	}()
 	return db.Model(&user).
 		Where("id = ?", user.ID).
 		Updates(map[string]any{

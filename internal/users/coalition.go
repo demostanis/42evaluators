@@ -40,7 +40,7 @@ func getCoalition(coalitionId int, db *gorm.DB) (*models.Coalition, error) {
 			return nil, err
 		}
 
-		db.Create(actualCoalition)
+		db.Save(actualCoalition)
 		return actualCoalition, nil
 	}
 	return &cachedCoalition, err

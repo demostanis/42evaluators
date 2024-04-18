@@ -144,23 +144,15 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			return
 		}
 
-		var searchResults []int
-		if search != "" {
-			err := db.
-				Select("user_id").
-				Table("user_search").
-				Where("display_name MATCH ?", search).
-				Find(&searchResults).Error
-			if err != nil {
-				search = ""
-			}
-		}
-		withSearch := func(searchResults []int) func(db *gorm.DB) *gorm.DB {
+		withSearch := func(search string) func(db *gorm.DB) *gorm.DB {
 			return func(db *gorm.DB) *gorm.DB {
 				if search == "" {
 					return db
 				}
-				return db.Where("id IN ?", searchResults)
+				return db.
+					Joins("FULL OUTER JOIN titles ON titles.id = title_id").
+					Where(`login % ? OR display_name % ? OR titles.name % ?`,
+						search, search, search)
 			}
 		}
 
@@ -172,7 +164,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Scopes(database.OnlyRealUsers()).
 			Scopes(database.WithCampus(campus)).
 			Scopes(database.WithPromo(promo)).
-			Scopes(withSearch(searchResults)).
+			Scopes(withSearch(search)).
 			Count(&totalUsers).Error
 		if err != nil {
 			internalServerError(w, fmt.Errorf("could not get user count: %w", err))
@@ -238,7 +230,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			Scopes(database.OnlyRealUsers()).
 			Scopes(database.WithCampus(campus)).
 			Scopes(database.WithPromo(promo)).
-			Scopes(withSearch(searchResults)).
+			Scopes(withSearch(search)).
 			Find(&users).Error
 		if err != nil {
 			internalServerError(w, fmt.Errorf("failed to list users: %w", err))

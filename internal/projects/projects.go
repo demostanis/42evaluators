@@ -64,7 +64,7 @@ func setPositionInGraph(
 }
 
 func prepareProjectForDb(db *gorm.DB, project *models.Project) {
-	project.SubjectID = project.Subject.ID
+	project.SubjectID = &project.Subject.ID
 
 	for i := range project.Teams {
 		team := &project.Teams[i]

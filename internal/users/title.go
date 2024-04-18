@@ -33,12 +33,7 @@ func getTitle(titleId int, db *gorm.DB) (*models.Title, error) {
 			return nil, err
 		}
 
-		// We ignore the error since it could happen
-		// that another goroutine, since the last time
-		// we checked whether the record already existed
-		// (above), added the same record in the database!
-		// Which is very unfortunate. So we don't care.
-		db.Create(actualTitle)
+		db.Save(actualTitle)
 		return actualTitle, nil
 	}
 	return &cachedTitle, err
