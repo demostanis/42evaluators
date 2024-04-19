@@ -49,11 +49,18 @@ func fetchSvg(cluster *clusters.Cluster) error {
 		return err
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
+	if resp.StatusCode != http.StatusOK {
+		cluster.Svg = "<p class=\"h-[90%] flex justify-center items-center\">Cannot find this cluster map. It's likely that " +
+			"its campus' staff has modified it, and thus the link has changed. " +
+			"If you are part of this campus, please send the cluster SVG to " +
+			"@cgodard on Slack.</p>"
+	} else {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		cluster.Svg = strings.Replace(string(body), "<svg", "<svg width=\"100%\" height=\"90%\" class=\"p-5 absolute\"", 1)
 	}
-	(*cluster).Svg = strings.Replace(string(body), "<svg", "<svg width=\"100%\" height=\"90%\" class=\"p-5 absolute\"", 1)
 	return nil
 }
 
