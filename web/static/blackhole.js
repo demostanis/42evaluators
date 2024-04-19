@@ -195,7 +195,8 @@ function renderBlackholeMap(blackholeMap) {
 		const search = event.target.value;
 
 		if (search == "") {
-			gotoStage(parseInt(scrollY / 114));
+			scrollY = previousScrollY;
+			gotoStage(parseInt(previousScrollY / 114));
 			return;
 		}
 
@@ -203,6 +204,7 @@ function renderBlackholeMap(blackholeMap) {
 			const stage = stages[i];
 			for (const user of stage.users) {
 				if (user.login.includes(search.toLowerCase())) {
+					scrollY = parseInt(i);
 					gotoStage(parseInt(i));
 					break;
 				}
@@ -211,7 +213,6 @@ function renderBlackholeMap(blackholeMap) {
 	});
 
 	const gotoStage = stageIndex => {
-		scrollY = stageIndex * 114;
 		let stage = stages[stageIndex];
 
 		const farthestStage = Object.keys(stages)[Object.keys(stages).length-1];
@@ -246,16 +247,18 @@ function renderBlackholeMap(blackholeMap) {
 
 		camera.updateProjectionMatrix();
 
-		camera.position.z = stageIndex + 15;
+		camera.position.z += (scrollY < previousScrollY ? -114 : 114) / 50;
 	}
 
 	let scrollY = 0;
+	let previousScrollY = 0;
 	let previousMaterial = stages[smallestDiff].material;
 	const handleScroll = event => {
 		if (document.querySelector("#blackholes:hover")) return;
 
 		if (!event.deltaY)
-			event.deltaY = (startY - event.touches[0].pageY) / 10;
+			event.deltaY = (startY - event.touches[0].pageY) < 0 ? -114/2 : 114/2;
+		previousScrollY = scrollY;
 		scrollY += event.deltaY;
 
 		gotoStage(parseInt(scrollY / 114));
