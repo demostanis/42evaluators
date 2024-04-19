@@ -206,7 +206,7 @@ function renderBlackholeMap(blackholeMap) {
 		const material = stage?.material;
 		if (material && previousMaterial)
 			previousMaterial.linewidth = 1;
-		if (material) {
+		if (material && stage) {
 			material.linewidth = 5;
 			previousMaterial = material;
 			showBlackholes(stage);

@@ -9,6 +9,7 @@ import (
 
 	"github.com/demostanis/42evaluators/internal/database"
 	"github.com/demostanis/42evaluators/internal/models"
+	"github.com/demostanis/42evaluators/web/templates"
 	"gorm.io/gorm"
 )
 
@@ -16,6 +17,30 @@ type Blackhole struct {
 	Login string    `json:"login"`
 	Date  time.Time `json:"date"`
 	Image string    `json:"image"`
+}
+
+func handleBlackhole(db *gorm.DB) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		currentCampusID := getLoggedInUser(r).them.CampusID
+		currentCampusIDRaw := r.URL.Query().Get("campus")
+		if currentCampusIDRaw != "" {
+			currentCampusID, _ = strconv.Atoi(currentCampusIDRaw)
+		}
+
+		var campuses []models.Campus
+		err := db.
+			Model(&models.Campus{}).
+			Find(&campuses).Error
+		if err != nil {
+			internalServerError(w, err)
+			return
+		}
+
+		templates.Blackhole(
+			campuses,
+			currentCampusID,
+		).Render(r.Context(), w)
+	})
 }
 
 func blackholeMap(db *gorm.DB) http.Handler {
