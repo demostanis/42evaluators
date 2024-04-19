@@ -92,7 +92,7 @@ script xpCalculator(
 				const blackholeEarned = parseInt((((
 					Math.min(newXP, 78880)/49980)**0.45)
 						-((oldXP/49980)**0.45))*483);
-				if (oldXP < newXP && blackholeEarned < 0) {
+				if (oldXP <= newXP && blackholeEarned < 0) {
 					return "+ 0 days";
 				}
 
