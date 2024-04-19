@@ -6,7 +6,7 @@ import (
 )
 
 script campusChangeHandler() {
-	const campusSelect = document.querySelector("#campus-select")
+	const campusSelect = document.querySelector("#campus-select");
 
 	function handle() {
 		const params = new URLSearchParams(window.location.search);
@@ -30,8 +30,8 @@ templ Blackhole(campuses []models.Campus, currentCampusID int) {
 		}
 	</script>
 	<script type="module" src="static/blackhole.js"></script>
-	<div class="text-center">
-		<select id="campus-select" class="select absolute mt-5">
+	<div class="absolute m-5">
+		<select id="campus-select" class="select">
 			<option disabled>Choose a campus...</option>
 			for _, campus := range campuses {
 				<option
@@ -42,6 +42,7 @@ templ Blackhole(campuses []models.Campus, currentCampusID int) {
 				>{ campus.Name }</option>
 			}
 		</select>
+		<input id="search" placeholder="Search..." class="input" />
 	</div>
 	<div id="blackholes" class="right-0 absolute w-full lg:w-96 h-96 lg:h-full bottom-0 bg-base-200/90 overflow-y-scroll pb-1"></div>
 	<style>html,body{overflow:hidden;}</style>

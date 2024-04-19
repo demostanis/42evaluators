@@ -190,18 +190,32 @@ function renderBlackholeMap(blackholeMap) {
 		startY = event.touches[0].pageY;
 	});
 
-	let scrollY = 0;
-	let previousMaterial = stages[smallestDiff].material;
-	const handleScroll = event => {
-		if (document.querySelector("#blackholes:hover")) return;
+	const searchInput = document.querySelector("#search");
+	searchInput.addEventListener("input", event => {
+		const search = event.target.value;
 
-		if (!event.deltaY)
-			event.deltaY = (startY - event.touches[0].pageY) / 10;
-		scrollY += event.deltaY;
+		if (search == "") {
+			gotoStage(parseInt(scrollY / 114));
+			return;
+		}
 
-		let stage = stages[parseInt(scrollY / 114)];
+		for (const i of Object.keys(stages)) {
+			const stage = stages[i];
+			for (const user of stage.users) {
+				if (user.login.includes(search.toLowerCase())) {
+					gotoStage(parseInt(i));
+					break;
+				}
+			}
+		}
+	});
+
+	const gotoStage = stageIndex => {
+		scrollY = stageIndex * 114;
+		let stage = stages[stageIndex];
+
 		const farthestStage = Object.keys(stages)[Object.keys(stages).length-1];
-		if (!stage && parseInt(scrollY / 114) > farthestStage)
+		if (!stage && stageIndex > farthestStage)
 			stage = stages[farthestStage];
 		const material = stage?.material;
 		if (material && previousMaterial)
@@ -210,11 +224,11 @@ function renderBlackholeMap(blackholeMap) {
 			material.linewidth = 5;
 			previousMaterial = material;
 			showBlackholes(stage);
-		} else if (scrollY >= -900 && scrollY < 300) {
+		} else if (stageIndex >= -900/114 && stageIndex < 300/114) {
 			showBlackholes(stages[0]);
 		}
 
-		if (scrollY < -900) {
+		if (stageIndex < -900/114) {
 			showBlackholes({
 				users: blackholed.map(b => b.user),
 				blackholed: true
@@ -229,9 +243,22 @@ function renderBlackholeMap(blackholeMap) {
 			}
 			camera.far = 2000;
 		}
+
 		camera.updateProjectionMatrix();
 
-		camera.position.z += event.deltaY / 50;
+		camera.position.z = stageIndex + 15;
+	}
+
+	let scrollY = 0;
+	let previousMaterial = stages[smallestDiff].material;
+	const handleScroll = event => {
+		if (document.querySelector("#blackholes:hover")) return;
+
+		if (!event.deltaY)
+			event.deltaY = (startY - event.touches[0].pageY) / 10;
+		scrollY += event.deltaY;
+
+		gotoStage(parseInt(scrollY / 114));
 	}
 
 	window.addEventListener("wheel", handleScroll);
