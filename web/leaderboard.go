@@ -110,8 +110,9 @@ func getAllCampuses(db *gorm.DB) ([]models.Campus, error) {
 }
 
 func internalServerError(w http.ResponseWriter, err error) {
+	// TODO: stream this to errstream
 	w.WriteHeader(http.StatusInternalServerError)
-	w.Write([]byte(fmt.Sprintf("an error occured: %v", err)))
+	_, _ = w.Write([]byte(fmt.Sprintf("an error occured: %v", err)))
 }
 
 func handleLeaderboard(db *gorm.DB) http.Handler {
@@ -247,7 +248,7 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 				(promo != "" && campus == "" && userPromo == promo) ||
 				(user.Campus.ID == activeCampusId && userPromo == promo))
 
-		templates.Leaderboard(users,
+		_ = templates.Leaderboard(users,
 			promos, campuses, activeCampusId,
 			r.URL, page, totalPages, shownFields,
 			getLoggedInUser(r).them.ID,

@@ -98,7 +98,7 @@ func handleClusters() http.Handler {
 			_ = fetchSvg(&selectedCluster)
 		}
 
-		templates.ClustersMap(allClusters, selectedCluster).
+		_ = templates.ClustersMap(allClusters, selectedCluster).
 			Render(r.Context(), w)
 	})
 }

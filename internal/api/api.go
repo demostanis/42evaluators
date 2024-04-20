@@ -245,7 +245,11 @@ func DoPaginated[T []E, E any](apiReq *ApiRequest) (chan func() (*E, error), err
 		var wg sync.WaitGroup
 		for i := apiReq.startingPage; i <= pageCount; i++ {
 			if weights != nil {
-				weights.Acquire(context.Background(), 1)
+				err = weights.Acquire(context.Background(), 1)
+				if err != nil {
+					resps <- func() (*E, error) { return nil, err }
+					return
+				}
 			}
 			wg.Add(1)
 			go func(i int) {

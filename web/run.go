@@ -8,8 +8,11 @@ import (
 	"gorm.io/gorm"
 )
 
+type ctxKey string
+
 const (
-	UsersPerPage = 50
+	UsersPerPage        = 50
+	urlCtxKey    ctxKey = "url"
 )
 
 func loggedInUsersOnly(handler http.Handler) http.Handler {
@@ -24,7 +27,7 @@ func loggedInUsersOnly(handler http.Handler) http.Handler {
 
 func withUrl(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), "url", r.URL.Path)
+		ctx := context.WithValue(r.Context(), urlCtxKey, r.URL.Path)
 		handler.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

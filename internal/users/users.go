@@ -64,10 +64,21 @@ func fetchOneCampus(ctx context.Context, campusId int, db *gorm.DB, errstream ch
 
 		wg.Add(1)
 		go func() {
-			user.CreateIfNeeded(db)
-			user.UpdateFields(db)
-			user.SetCampus(campusId, db)
-			wg.Done()
+			defer wg.Done()
+			err = user.CreateIfNeeded(db)
+			if err != nil {
+				errstream <- err
+				return
+			}
+			err = user.UpdateFields(db)
+			if err != nil {
+				errstream <- err
+				return
+			}
+			err = user.SetCampus(campusId, db)
+			if err != nil {
+				errstream <- err
+			}
 		}()
 	}
 	wg.Wait()
@@ -79,16 +90,20 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 	db.Find(&campuses)
 
 	var wg sync.WaitGroup
-	go GetTests(ctx, db, errstream, wg)
-	go GetCoalitions(ctx, db, errstream, wg)
-	go GetTitles(ctx, db, errstream, wg)
-	go GetLogtimes(ctx, db, errstream, wg)
+	go GetTests(ctx, db, errstream, &wg)
+	go GetCoalitions(ctx, db, errstream, &wg)
+	go GetTitles(ctx, db, errstream, &wg)
+	go GetLogtimes(ctx, db, errstream, &wg)
 
 	start := time.Now()
 	weights := semaphore.NewWeighted(ConcurrentCampusesFetch)
 
 	for _, campus := range campuses {
-		weights.Acquire(ctx, 1)
+		err := weights.Acquire(ctx, 1)
+		if err != nil {
+			errstream <- err
+			continue
+		}
 		wg.Add(1)
 
 		go func(campusId int) {

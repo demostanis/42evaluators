@@ -104,7 +104,7 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 			}
 		}
 
-		templates.PeerFinder(
+		_ = templates.PeerFinder(
 			subjects, projectsMap, checkedSubjects, status,
 		).Render(r.Context(), w)
 	})

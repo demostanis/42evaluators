@@ -21,7 +21,7 @@ func GetTests(
 	ctx context.Context,
 	db *gorm.DB,
 	errstream chan error,
-	wg sync.WaitGroup,
+	wg *sync.WaitGroup,
 ) {
 	wg.Add(1)
 
@@ -45,8 +45,15 @@ func GetTests(
 
 		if group.Group.Name == "Test account" {
 			user := models.User{ID: group.UserID}
-			user.CreateIfNeeded(db)
-			user.YesItsATestAccount(db)
+			err = user.CreateIfNeeded(db)
+			if err != nil {
+				errstream <- err
+				continue
+			}
+			err = user.YesItsATestAccount(db)
+			if err != nil {
+				errstream <- err
+			}
 		}
 	}
 

@@ -36,7 +36,7 @@ func handleBlackhole(db *gorm.DB) http.Handler {
 			return
 		}
 
-		templates.Blackhole(
+		_ = templates.Blackhole(
 			campuses,
 			currentCampusID,
 		).Render(r.Context(), w)
@@ -78,6 +78,6 @@ func blackholeMap(db *gorm.DB) http.Handler {
 			return a.Date.Compare(b.Date)
 		})
 
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 	})
 }

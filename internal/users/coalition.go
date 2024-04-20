@@ -50,7 +50,7 @@ func GetCoalitions(
 	ctx context.Context,
 	db *gorm.DB,
 	errstream chan error,
-	wg sync.WaitGroup,
+	wg *sync.WaitGroup,
 ) {
 	wg.Add(1)
 
@@ -74,14 +74,21 @@ func GetCoalitions(
 		}
 
 		user := models.User{ID: coalition.UserID}
-		user.CreateIfNeeded(db)
+		err = user.CreateIfNeeded(db)
+		if err != nil {
+			errstream <- err
+			continue
+		}
 		go func(coalitionId int) {
 			actualCoalition, err := getCoalition(coalitionId, db)
 			if err != nil {
 				errstream <- err
 				return
 			}
-			user.SetCoalition(*actualCoalition, db)
+			err = user.SetCoalition(*actualCoalition, db)
+			if err != nil {
+				errstream <- err
+			}
 		}(coalition.ID)
 	}
 

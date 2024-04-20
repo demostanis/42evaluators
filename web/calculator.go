@@ -42,7 +42,7 @@ func handleCalculator(db *gorm.DB) http.Handler {
 		// we should display them above others in the
 		// project select
 
-		templates.Calculator(subjects, level).
+		_ = templates.Calculator(subjects, level).
 			Render(r.Context(), w)
 	})
 }

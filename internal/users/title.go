@@ -43,7 +43,7 @@ func GetTitles(
 	ctx context.Context,
 	db *gorm.DB,
 	errstream chan error,
-	wg sync.WaitGroup,
+	wg *sync.WaitGroup,
 ) {
 	wg.Add(1)
 
@@ -69,14 +69,22 @@ func GetTitles(
 		}
 
 		user := models.User{ID: title.UserID}
-		user.CreateIfNeeded(db)
+		err = user.CreateIfNeeded(db)
+		if err != nil {
+			errstream <- err
+			continue
+		}
 		go func(titleId int) {
 			actualTitle, err := getTitle(titleId, db)
 			if err != nil {
 				errstream <- err
 				return
 			}
-			user.SetTitle(*actualTitle, db)
+			err = user.SetTitle(*actualTitle, db)
+			if err != nil {
+				errstream <- err
+				return
+			}
 		}(title.ID)
 	}
 

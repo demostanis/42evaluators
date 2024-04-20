@@ -80,7 +80,7 @@ func GetLogtimes(
 	ctx context.Context,
 	db *gorm.DB,
 	errstream chan error,
-	wg sync.WaitGroup,
+	wg *sync.WaitGroup,
 ) {
 	wg.Add(1)
 
@@ -124,8 +124,15 @@ func GetLogtimes(
 		weeklyLogtime := calcWeeklyLogtime(logtime)
 
 		user := models.User{ID: userId}
-		user.CreateIfNeeded(db)
-		user.SetWeeklyLogtime(weeklyLogtime, db)
+		err = user.CreateIfNeeded(db)
+		if err != nil {
+			errstream <- err
+			continue
+		}
+		err = user.SetWeeklyLogtime(weeklyLogtime, db)
+		if err != nil {
+			errstream <- err
+		}
 	}
 
 	wg.Done()

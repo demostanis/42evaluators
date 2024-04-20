@@ -37,7 +37,7 @@ func handleIndex(db *gorm.DB) http.Handler {
 		apiKey := api.OauthApiKey()
 		if apiKey == nil {
 			w.WriteHeader(http.StatusPreconditionRequired)
-			w.Write([]byte("The server is currently restarting, please wait a few seconds. If this issue persists, please report to @cgodard on Slack."))
+			_, _ = w.Write([]byte("The server is currently restarting, please wait a few seconds. If this issue persists, please report to @cgodard on Slack."))
 			return
 		}
 
@@ -61,18 +61,18 @@ func handleIndex(db *gorm.DB) http.Handler {
 				})
 				mu.Unlock()
 			}
-			templates.
+			_ = templates.
 				LoggedInIndex(them, err).
 				Render(r.Context(), w)
 		} else {
 			user := getLoggedInUser(r)
 			if user != nil {
-				templates.
+				_ = templates.
 					LoggedInIndex(user.them, nil).
 					Render(r.Context(), w)
 			} else {
 				needsLogin := r.URL.Query().Get("needslogin") != ""
-				templates.
+				_ = templates.
 					LoggedOutIndex(apiKey.UID, apiKey.RedirectUri, needsLogin).
 					Render(r.Context(), w)
 			}
