@@ -228,6 +228,9 @@ function renderBlackholeMap(blackholeMap) {
 		let stage = stages[stageIndex];
 
 		const farthestStage = Object.keys(stages)[Object.keys(stages).length-1];
+		const nearestStage = Object.keys(stages)[0];
+		if (!stage && stageIndex < nearestStage)
+			stage = stages[nearestStage];
 		if (!stage && stageIndex > farthestStage)
 			stage = stages[farthestStage];
 		const material = stage?.material;
