@@ -24,17 +24,17 @@ type CoalitionID struct {
 	UserID int `json:"user_id"`
 }
 
-func getCoalition(coalitionId int, db *gorm.DB) (*models.Coalition, error) {
+func getCoalition(coalitionID int, db *gorm.DB) (*models.Coalition, error) {
 	var cachedCoalition models.Coalition
 	err := db.
 		Session(&gorm.Session{}).
 		Model(&models.Coalition{}).
-		Where("id = ?", coalitionId).
+		Where("id = ?", coalitionID).
 		First(&cachedCoalition).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		actualCoalition, err := api.Do[models.Coalition](
-			api.NewRequest(fmt.Sprintf("/v2/coalitions/%d", coalitionId)).
+			api.NewRequest(fmt.Sprintf("/v2/coalitions/%d", coalitionID)).
 				Authenticated())
 		if err != nil {
 			return nil, err
@@ -79,8 +79,8 @@ func GetCoalitions(
 			errstream <- err
 			continue
 		}
-		go func(coalitionId int) {
-			actualCoalition, err := getCoalition(coalitionId, db)
+		go func(coalitionID int) {
+			actualCoalition, err := getCoalition(coalitionID, db)
 			if err != nil {
 				errstream <- err
 				return

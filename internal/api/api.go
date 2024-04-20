@@ -23,7 +23,7 @@ import (
 const (
 	defaultPageSize             = 100
 	defaultMaxConcurrentFetches = 50
-	apiUrl                      = "https://api.intra.42.fr"
+	apiURL                      = "https://api.intra.42.fr"
 )
 
 type ParseError struct {
@@ -36,7 +36,7 @@ func (parseError ParseError) Error() string {
 		parseError.err, parseError.body)
 }
 
-type ApiRequest struct {
+type APIRequest struct {
 	method               string
 	endpoint             string
 	headers              map[string]string
@@ -49,8 +49,8 @@ type ApiRequest struct {
 	startingPage         int
 }
 
-func NewRequest(endpoint string) *ApiRequest {
-	return &ApiRequest{
+func NewRequest(endpoint string) *APIRequest {
+	return &APIRequest{
 		method:               "GET",
 		endpoint:             endpoint,
 		headers:              map[string]string{},
@@ -64,54 +64,54 @@ func NewRequest(endpoint string) *ApiRequest {
 	}
 }
 
-func (apiReq *ApiRequest) Authenticated() *ApiRequest {
+func (apiReq *APIRequest) Authenticated() *APIRequest {
 	apiReq.authenticated = true
 	return apiReq
 }
 
-func (apiReq *ApiRequest) AuthenticatedAs(accessToken string) *ApiRequest {
+func (apiReq *APIRequest) AuthenticatedAs(accessToken string) *APIRequest {
 	apiReq.authenticatedAs = accessToken
 	return apiReq
 }
 
-func (apiReq *ApiRequest) WithMethod(method string) *ApiRequest {
+func (apiReq *APIRequest) WithMethod(method string) *APIRequest {
 	apiReq.method = method
 	return apiReq
 }
 
-func (apiReq *ApiRequest) WithHeaders(headers map[string]string) *ApiRequest {
+func (apiReq *APIRequest) WithHeaders(headers map[string]string) *APIRequest {
 	maps.Copy(apiReq.headers, headers)
 	return apiReq
 }
 
-func (apiReq *ApiRequest) WithParams(params map[string]string) *ApiRequest {
+func (apiReq *APIRequest) WithParams(params map[string]string) *APIRequest {
 	maps.Copy(apiReq.params, params)
 	return apiReq
 }
 
-func (apiReq *ApiRequest) WithMaxConcurrentFetches(n int64) *ApiRequest {
+func (apiReq *APIRequest) WithMaxConcurrentFetches(n int64) *APIRequest {
 	apiReq.maxConcurrentFetches = n
 	return apiReq
 }
 
-func (apiReq *ApiRequest) WithPageSize(n int) *ApiRequest {
+func (apiReq *APIRequest) WithPageSize(n int) *APIRequest {
 	apiReq.pageSize = strconv.Itoa(n)
 	return apiReq
 }
 
-func (apiReq *ApiRequest) FromPage(n int) *ApiRequest {
+func (apiReq *APIRequest) FromPage(n int) *APIRequest {
 	if n > 0 {
 		apiReq.startingPage = n
 	}
 	return apiReq
 }
 
-func (apiReq *ApiRequest) OutputHeadersIn(output **http.Header) *ApiRequest {
+func (apiReq *APIRequest) OutputHeadersIn(output **http.Header) *APIRequest {
 	apiReq.outputHeadersIn = output
 	return apiReq
 }
 
-func Do[T any](apiReq *ApiRequest) (*T, error) {
+func Do[T any](apiReq *APIRequest) (*T, error) {
 	var client *RLHTTPClient
 
 	if apiReq.authenticated {
@@ -133,10 +133,10 @@ func Do[T any](apiReq *ApiRequest) (*T, error) {
 		}
 		client = findNonRateLimitedClientFor(*targetTarget)
 	} else {
-		client = RateLimitedClient("", models.ApiKey{})
+		client = RateLimitedClient("", models.APIKey{})
 	}
 
-	req, err := http.NewRequest(apiReq.method, apiUrl+apiReq.endpoint, nil)
+	req, err := http.NewRequest(apiReq.method, apiURL+apiReq.endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (pageCountErr PageCountError) Error() string {
 	return fmt.Sprintf("failed to get page count: %v", pageCountErr.err)
 }
 
-func getPageCount(apiReq *ApiRequest) (int, error) {
+func getPageCount(apiReq *APIRequest) (int, error) {
 	params := make(map[string]string)
 	params["page[size]"] = apiReq.pageSize
 
@@ -227,7 +227,7 @@ func getPageCount(apiReq *ApiRequest) (int, error) {
 	return 1 + (total-1)/perPage, nil
 }
 
-func DoPaginated[T []E, E any](apiReq *ApiRequest) (chan func() (*E, error), error) {
+func DoPaginated[T []E, E any](apiReq *APIRequest) (chan func() (*E, error), error) {
 	resps := make(chan func() (*E, error))
 	pageCount, err := getPageCount(apiReq)
 	if err != nil {

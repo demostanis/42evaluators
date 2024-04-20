@@ -18,14 +18,14 @@ type OauthTokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-func OauthToken(apiKey models.ApiKey, code string) (string, error) {
+func OauthToken(apiKey models.APIKey, code string) (string, error) {
 	params := make(map[string]string)
 	params["grant_type"] = "client_credentials"
 	params["client_id"] = apiKey.UID
 	params["client_secret"] = apiKey.Secret
 	if code != "" {
 		params["code"] = code
-		params["redirect_uri"] = apiKey.RedirectUri
+		params["redirect_uri"] = apiKey.RedirectURI
 		params["grant_type"] = "authorization_code"
 	}
 
@@ -43,7 +43,7 @@ func OauthToken(apiKey models.ApiKey, code string) (string, error) {
 	return resp.AccessToken, nil
 }
 
-func InitClients(apiKeys []models.ApiKey) error {
+func InitClients(apiKeys []models.APIKey) error {
 	clients = make(map[int][]*RLHTTPClient)
 
 	var total float32

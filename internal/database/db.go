@@ -14,7 +14,7 @@ const (
 	Development
 )
 
-func newDb(dialector gorm.Dialector) (*gorm.DB, error) {
+func newDB(dialector gorm.Dialector) (*gorm.DB, error) {
 	db, err := gorm.Open(dialector, &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
 		// TODO: remove
@@ -24,7 +24,7 @@ func newDb(dialector gorm.Dialector) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	if err = db.AutoMigrate(models.ApiKey{}); err != nil {
+	if err = db.AutoMigrate(models.APIKey{}); err != nil {
 		return nil, err
 	}
 	if err = db.AutoMigrate(models.User{}); err != nil {
@@ -60,6 +60,6 @@ func newDb(dialector gorm.Dialector) (*gorm.DB, error) {
 	return db, nil
 }
 
-func OpenDb() (*gorm.DB, error) {
-	return newDb(postgres.Open("host=localhost"))
+func OpenDB() (*gorm.DB, error) {
+	return newDB(postgres.Open("host=localhost"))
 }

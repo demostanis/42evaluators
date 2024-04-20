@@ -12,10 +12,10 @@ const (
 	PromoFormat = "01/2006"
 )
 
-func WithCampus(campusId string) func(db *gorm.DB) *gorm.DB {
+func WithCampus(campusID string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if campusId != "" {
-			return db.Where("campus_id = ?", campusId)
+		if campusID != "" {
+			return db.Where("campus_id = ?", campusID)
 		}
 		return db
 	}

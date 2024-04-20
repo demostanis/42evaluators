@@ -16,13 +16,13 @@ func main() {
 		return
 	}
 
-	db, err := database.OpenDb()
+	db, err := database.OpenDB()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error opening database:", err)
 		return
 	}
-	phyDb, _ := db.DB()
-	defer phyDb.Close()
+	phyDB, _ := db.DB()
+	defer phyDB.Close()
 
 	if len(os.Args) != 2 {
 		fmt.Fprintln(os.Stderr, "usage: ./keygen <key count>")

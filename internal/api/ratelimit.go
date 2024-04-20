@@ -72,7 +72,7 @@ type RLHTTPClient struct {
 	hourlyRateLimiter   *rate.Limiter
 	isRateLimited       bool
 	accessToken         string
-	apiKey              models.ApiKey
+	apiKey              models.APIKey
 }
 
 func (c *RLHTTPClient) setIsRateLimited(isRateLimited bool) {
@@ -87,7 +87,7 @@ func (c *RLHTTPClient) getIsRateLimited() bool {
 	return c.isRateLimited
 }
 
-func RateLimitedClient(accessToken string, apiKey models.ApiKey) *RLHTTPClient {
+func RateLimitedClient(accessToken string, apiKey models.APIKey) *RLHTTPClient {
 	return &RLHTTPClient{
 		client: http.DefaultClient,
 		secondlyRateLimiter: rate.NewLimiter(
@@ -130,11 +130,11 @@ func findNonRateLimitedClientFor(target Target) *RLHTTPClient {
 	return findNonRateLimitedClientFor(target)
 }
 
-func OauthApiKey() *models.ApiKey {
+func OauthAPIKey() *models.APIKey {
 	oauthClients := clients[oauthTarget.ID]
 	if len(oauthClients) < 1 {
 		time.Sleep(SleepBetweenTries)
-		return OauthApiKey()
+		return OauthAPIKey()
 	}
 	return &oauthClients[0].apiKey
 }

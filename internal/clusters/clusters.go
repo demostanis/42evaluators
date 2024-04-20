@@ -24,7 +24,7 @@ var (
 type Location struct {
 	ID       int    `json:"id"`
 	Host     string `json:"host"`
-	CampusId int    `json:"campus_id"`
+	CampusID int    `json:"campus_id"`
 	User     struct {
 		ID    int    `json:"id"`
 		Login string `json:"login"`
@@ -38,11 +38,11 @@ type Location struct {
 }
 
 type Cluster struct {
-	Id     int    `json:"id"`
+	ID     int    `json:"id"`
 	Name   string `json:"name"`
 	Image  string `json:"cdn_link"`
 	Campus struct {
-		Id   int    `json:"id"`
+		ID   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"campus"`
 	Svg         string
@@ -87,10 +87,10 @@ func UpdateLocationInDB(location models.Location, db *gorm.DB) error {
 		Where("id = ?", location.ID).
 		Updates(map[string]any{
 			"ID":       location.ID,
-			"UserId":   location.UserId,
+			"UserID":   location.UserID,
 			"Login":    location.Login,
 			"Host":     location.Host,
-			"CampusId": location.CampusId,
+			"CampusID": location.CampusID,
 			"EndAt":    location.EndAt,
 			"Image":    location.Image,
 		}).Error
@@ -123,10 +123,10 @@ func getLocationsForField(
 		}
 		dbLocation := models.Location{
 			ID:       location.ID,
-			UserId:   location.User.ID,
+			UserID:   location.User.ID,
 			Login:    location.User.Login,
 			Host:     location.Host,
-			CampusId: location.CampusId,
+			CampusID: location.CampusID,
 			Image:    location.User.Image.Versions.Small,
 			EndAt:    location.EndAt,
 		}

@@ -47,14 +47,14 @@ func blackholeMap(db *gorm.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		result := make([]Blackhole, 0)
 
-		campusId := r.URL.Query().Get("campus")
-		if campusId == "" {
-			campusId = strconv.Itoa(getLoggedInUser(r).them.CampusID)
+		campusID := r.URL.Query().Get("campus")
+		if campusID == "" {
+			campusID = strconv.Itoa(getLoggedInUser(r).them.CampusID)
 		}
 		var users []models.User
 		err := db.
 			Scopes(database.OnlyRealUsers()).
-			Scopes(database.WithCampus(campusId)).
+			Scopes(database.WithCampus(campusID)).
 			Find(&users).Error
 		if err != nil {
 			internalServerError(w, err)

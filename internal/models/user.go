@@ -136,10 +136,10 @@ func (user *User) YesItsATestAccount(db *gorm.DB) error {
 		}).Error
 }
 
-func (user *User) SetCampus(campusId int, db *gorm.DB) error {
+func (user *User) SetCampus(campusID int, db *gorm.DB) error {
 	var campus Campus
 	err := db.Model(&Campus{}).
-		Where("id = ?", campusId).
+		Where("id = ?", campusID).
 		First(&campus).Error
 	if err != nil {
 		return err
@@ -153,7 +153,7 @@ func (user *User) SetCampus(campusId int, db *gorm.DB) error {
 	return db.Model(&user).
 		Where("id = ?", user.ID).
 		Updates(map[string]any{
-			"CampusID": campusId,
+			"CampusID": campusID,
 		}).Error
 }
 

@@ -38,11 +38,11 @@ templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Clust
 		<select class="select select-bordered ml-5 mt-4 absolute left-0" id="cluster">
 			for _, cluster := range allClusters {
 				<option
-					if selectedCluster.Id == cluster.Id {
+					if selectedCluster.ID == cluster.ID {
 						disabled
 						selected
 					}
-					value={ strconv.Itoa(cluster.Id) }
+					value={ strconv.Itoa(cluster.ID) }
 				>{ cluster.DisplayName }</option>
 			}
 		</select>

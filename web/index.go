@@ -34,7 +34,7 @@ func getLoggedInUser(r *http.Request) *LoggedInUser {
 
 func handleIndex(db *gorm.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		apiKey := api.OauthApiKey()
+		apiKey := api.OauthAPIKey()
 		if apiKey == nil {
 			w.WriteHeader(http.StatusPreconditionRequired)
 			_, _ = w.Write([]byte("The server is currently restarting, please wait a few seconds. If this issue persists, please report to @cgodard on Slack."))
@@ -73,7 +73,7 @@ func handleIndex(db *gorm.DB) http.Handler {
 			} else {
 				needsLogin := r.URL.Query().Get("needslogin") != ""
 				_ = templates.
-					LoggedOutIndex(apiKey.UID, apiKey.RedirectUri, needsLogin).
+					LoggedOutIndex(apiKey.UID, apiKey.RedirectURI, needsLogin).
 					Render(r.Context(), w)
 			}
 		}

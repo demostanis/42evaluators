@@ -66,33 +66,33 @@ func fetchSvg(cluster *clusters.Cluster) error {
 
 func handleClusters() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defaultClusterId := 199
-		campusId := getLoggedInUser(r).them.CampusID
+		defaultClusterID := 199
+		campusID := getLoggedInUser(r).them.CampusID
 		for _, cluster := range allClusters {
-			if cluster.Campus.Id == campusId {
-				defaultClusterId = cluster.Id
+			if cluster.Campus.ID == campusID {
+				defaultClusterID = cluster.ID
 				break
 			}
 		}
 
 		var selectedCluster clusters.Cluster
 		cluster := r.URL.Query().Get("cluster")
-		clusterId, err := strconv.Atoi(cluster)
+		clusterID, err := strconv.Atoi(cluster)
 		if cluster == "" || err != nil {
 			http.Redirect(w, r,
-				fmt.Sprintf("/clusters?cluster=%d", defaultClusterId),
+				fmt.Sprintf("/clusters?cluster=%d", defaultClusterID),
 				http.StatusMovedPermanently)
 			return
 		}
 		found := false
 		for _, cluster := range allClusters {
-			if cluster.Id == clusterId {
+			if cluster.ID == clusterID {
 				selectedCluster = cluster
 				found = true
 			}
 		}
 		if !found {
-			selectedCluster = allClusters[defaultClusterId]
+			selectedCluster = allClusters[defaultClusterID]
 		}
 		if selectedCluster.Svg == "" {
 			_ = fetchSvg(&selectedCluster)
@@ -106,7 +106,7 @@ func handleClusters() http.Handler {
 var upgrader = websocket.Upgrader{}
 
 type Message struct {
-	ClusterId int `json:"cluster"`
+	ClusterID int `json:"cluster"`
 }
 
 type Response struct {
@@ -116,21 +116,21 @@ type Response struct {
 	Left  bool   `json:"left"`
 }
 
-func findCampusIdForCluster(clusterId int) int {
-	campusId := -1
+func findCampusIDForCluster(clusterID int) int {
+	campusID := -1
 	for _, cluster := range allClusters {
-		if cluster.Id == clusterId {
-			campusId = cluster.Campus.Id
+		if cluster.ID == clusterID {
+			campusID = cluster.Campus.ID
 		}
 	}
-	return campusId
+	return campusID
 }
 
 func sendResponse(c *websocket.Conn, location models.Location, db *gorm.DB) {
 	image := location.Image
 	if image == "" {
 		db.
-			Where("id = ?", location.UserId).
+			Where("id = ?", location.UserID).
 			Select("image_link_small").
 			Table("users").
 			Find(&image)
@@ -178,18 +178,18 @@ func clustersWs(db *gorm.DB) http.Handler {
 					break
 				}
 
-				clusterChan <- message.ClusterId
+				clusterChan <- message.ClusterID
 			}
 		}()
 
 		var stopSendingLocationsForPreviousCluster func()
-		var wantedClusterId int
+		var wantedClusterID int
 
 		for {
 			select {
 			// When the user wants to see a new cluster...
-			case wantedClusterId = <-clusterChan:
-				if wantedClusterId == 0 {
+			case wantedClusterID = <-clusterChan:
+				if wantedClusterID == 0 {
 					break
 				}
 				if stopSendingLocationsForPreviousCluster != nil {
@@ -199,7 +199,7 @@ func clustersWs(db *gorm.DB) http.Handler {
 				var locations []models.Location
 				db.
 					Model(&models.Location{}).
-					Where("campus_id = ?", findCampusIdForCluster(wantedClusterId)).
+					Where("campus_id = ?", findCampusIDForCluster(wantedClusterID)).
 					Find(&locations)
 
 				if len(locations) > 0 {
@@ -209,8 +209,8 @@ func clustersWs(db *gorm.DB) http.Handler {
 				}
 
 			case location := <-clusters.LocationChannel:
-				campusId := findCampusIdForCluster(wantedClusterId)
-				if location.CampusId == campusId {
+				campusID := findCampusIDForCluster(wantedClusterID)
+				if location.CampusID == campusID {
 					// Respond with user information if the location's campus
 					// is the same as the wanted cluster's campus (it would be
 					// more performant to only send locations in the specifially

@@ -28,7 +28,7 @@ type Subject struct {
 
 type Project struct {
 	ID            int    `json:"id"`
-	CursusIds     []int  `gorm:"-" json:"cursus_ids"`
+	CursusIDs     []int  `gorm:"-" json:"cursus_ids"`
 	FinalMark     int    `json:"final_mark"`
 	Status        string `json:"status"`
 	Teams         []Team `gorm:"foreignKey:ProjectID" json:"teams"`

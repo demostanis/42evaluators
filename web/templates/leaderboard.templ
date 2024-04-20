@@ -49,9 +49,9 @@ func urlWithPage(url *url.URL, page int) templ.SafeURL {
 	if page != 1 {
 		params.Add("page", strconv.Itoa(page))
 	}
-	newUrl := *url
-	newUrl.RawQuery = params.Encode()
-	return templ.SafeURL(newUrl.String())
+	newURL := *url
+	newURL.RawQuery = params.Encode()
+	return templ.SafeURL(newURL.String())
 }
 
 const (
@@ -113,42 +113,42 @@ templ pagination(url *url.URL, page int, totalPages int, gotoMyPositionShown boo
 	</div>
 }
 
-func getProfileUrl(user models.User) templ.SafeURL {
+func getProfileURL(user models.User) templ.SafeURL {
 	return templ.SafeURL("https://profile.intra.42.fr/users/" + user.Login)
 }
 
-func getBgUrl(user models.User, currentUserId int) string {
+func getBgURL(user models.User, currentUserID int) string {
 	// TODO: stick the coalition cover somewhere prettier
-	//if user.Coalition.CoverUrl == "" {
+	//if user.Coalition.CoverURL == "" {
 	//	return "bg-[url(https://profile.intra.42.fr/assets/background_login-a4e0666f73c02f025f590b474b394fd86e1cae20e95261a6e4862c2d0faa1b04.jpg)] bg-cover bg-center"
 	//} else {
-	//	return "bg-[url(" + user.Coalition.CoverUrl + ")] bg-cover bg-center"
+	//	return "bg-[url(" + user.Coalition.CoverURL + ")] bg-cover bg-center"
 	//}
-	if user.ID == currentUserId {
+	if user.ID == currentUserID {
 		return "bg-blue-900 me"
 	}
 	return ""
 }
 
-func urlWithSorting(myUrl *url.URL, sort string) templ.SafeURL {
-	params := myUrl.Query()
+func urlWithSorting(myURL *url.URL, sort string) templ.SafeURL {
+	params := myURL.Query()
 	params.Del("sort")
 	params.Del("me")
 	if sort != "level" { // since that's the default
 		params.Add("sort", sort)
 	}
-	newUrl := *myUrl
-	newUrl.RawQuery = params.Encode()
-	return templ.SafeURL(newUrl.String())
+	newURL := *myURL
+	newURL.RawQuery = params.Encode()
+	return templ.SafeURL(newURL.String())
 }
 
-func urlForMe(myUrl *url.URL) templ.SafeURL {
-	params := myUrl.Query()
+func urlForMe(myURL *url.URL) templ.SafeURL {
+	params := myURL.Query()
 	params.Del("me")
 	params.Add("me", "1")
-	newUrl := *myUrl
-	newUrl.RawQuery = params.Encode()
-	return templ.SafeURL(newUrl.String())
+	newURL := *myURL
+	newURL.RawQuery = params.Encode()
+	return templ.SafeURL(newURL.String())
 }
 
 script jumpToMe() {
@@ -160,7 +160,7 @@ script jumpToMe() {
 	}
 }
 
-script updateLeaderboardWhenNeeded(campusIds []int) {
+script updateLeaderboardWhenNeeded(campusIDs []int) {
 	function updatePromo(e) {
 		const params = new URLSearchParams(window.location.search);
 		const selected = e.target.selectedOptions[0];
@@ -183,7 +183,7 @@ script updateLeaderboardWhenNeeded(campusIds []int) {
 		params.delete("promo");
 		if (selected.textContent != "Any campus") {
 			params.delete("campus");
-			params.append("campus", campusIds[e.target.selectedIndex - 1]);
+			params.append("campus", campusIDs[e.target.selectedIndex - 1]);
 		} else
 			params.delete("campus");
 		window.location.search = params;
@@ -234,7 +234,7 @@ script fieldsSettingsHandler() {
 		.addEventListener("click", handle);
 }
 
-func getCampusIds(campuses []models.Campus) []int {
+func getCampusIDs(campuses []models.Campus) []int {
 	ids := make([]int, 0)
 	for _, campus := range campuses {
 		ids = append(ids, campus.ID)
@@ -260,7 +260,7 @@ func sort(shownFields map[string]Field) []Field {
 templ Leaderboard(users []models.User,
 	promos []Promo, campuses []models.Campus, activeCampus int,
 	url *url.URL, page int, totalPages int, shownFields map[string]Field,
-	currentUserId int, offset int, gotoMyPositionShown bool,
+	currentUserID int, offset int, gotoMyPositionShown bool,
 	search string) {
 	@header()
 	<div id="main" class="mt-[17px]">
@@ -330,7 +330,7 @@ templ Leaderboard(users []models.User,
 				<tbody>
 					for i, user := range users {
 						<tr
-							class={ "text-xl", getBgUrl(user, currentUserId) }
+							class={ "text-xl", getBgURL(user, currentUserID) }
 						>
 							<td>{ strconv.Itoa(i + offset + 1) }.</td>
 							<td class="flex">
@@ -339,7 +339,7 @@ templ Leaderboard(users []models.User,
 								</div>
 							</td>
 							<td>
-								<a href={ getProfileUrl(user) }>
+								<a href={ getProfileURL(user) }>
 									{ getDisplayName(user) }
 								</a>
 							</td>
@@ -412,7 +412,7 @@ templ Leaderboard(users []models.User,
 		</div>
 		<label class="modal-backdrop" for="fields-settings"></label>
 	</div>
-	@updateLeaderboardWhenNeeded(getCampusIds(campuses))
+	@updateLeaderboardWhenNeeded(getCampusIDs(campuses))
 	@fieldsSettingsHandler()
 	@jumpToMe()
 	@footer()

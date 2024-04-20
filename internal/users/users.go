@@ -35,9 +35,9 @@ func WaitForUsers() {
 	}
 }
 
-func fetchOneCampus(ctx context.Context, campusId int, db *gorm.DB, errstream chan error) {
+func fetchOneCampus(ctx context.Context, campusID int, db *gorm.DB, errstream chan error) {
 	params := maps.Clone(DefaultParams)
-	params["filter[campus_id]"] = strconv.Itoa(campusId)
+	params["filter[campus_id]"] = strconv.Itoa(campusID)
 
 	users, err := api.DoPaginated[[]models.User](
 		api.NewRequest("/v2/cursus_users").
@@ -75,7 +75,7 @@ func fetchOneCampus(ctx context.Context, campusId int, db *gorm.DB, errstream ch
 				errstream <- err
 				return
 			}
-			err = user.SetCampus(campusId, db)
+			err = user.SetCampus(campusID, db)
 			if err != nil {
 				errstream <- err
 			}
@@ -106,8 +106,8 @@ func GetUsers(ctx context.Context, db *gorm.DB, errstream chan error) {
 		}
 		wg.Add(1)
 
-		go func(campusId int) {
-			fetchOneCampus(ctx, campusId, db, errstream)
+		go func(campusID int) {
+			fetchOneCampus(ctx, campusID, db, errstream)
 			weights.Release(1)
 			wg.Done()
 		}(campus.ID)

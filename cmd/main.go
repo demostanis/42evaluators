@@ -50,18 +50,18 @@ func main() {
 		return
 	}
 
-	db, err := database.OpenDb()
+	db, err := database.OpenDB()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error opening database:", err)
 		return
 	}
-	phyDb, _ := db.DB()
-	defer phyDb.Close()
+	phyDB, _ := db.DB()
+	defer phyDB.Close()
 
 	go web.Run(db)
 
-	var keys []models.ApiKey
-	err = db.Model(&models.ApiKey{}).Find(&keys).Error
+	var keys []models.APIKey
+	err = db.Model(&models.APIKey{}).Find(&keys).Error
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error querying API keys:", err)
 		return

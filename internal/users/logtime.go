@@ -120,10 +120,10 @@ func GetLogtimes(
 			totalWeeklyLogtimes[logtime.UserID], *logtime)
 	}
 
-	for userId, logtime := range totalWeeklyLogtimes {
+	for userID, logtime := range totalWeeklyLogtimes {
 		weeklyLogtime := calcWeeklyLogtime(logtime)
 
-		user := models.User{ID: userId}
+		user := models.User{ID: userID}
 		err = user.CreateIfNeeded(db)
 		if err != nil {
 			errstream <- err

@@ -11,23 +11,23 @@ import (
 	"gorm.io/gorm"
 )
 
-type TitleId struct {
+type TitleID struct {
 	ID       int  `json:"title_id"`
 	Selected bool `json:"selected"`
 	UserID   int  `json:"user_id"`
 }
 
-func getTitle(titleId int, db *gorm.DB) (*models.Title, error) {
+func getTitle(titleID int, db *gorm.DB) (*models.Title, error) {
 	var cachedTitle models.Title
 	err := db.
 		Session(&gorm.Session{}).
 		Model(&models.Title{}).
-		Where("id = ?", titleId).
+		Where("id = ?", titleID).
 		First(&cachedTitle).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		actualTitle, err := api.Do[models.Title](
-			api.NewRequest(fmt.Sprintf("/v2/titles/%d", titleId)).
+			api.NewRequest(fmt.Sprintf("/v2/titles/%d", titleID)).
 				Authenticated())
 		if err != nil {
 			return nil, err
@@ -47,7 +47,7 @@ func GetTitles(
 ) {
 	wg.Add(1)
 
-	titles, err := api.DoPaginated[[]TitleId](
+	titles, err := api.DoPaginated[[]TitleID](
 		api.NewRequest("/v2/titles_users").
 			Authenticated())
 	if err != nil {
@@ -74,8 +74,8 @@ func GetTitles(
 			errstream <- err
 			continue
 		}
-		go func(titleId int) {
-			actualTitle, err := getTitle(titleId, db)
+		go func(titleID int) {
+			actualTitle, err := getTitle(titleID, db)
 			if err != nil {
 				errstream <- err
 				return

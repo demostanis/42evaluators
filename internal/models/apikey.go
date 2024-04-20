@@ -1,9 +1,10 @@
 package models
 
-type ApiKey struct {
+type APIKey struct {
+	ID          int
 	Name        string
 	AppID       int
 	UID         string
 	Secret      string
-	RedirectUri string
+	RedirectURI string
 }

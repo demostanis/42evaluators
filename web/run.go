@@ -25,7 +25,7 @@ func loggedInUsersOnly(handler http.Handler) http.Handler {
 	})
 }
 
-func withUrl(handler http.Handler) http.Handler {
+func withURL(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), urlCtxKey, r.URL.Path)
 		handler.ServeHTTP(w, r.WithContext(ctx))
@@ -33,14 +33,14 @@ func withUrl(handler http.Handler) http.Handler {
 }
 
 func Run(db *gorm.DB) {
-	http.Handle("/", withUrl(handleIndex(db)))
-	http.Handle("/leaderboard", withUrl(loggedInUsersOnly(handleLeaderboard(db))))
-	http.Handle("/peerfinder", withUrl(loggedInUsersOnly(handlePeerFinder(db))))
-	http.Handle("/calculator", withUrl(loggedInUsersOnly(handleCalculator(db))))
-	http.Handle("/blackhole", withUrl(loggedInUsersOnly(handleBlackhole(db))))
-	http.Handle("/blackhole.json", withUrl(loggedInUsersOnly(blackholeMap(db))))
-	http.Handle("/clusters", withUrl(loggedInUsersOnly(handleClusters())))
-	http.Handle("/clusters.live", withUrl(loggedInUsersOnly(clustersWs(db))))
+	http.Handle("/", withURL(handleIndex(db)))
+	http.Handle("/leaderboard", withURL(loggedInUsersOnly(handleLeaderboard(db))))
+	http.Handle("/peerfinder", withURL(loggedInUsersOnly(handlePeerFinder(db))))
+	http.Handle("/calculator", withURL(loggedInUsersOnly(handleCalculator(db))))
+	http.Handle("/blackhole", withURL(loggedInUsersOnly(handleBlackhole(db))))
+	http.Handle("/blackhole.json", withURL(loggedInUsersOnly(blackholeMap(db))))
+	http.Handle("/clusters", withURL(loggedInUsersOnly(handleClusters())))
+	http.Handle("/clusters.live", withURL(loggedInUsersOnly(clustersWs(db))))
 
 	http.Handle("/static/", handleStatic())
 

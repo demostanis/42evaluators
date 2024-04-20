@@ -36,13 +36,13 @@ var (
 	DefaultRedirectURI = "http://localhost:8080"
 
 	ErrNoIntraSession = errors.New("no INTRA_SESSION_TOKEN found in .env file")
-	ErrNoUserIdToken  = errors.New("no USER_ID_TOKEN found in .env file")
+	ErrNoUserIDToken  = errors.New("no USER_ID_TOKEN found in .env file")
 )
 
 type Session struct {
 	authToken    string
 	intraSession string
-	userIdToken  string
+	userIDToken  string
 	redirectURI  string
 	client       tls_client.HttpClient
 	db           *gorm.DB
@@ -84,7 +84,7 @@ func GetKeys(x int, db *gorm.DB) error {
 		go func(i int) {
 			defer sem.Release(1)
 			defer wg.Done()
-			err = s.createApiKey()
+			err = s.createAPIKey()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				return
@@ -105,7 +105,7 @@ func (s *Session) PullAuthenticityToken() error {
 
 	userID, ok := os.LookupEnv("USER_ID_TOKEN")
 	if !ok {
-		return ErrNoUserIdToken
+		return ErrNoUserIDToken
 	}
 
 	req := &http.Request{
@@ -155,9 +155,9 @@ func NewSession(db *gorm.DB) (*Session, error) {
 		return nil, ErrNoIntraSession
 	}
 
-	userIdToken, ok := os.LookupEnv("USER_ID_TOKEN")
+	userIDToken, ok := os.LookupEnv("USER_ID_TOKEN")
 	if !ok {
-		return nil, ErrNoUserIdToken
+		return nil, ErrNoUserIDToken
 	}
 
 	client, err := tls_client.NewHttpClient(
@@ -170,14 +170,14 @@ func NewSession(db *gorm.DB) (*Session, error) {
 		return nil, err
 	}
 
-	redirectUri, ok := os.LookupEnv("REDIRECT_URI")
+	redirectURI, ok := os.LookupEnv("REDIRECT_URI")
 	if !ok {
-		redirectUri = DefaultRedirectURI
+		redirectURI = DefaultRedirectURI
 	}
 	session := Session{
-		redirectURI:  redirectUri,
+		redirectURI:  redirectURI,
 		intraSession: intraSession,
-		userIdToken:  userIdToken,
+		userIDToken:  userIDToken,
 		client:       client,
 		db:           db,
 	}
@@ -189,13 +189,13 @@ func NewSession(db *gorm.DB) (*Session, error) {
 	return &session, nil
 }
 
-func (s *Session) fetchApiKeysFromIntra() ([]string, error) {
+func (s *Session) fetchAPIKeysFromIntra() ([]string, error) {
 	req := &http.Request{
 		Method: http.MethodGet,
 		URL:    &url.URL{Scheme: "https", Host: host, Path: "/oauth/applications/"},
 		Header: http.Header{
 			"authority":  {"profile.intra.42.fr"},
-			"cookie":     {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},
+			"cookie":     {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIDToken, s.intraSession)},
 			"origin":     {"https://profile.intra.42.fr"},
 			"referer":    {"https://profile.intra.42.fr/oauth/applications/new"},
 			"user-agent": {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
@@ -229,21 +229,21 @@ func (s *Session) fetchApiKeysFromIntra() ([]string, error) {
 		return nil, errors.New("no .apps_root")
 	}
 
-	var apps []struct{ Id int }
+	var apps []struct{ ID int }
 	err = json.Unmarshal([]byte(data), &apps)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, app := range apps {
-		result = append(result, strconv.Itoa(app.Id))
+		result = append(result, strconv.Itoa(app.ID))
 	}
 
 	return result, nil
 }
 
 func (s *Session) DeleteAllApplications() error {
-	keys, err := s.fetchApiKeysFromIntra()
+	keys, err := s.fetchAPIKeysFromIntra()
 	if err != nil {
 		return err
 	}
@@ -283,7 +283,7 @@ func (s *Session) DeleteApplication(id string) error {
 					url.QueryEscape(s.authToken)))),
 		Header: http.Header{
 			"authority":    {"profile.intra.42.fr"},
-			"cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},
+			"cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIDToken, s.intraSession)},
 			"origin":       {"https://profile.intra.42.fr"},
 			"referer":      {fmt.Sprintf("https://profile.intra.42.fr/oauth/applications/%s", id)},
 			"User-Agent":   {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
@@ -303,10 +303,10 @@ func (s *Session) DeleteApplication(id string) error {
 
 	return s.db.
 		Where("id = ?", id).
-		Delete(&models.ApiKey{}).Error
+		Delete(&models.APIKey{}).Error
 }
 
-func (s *Session) createApiKey() error {
+func (s *Session) createAPIKey() error {
 	appName := "42evaluators"
 	buf, writer, err := s.buildForm(appName)
 	if err != nil {
@@ -319,7 +319,7 @@ func (s *Session) createApiKey() error {
 		Body:   io.NopCloser(buf),
 		Host:   host,
 		Header: http.Header{
-			"Cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},
+			"Cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIDToken, s.intraSession)},
 			"Origin":       {"https://profile.intra.42.fr"},
 			"Referer":      {"https://profile.intra.42.fr/oauth/applications/new"},
 			"User-Agent":   {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
@@ -329,7 +329,7 @@ func (s *Session) createApiKey() error {
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("CreateApiKey client error: %w", err)
+		return fmt.Errorf("CreateAPIKey client error: %w", err)
 	}
 
 	if resp.StatusCode != 302 && resp.StatusCode != 200 {
@@ -346,7 +346,7 @@ func (s *Session) createApiKey() error {
 		return err
 	}
 
-	apiKey := &models.ApiKey{Name: appName}
+	apiKey := &models.APIKey{Name: appName}
 	elems := strings.Split(doc.Find("a[href^='/oauth/applications/']").AttrOr("href", ""), "/")
 	if len(elems) < 4 {
 		return errors.New("invalid response, did you pass the right authenticity token?")
@@ -361,20 +361,20 @@ func (s *Session) createApiKey() error {
 	}
 	apiKey.AppID = appID
 
-	if err = s.fetchApiData(apiKey); err != nil {
+	if err = s.fetchAPIData(apiKey); err != nil {
 		return err
 	}
 	return s.db.Create(apiKey).Error
 }
 
-// fetchApiData fetches the API Key from the html page.
-func (s *Session) fetchApiData(api *models.ApiKey) error {
+// fetchAPIData fetches the API Key from the html page.
+func (s *Session) fetchAPIData(api *models.APIKey) error {
 	req := &http.Request{
 		Method: http.MethodGet,
 		URL:    &url.URL{Scheme: "https", Host: host, Path: fmt.Sprintf("/oauth/applications/%d", api.AppID)},
 		Header: http.Header{
 			"authority":  {"profile.intra.42.fr"},
-			"cookie":     {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIdToken, s.intraSession)},
+			"cookie":     {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIDToken, s.intraSession)},
 			"origin":     {"https://profile.intra.42.fr"},
 			"referer":    {"https://profile.intra.42.fr/oauth/applications/new"},
 			"user-agent": {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
@@ -411,7 +411,7 @@ func (s *Session) fetchApiData(api *models.ApiKey) error {
 		}
 	})
 
-	api.RedirectUri = doc.Find(".redirect-uri-block code").First().Text()
+	api.RedirectURI = doc.Find(".redirect-uri-block code").First().Text()
 
 	return nil
 }

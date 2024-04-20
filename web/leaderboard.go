@@ -238,18 +238,18 @@ func handleLeaderboard(db *gorm.DB) http.Handler {
 			return
 		}
 
-		activeCampusId, _ := strconv.Atoi(campus)
+		activeCampusID, _ := strconv.Atoi(campus)
 		userPromo := fmt.Sprintf("%02d/%d",
 			user.BeginAt.Month(),
 			user.BeginAt.Year())
 		gotoMyPositionShown := search == "" &&
 			((campus == "" && promo == "") ||
-				(promo == "" && user.Campus.ID == activeCampusId) ||
+				(promo == "" && user.Campus.ID == activeCampusID) ||
 				(promo != "" && campus == "" && userPromo == promo) ||
-				(user.Campus.ID == activeCampusId && userPromo == promo))
+				(user.Campus.ID == activeCampusID && userPromo == promo))
 
 		_ = templates.Leaderboard(users,
-			promos, campuses, activeCampusId,
+			promos, campuses, activeCampusID,
 			r.URL, page, totalPages, shownFields,
 			getLoggedInUser(r).them.ID,
 			offset, gotoMyPositionShown,

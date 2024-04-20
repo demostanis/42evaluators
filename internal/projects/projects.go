@@ -63,7 +63,7 @@ func setPositionInGraph(
 	}
 }
 
-func prepareProjectForDb(db *gorm.DB, project *models.Project) {
+func prepareProjectForDB(db *gorm.DB, project *models.Project) {
 	project.SubjectID = &project.Subject.ID
 
 	for i := range project.Teams {
@@ -109,9 +109,9 @@ func GetProjects(ctx context.Context, db *gorm.DB, errstream chan error) {
 			break
 		}
 
-		if len(project.CursusIds) > 0 && project.CursusIds[0] == 21 &&
+		if len(project.CursusIDs) > 0 && project.CursusIDs[0] == 21 &&
 			len(project.Teams) > 0 && len(project.Teams[0].Users) > 0 {
-			prepareProjectForDb(db, project)
+			prepareProjectForDB(db, project)
 			err = db.
 				Session(&gorm.Session{FullSaveAssociations: true}).
 				Save(&project).Error
