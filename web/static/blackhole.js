@@ -270,7 +270,7 @@ function renderBlackholeMap(blackholeMap) {
 		if (document.querySelector("#blackholes:hover")) return;
 
 		if (!event.deltaY)
-			event.deltaY = (startY - event.touches[0].pageY) < 0 ? -114/3 : 114/3;
+			event.deltaY = (startY - event.touches[0].pageY) < 0 ? -114 : 114;
 		previousScrollY = scrollY;
 		scrollY += event.deltaY;
 
