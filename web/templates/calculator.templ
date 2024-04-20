@@ -101,7 +101,7 @@ script xpCalculator(
 					sign = "";
 				return sign + blackholeEarned + (blackholeEarned == 1 ? " day" : " days");
 			}
-			if (xpForSeries[number])
+			if (xpForSeries[number] != undefined)
 				bhDays[number+1] = calcBlackhole(xpForSeries[number], newXP);
 			document.querySelector(".plus-days").
 				textContent = calcBlackhole(initialUserXP,
