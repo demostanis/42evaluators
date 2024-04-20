@@ -202,14 +202,23 @@ function renderBlackholeMap(blackholeMap) {
 			return;
 		}
 
-		for (const i of Object.keys(stages)) {
+		a: for (const i of Object.keys(stages)) {
 			const stage = stages[i];
 			for (const user of stage.users) {
 				if (user.login.includes(search.toLowerCase())) {
 					scrollY = parseInt(i)*114;
 					camera.position.z = 114 / 50 * (scrollY/114) + 15;
 					gotoStage(parseInt(i), false);
-					break;
+
+					const userElem = [].__proto__.slice.call(
+						document.querySelector("#blackholes").
+							querySelectorAll("a")).
+							find(a =>
+								a.textContent.includes(search.toLowerCase()));
+					userElem.parentNode.parentNode.classList.add("bg-blue-900");
+					userElem.scrollIntoView();
+
+					break a;
 				}
 			}
 		}
