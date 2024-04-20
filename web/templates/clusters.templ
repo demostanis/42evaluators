@@ -35,7 +35,7 @@ templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Clust
 	<script src="static/clusters.js"></script>
 	<div id="main" class="flex place-content-center w-full h-full mt-1">
 		@templ.Raw(selectedCluster.Svg)
-		<select class="select select-bordered ml-8 mt-5 absolute left-0" id="cluster">
+		<select class="select select-bordered ml-5 mt-4 absolute left-0" id="cluster">
 			for _, cluster := range allClusters {
 				<option
 					if selectedCluster.Id == cluster.Id {
