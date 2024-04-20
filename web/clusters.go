@@ -50,7 +50,7 @@ func fetchSvg(cluster *clusters.Cluster) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		cluster.Svg = "<p class=\"h-[90%] flex justify-center items-center\">Cannot find this cluster map. It's likely that " +
+		cluster.Svg = "<p class=\"h-[90%] flex justify-center m-5 text-center items-center\">Cannot find this cluster map. It's likely that " +
 			"its campus' staff has modified it, and thus the link has changed. " +
 			"If you are part of this campus, please send the cluster SVG to " +
 			"@cgodard on Slack.</p>"
