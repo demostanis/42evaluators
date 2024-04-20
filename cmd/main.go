@@ -85,7 +85,5 @@ func main() {
 		return
 	}
 
-	go reportErrors(errstream)
-
-	select {}
+	reportErrors(errstream)
 }
