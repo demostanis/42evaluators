@@ -84,17 +84,59 @@ script deselectAllHandler() {
 	});
 }
 
+script statusSelectHandler() {
+	const statusSelect = document.querySelector("#status-select");
+
+	function handle(e) {
+		e.preventDefault();
+
+		const status = statusSelect.selectedOptions[0].value;
+		const params = new URLSearchParams(window.location.search);
+		params.delete("status");
+		params.append("status", status);
+		window.location.search = params;
+	}
+
+	statusSelect.addEventListener("change", handle);
+}
+
 templ PeerFinder(
 	subjects []models.Subject,
 	projects map[int][]models.Project,
 	checkedSubjects map[string]bool,
+	currentStatus string,
 ) {
 	@header()
 	<style>html,body{overflow-x:hidden;}</style>
-	<div class="flex justify-center mt-5">
-		<p>Show teams with status</p>
-		<select class="select">
-			<option>searching_for_a_group</option>
+	<div class="flex items-center gap-2 justify-center mt-5">
+		<p>Show teams</p>
+		<select id="status-select" class="select select-bordered">
+			// ugly
+			<option value="active"
+				if currentStatus == "active" {
+					selected
+				}
+			>which are active</option>
+			<option value="finished"
+				if currentStatus == "finished" {
+					selected
+				}
+			>which finished a project</option>
+			<option value="in_progress"
+				if currentStatus == "in_progress" {
+					selected
+				}
+			>working on a project</option>
+			<option value="creating_group"
+				if currentStatus == "creating_group" {
+					selected
+				}
+			>that are not locked</option>
+			<option value="waiting_for_correction"
+				if currentStatus == "waiting_for_correction" {
+					selected
+				}
+			>waiting for corrections</option>
 		</select>
 		<label for="projects-settings" class="btn">Show projects...</label>
 	</div>
@@ -136,6 +178,7 @@ templ PeerFinder(
 		</form>
 		<label class="modal-backdrop" for="projects-settings"></label>
 	</div>
+	@statusSelectHandler()
 	@projectsSettingsHandler()
 	@deselectAllHandler()
 	@footer()

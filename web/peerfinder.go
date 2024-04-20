@@ -37,6 +37,23 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 			return
 		}
 
+		status := r.URL.Query().Get("status")
+		if status == "" {
+			status = "active"
+		}
+		isValidStatus := false
+		for _, possibleStatus := range []string{
+			"active", "finished", "waiting_for_correction",
+			"creating_group", "in_progress",
+		} {
+			if status == possibleStatus {
+				isValidStatus = true
+			}
+		}
+		if !isValidStatus {
+			status = "active"
+		}
+
 		var wantedSubjects []string
 		wantedSubjectsRaw := r.URL.Query().Get("subjects")
 		if wantedSubjectsRaw != "" {
@@ -52,14 +69,25 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 			checkedSubjects[subject] = true
 		}
 
+		withStatus := func(search string) func(db *gorm.DB) *gorm.DB {
+			return func(db *gorm.DB) *gorm.DB {
+				if status == "active" {
+					return db.
+						Where("status != 'finished'")
+				}
+				return db.
+					Where("status = ?", status)
+			}
+		}
+
 		var projects []models.Project
 		db.
-			Where("status != 'finished'").
 			Preload("Teams.Users.User",
 				"campus_id = ? AND "+database.OnlyRealUsersCondition,
 				getLoggedInUser(r).them.CampusID).
 			Preload("Subject", "name IN ? AND "+database.UnwantedSubjectsCondition,
 				wantedSubjects).
+			Scopes(withStatus(status)).
 			Model(&models.Project{}).
 			// We need to fetch by batches of users, else GORM
 			// generates way too large queries...
@@ -76,7 +104,8 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 			}
 		}
 
-		templates.PeerFinder(subjects, projectsMap, checkedSubjects).
-			Render(r.Context(), w)
+		templates.PeerFinder(
+			subjects, projectsMap, checkedSubjects, status,
+		).Render(r.Context(), w)
 	})
 }
