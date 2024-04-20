@@ -29,7 +29,7 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 
 		err := db.
 			Model(&models.Subject{}).
-			Order("position").
+			Order("position, name").
 			Where(database.UnwantedSubjectsCondition).
 			Find(&subjects).Error
 		if err != nil {
