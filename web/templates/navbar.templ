@@ -1,7 +1,11 @@
 package templates
 
+type ctxKey string
+
+const UrlCtxKey ctxKey = "url"
+
 func getActive(ctx context.Context, url string) string {
-	if ctx.Value("url").(string) == url {
+	if ctx.Value(UrlCtxKey).(string) == url {
 		return "active"
 	}
 	return ""

@@ -5,15 +5,12 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/demostanis/42evaluators/web/templates"
+
 	"gorm.io/gorm"
 )
 
-type ctxKey string
-
-const (
-	UsersPerPage        = 50
-	urlCtxKey    ctxKey = "url"
-)
+const UsersPerPage = 50
 
 func loggedInUsersOnly(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +24,7 @@ func loggedInUsersOnly(handler http.Handler) http.Handler {
 
 func withURL(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), urlCtxKey, r.URL.Path)
+		ctx := context.WithValue(r.Context(), templates.UrlCtxKey, r.URL.Path)
 		handler.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
