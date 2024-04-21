@@ -14,7 +14,9 @@ import (
 	"gorm.io/gorm"
 )
 
-const cursus21Begin = "2019-07-29T08:45:17.896Z"
+var cursus21Begin, _ = time.Parse(time.RFC3339, "2019-07-29T08:45:17.896Z")
+
+const maxConcurrentFetches = 100
 
 type ProjectData struct {
 	X          float64 `json:"x"`
@@ -84,15 +86,10 @@ func prepareProjectForDB(db *gorm.DB, project *models.Project) {
 }
 
 func GetProjects(ctx context.Context, db *gorm.DB, errstream chan error) {
-	// TODO: only fetch what's changed
-	updatedAt := cursus21Begin
 	projects, err := api.DoPaginated[[]models.Project](
 		api.NewRequest("/v2/projects_users").
-			WithParams(map[string]string{
-				"range[updated_at]": updatedAt + "," + time.Now().Format(time.RFC3339),
-				"filter[campus]":    "62",
-			}).
-			WithMaxConcurrentFetches(100).
+			WithMaxConcurrentFetches(maxConcurrentFetches).
+			SinceLastFetch(db, cursus21Begin).
 			Authenticated())
 	if err != nil {
 		errstream <- err

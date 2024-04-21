@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/demostanis/42evaluators/internal/models"
+	"gorm.io/gorm"
 
 	"golang.org/x/sync/semaphore"
 )
@@ -47,6 +48,7 @@ type APIRequest struct {
 	maxConcurrentFetches int64
 	pageSize             string
 	startingPage         int
+	startingDate         time.Time
 }
 
 func NewRequest(endpoint string) *APIRequest {
@@ -106,6 +108,33 @@ func (apiReq *APIRequest) FromPage(n int) *APIRequest {
 	return apiReq
 }
 
+func (apiReq *APIRequest) SinceLastFetch(db *gorm.DB, defaultTime time.Time) *APIRequest {
+	var startingDate time.Time
+
+	column := apiReq.endpoint[strings.LastIndexByte(apiReq.endpoint, '/')+1:]
+	now := time.Now()
+	err := db.
+		Limit(1).
+		Select(column).
+		Table("request_timestamps").
+		Find(&startingDate).Error
+	if err != nil || startingDate.IsZero() {
+		db.Exec(`CREATE TABLE IF NOT EXISTS request_timestamps ()`)
+		db.Exec(`ALTER TABLE request_timestamps
+				ADD IF NOT EXISTS ` + column + ` timestamp`)
+		db.Exec(`INSERT INTO request_timestamps(`+column+`)
+				VALUES (?)`, now)
+	}
+	db.Exec(`UPDATE request_timestamps SET `+column+` = ?`,
+		now)
+
+	if startingDate.IsZero() {
+		startingDate = defaultTime
+	}
+	apiReq.startingDate = startingDate
+	return apiReq
+}
+
 func (apiReq *APIRequest) OutputHeadersIn(output **http.Header) *APIRequest {
 	apiReq.outputHeadersIn = output
 	return apiReq
@@ -142,6 +171,12 @@ func Do[T any](apiReq *APIRequest) (*T, error) {
 	}
 
 	q := req.URL.Query()
+	if !apiReq.startingDate.IsZero() {
+		startingDateStr := apiReq.startingDate.Format(time.RFC3339)
+		nowStr := time.Now().Format(time.RFC3339)
+		q.Add("range[updated_at]", startingDateStr+","+nowStr)
+	}
+
 	for key, value := range apiReq.params {
 		q.Add(key, value)
 	}
