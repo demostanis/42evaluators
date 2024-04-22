@@ -11,7 +11,7 @@ web/templates/%_templ.go: web/templates/%.templ
 templates: $(TEMPLATES)
 
 dev: deps templates
-	env $(FLAGS) $(GO) run $(GOFLAGS) cmd/main.go cmd/jobs.go # TODO: should be *.go
+	env $(FLAGS) $(GO) run $(GOFLAGS) cmd/*.go
 
 nojobs: FLAGS=disabledjobs=*
 nojobs: dev
