@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"math"
@@ -55,11 +54,11 @@ type User struct {
 	Level          float64
 	WeeklyLogtime  time.Duration
 
-	CoalitionID sql.NullInt64
+	CoalitionID int
 	Coalition   Coalition
-	TitleID     sql.NullInt64
+	TitleID     int
 	Title       Title
-	CampusID    sql.NullInt64
+	CampusID    int
 	Campus      Campus
 }
 

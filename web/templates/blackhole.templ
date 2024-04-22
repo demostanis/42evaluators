@@ -30,7 +30,7 @@ templ Blackhole(campuses []models.Campus, currentCampusID int) {
 		}
 	</script>
 	<script type="module" src="static/blackhole.js"></script>
-	<div class="absolute m-5">
+	<div class="absolute m-5 flex gap-2">
 		<select id="campus-select" class="select">
 			<option disabled>Choose a campus...</option>
 			for _, campus := range campuses {

@@ -2,12 +2,13 @@ package models
 
 type TeamUser struct {
 	TeamID int  `gorm:"primaryKey"`
-	UserID *int `gorm:"primaryKey" json:"id"`
+	UserID int  `gorm:"primaryKey" json:"id"`
 	Leader bool `json:"leader"`
 	User   User
 }
 
 type Team struct {
+	// this musn't be a gorm.Model, because GORM is so
 	// fucking drunk and will put two ids in INSERT statements,
 	// making the DB complain that there are two fucking ids.
 	ID        int        `json:"id"`
@@ -35,6 +36,6 @@ type Project struct {
 	CurrentTeamID int    `gorm:"-" json:"current_team_id"`
 	ActiveTeam    int
 
-	SubjectID *int
+	SubjectID int
 	Subject   Subject `json:"project"`
 }

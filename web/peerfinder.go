@@ -86,6 +86,8 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 			}
 		}
 
+		projectsMap := make(map[int][]models.Project)
+
 		var projects []models.Project
 		db.
 			Preload("Teams.Users.User",
@@ -99,16 +101,14 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 			// generates way too large queries...
 			FindInBatches(&projects, usersPerQuery,
 				func(db *gorm.DB, batch int) error {
+					for _, project := range projects {
+						if isValidProject(project) {
+							projectsMap[project.Subject.ID] = append(
+								projectsMap[project.Subject.ID], project)
+						}
+					}
 					return nil
 				})
-
-		projectsMap := make(map[int][]models.Project)
-		for _, project := range projects {
-			if isValidProject(project) {
-				projectsMap[project.Subject.ID] = append(
-					projectsMap[project.Subject.ID], project)
-			}
-		}
 
 		_ = templates.PeerFinder(
 			subjects, projectsMap, checkedSubjects, status,
