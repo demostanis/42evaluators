@@ -297,7 +297,7 @@ func (s *Session) DeleteApplication(id string) error {
 		return fmt.Errorf("DeleteApplication client error: %w", err)
 	}
 
-	if resp.StatusCode != 302 && resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusFound && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected response status, got %s", resp.Status)
 	}
 
@@ -332,7 +332,7 @@ func (s *Session) createAPIKey() error {
 		return fmt.Errorf("CreateAPIKey client error: %w", err)
 	}
 
-	if resp.StatusCode != 302 && resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusFound && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected response status, got %s", resp.Status)
 	}
 
