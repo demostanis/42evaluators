@@ -9,7 +9,6 @@ import (
 	"io"
 	"maps"
 	"net/http"
-	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -47,7 +46,6 @@ type APIRequest struct {
 	authenticatedAs      string
 	maxConcurrentFetches int64
 	pageSize             string
-	startingPage         int
 	startingDate         time.Time
 }
 
@@ -62,7 +60,6 @@ func NewRequest(endpoint string) *APIRequest {
 		authenticatedAs:      "",
 		maxConcurrentFetches: defaultMaxConcurrentFetches,
 		pageSize:             strconv.Itoa(defaultPageSize),
-		startingPage:         1,
 	}
 }
 
@@ -98,13 +95,6 @@ func (apiReq *APIRequest) WithMaxConcurrentFetches(n int64) *APIRequest {
 
 func (apiReq *APIRequest) WithPageSize(n int) *APIRequest {
 	apiReq.pageSize = strconv.Itoa(n)
-	return apiReq
-}
-
-func (apiReq *APIRequest) FromPage(n int) *APIRequest {
-	if n > 0 {
-		apiReq.startingPage = n
-	}
 	return apiReq
 }
 
@@ -253,11 +243,11 @@ func getPageCount(apiReq *APIRequest) (int, error) {
 	}
 	total, err := strconv.Atoi(headers.Get("X-Total"))
 	if err != nil {
-		return 0, PageCountError{err}
+		return 0, PageCountError{errors.New("no X-Total in response")}
 	}
 	perPage, err := strconv.Atoi(headers.Get("X-Per-Page"))
 	if err != nil {
-		return 0, PageCountError{err}
+		return 0, PageCountError{errors.New("no X-Per-Page in response")}
 	}
 	return 1 + (total-1)/perPage, nil
 }
@@ -270,7 +260,7 @@ func DoPaginated[T []E, E any](apiReq *APIRequest) (chan func() (*E, error), err
 	}
 
 	fmt.Printf("fetching %d pages in %s...\n",
-		pageCount-apiReq.startingPage+1, apiReq.endpoint)
+		pageCount, apiReq.endpoint)
 
 	var weights *semaphore.Weighted
 	if apiReq.maxConcurrentFetches != 0 {
@@ -278,7 +268,7 @@ func DoPaginated[T []E, E any](apiReq *APIRequest) (chan func() (*E, error), err
 	}
 	go func() {
 		var wg sync.WaitGroup
-		for i := apiReq.startingPage; i <= pageCount; i++ {
+		for i := 1; i <= pageCount; i++ {
 			if weights != nil {
 				err = weights.Acquire(context.Background(), 1)
 				if err != nil {
@@ -301,15 +291,6 @@ func DoPaginated[T []E, E any](apiReq *APIRequest) (chan func() (*E, error), err
 				} else {
 					for _, elem := range *elems {
 						func(elem E) {
-							value := reflect.ValueOf(&elem).Elem()
-							if value.Kind() == reflect.Struct {
-								field := value.FieldByName("Page")
-								if field.IsValid() &&
-									field.CanSet() &&
-									field.Kind() == reflect.Int {
-									field.Set(reflect.ValueOf(i))
-								}
-							}
 							resps <- func() (*E, error) { return &elem, nil }
 						}(elem)
 					}

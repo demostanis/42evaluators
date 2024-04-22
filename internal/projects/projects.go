@@ -63,6 +63,9 @@ func setPositionInGraph(
 			break
 		}
 	}
+	if subject.Position == 0 && subject.Name != "Libft" {
+		subject.Position = 99999
+	}
 }
 
 func prepareProjectForDB(db *gorm.DB, project *models.Project) {

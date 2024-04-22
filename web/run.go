@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/a-h/templ"
+	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/web/templates"
 
 	"gorm.io/gorm"
@@ -38,6 +40,8 @@ func Run(db *gorm.DB) {
 	http.Handle("/blackhole.json", withURL(loggedInUsersOnly(blackholeMap(db))))
 	http.Handle("/clusters", withURL(loggedInUsersOnly(handleClusters())))
 	http.Handle("/clusters.live", withURL(loggedInUsersOnly(clustersWs(db))))
+	http.Handle("/stats", withURL(loggedInUsersOnly(templ.Handler(templates.Stats(&api.APIStats)))))
+	http.Handle("/stats.live", withURL(loggedInUsersOnly(statsWs(db))))
 
 	http.Handle("/static/", handleStatic())
 

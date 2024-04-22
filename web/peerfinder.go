@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/demostanis/42evaluators/internal/database"
@@ -35,6 +36,11 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 		if err != nil {
 			internalServerError(w, err)
 			return
+		}
+
+		campusId, err := strconv.Atoi(r.URL.Query().Get("campus"))
+		if err != nil {
+			campusId = getLoggedInUser(r).them.CampusID
 		}
 
 		status := r.URL.Query().Get("status")
@@ -84,7 +90,7 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 		db.
 			Preload("Teams.Users.User",
 				"campus_id = ? AND "+database.OnlyRealUsersCondition,
-				getLoggedInUser(r).them.CampusID).
+				campusId).
 			Preload("Subject", "name IN ? AND "+database.UnwantedSubjectsCondition,
 				wantedSubjects).
 			Scopes(withStatus(status)).

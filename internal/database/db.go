@@ -1,6 +1,8 @@
 package database
 
 import (
+	"time"
+
 	"github.com/demostanis/42evaluators/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -57,6 +59,11 @@ func newDB(dialector gorm.Dialector) (*gorm.DB, error) {
 	if err = db.Exec("CREATE EXTENSION IF NOT EXISTS pg_trgm").Error; err != nil {
 		return nil, err
 	}
+
+	phyDB, _ := db.DB()
+	phyDB.SetMaxOpenConns(20)
+	phyDB.SetConnMaxLifetime(time.Second * 20)
+
 	return db, nil
 }
 
