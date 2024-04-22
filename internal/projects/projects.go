@@ -104,6 +104,7 @@ func GetProjects(ctx context.Context, db *gorm.DB, errstream chan error) {
 		project, err := (<-projects)()
 		if err != nil {
 			errstream <- err
+			continue
 		}
 		if project == nil {
 			break
