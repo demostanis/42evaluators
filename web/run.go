@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -17,7 +18,9 @@ const UsersPerPage = 50
 func loggedInUsersOnly(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if getLoggedInUser(r) == nil {
-			http.Redirect(w, r, "/?needslogin=1", http.StatusSeeOther)
+			http.Redirect(w, r, fmt.Sprintf("/?needslogin=1&next=%s",
+				r.URL.Path,
+			), http.StatusSeeOther)
 			return
 		}
 		handler.ServeHTTP(w, r)

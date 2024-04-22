@@ -58,6 +58,7 @@ script removeUselessParams() {
 templ LoggedOutIndex(clientID string, redirectURI string, needsLogin bool) {
 	@header()
 	if needsLogin {
+		<meta http-equiv="refresh" content={ fmt.Sprintf("0; %s", getOauthURL(clientID, redirectURI)) } />
 		<div class="bg-base-300 w-full h-12 flex items-center justify-center">
 			<span>You need to be logged-in to access this page.</span>
 		</div>

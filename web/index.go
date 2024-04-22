@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -42,8 +43,9 @@ func handleIndex(db *gorm.DB) http.Handler {
 		}
 
 		code := r.URL.Query().Get("code")
+		next := r.URL.Query().Get("next")
 		if code != "" {
-			accessToken, err := api.OauthToken(*apiKey, code)
+			accessToken, err := api.OauthToken(*apiKey, code, next)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return
@@ -61,9 +63,13 @@ func handleIndex(db *gorm.DB) http.Handler {
 				})
 				mu.Unlock()
 			}
-			_ = templates.
-				LoggedInIndex(them, err).
-				Render(r.Context(), w)
+			if next == "" {
+				_ = templates.
+					LoggedInIndex(them, err).
+					Render(r.Context(), w)
+			} else {
+				http.Redirect(w, r, next, http.StatusSeeOther)
+			}
 		} else {
 			user := getLoggedInUser(r)
 			if user != nil {
@@ -73,7 +79,9 @@ func handleIndex(db *gorm.DB) http.Handler {
 			} else {
 				needsLogin := r.URL.Query().Get("needslogin") != ""
 				_ = templates.
-					LoggedOutIndex(apiKey.UID, apiKey.RedirectURI, needsLogin).
+					LoggedOutIndex(apiKey.UID, fmt.Sprintf("%s?next=%s",
+						apiKey.RedirectURI, next,
+					), needsLogin).
 					Render(r.Context(), w)
 			}
 		}

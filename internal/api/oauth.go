@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/demostanis/42evaluators/internal/models"
 )
@@ -18,14 +19,18 @@ type OauthTokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-func OauthToken(apiKey models.APIKey, code string) (string, error) {
+func OauthToken(apiKey models.APIKey, code string, next string) (string, error) {
 	params := make(map[string]string)
 	params["grant_type"] = "client_credentials"
 	params["client_id"] = apiKey.UID
 	params["client_secret"] = apiKey.Secret
 	if code != "" {
 		params["code"] = code
-		params["redirect_uri"] = apiKey.RedirectURI
+		params["redirect_uri"] = fmt.Sprintf(
+			"%s?next=%s",
+			apiKey.RedirectURI,
+			next,
+		)
 		params["grant_type"] = "authorization_code"
 	}
 
@@ -55,7 +60,7 @@ func InitClients(apiKeys []models.APIKey) error {
 	}
 
 	for _, apiKey := range apiKeys {
-		accessToken, err := OauthToken(apiKey, "")
+		accessToken, err := OauthToken(apiKey, "", "")
 		if err != nil {
 			continue
 		}
