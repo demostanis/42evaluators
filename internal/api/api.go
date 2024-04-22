@@ -259,6 +259,7 @@ func DoPaginated[T []E, E any](apiReq *APIRequest) (chan func() (*E, error), err
 		return resps, err
 	}
 
+	APIStats.growTotalRequests(pageCount)
 	fmt.Printf("fetching %d pages in %s...\n",
 		pageCount, apiReq.endpoint)
 
@@ -278,6 +279,8 @@ func DoPaginated[T []E, E any](apiReq *APIRequest) (chan func() (*E, error), err
 			}
 			wg.Add(1)
 			go func(i int) {
+				defer APIStats.requestDone()
+
 				newReq := *apiReq
 				newReq.params = maps.Clone(newReq.params)
 				newReq.params["page[number]"] = strconv.Itoa(i)
