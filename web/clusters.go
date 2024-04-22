@@ -126,6 +126,17 @@ func findCampusIDForCluster(clusterID int) int {
 	return campusID
 }
 
+var locationChans []chan models.Location
+
+func broadcastLocations() {
+	for {
+		location := <-clusters.LocationChannel
+		for _, locationChan := range locationChans {
+			locationChan <- location
+		}
+	}
+}
+
 func sendResponse(c *websocket.Conn, location models.Location, db *gorm.DB) {
 	image := location.Image
 	if image == "" {
@@ -151,6 +162,8 @@ func sendResponse(c *websocket.Conn, location models.Location, db *gorm.DB) {
 
 // Damn, this function is huge.
 func clustersWs(db *gorm.DB) http.Handler {
+	go broadcastLocations()
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -164,6 +177,16 @@ func clustersWs(db *gorm.DB) http.Handler {
 		// cluster view)
 		clusterChan := make(chan int)
 		defer close(clusterChan)
+
+		locationChan := make(chan models.Location)
+		locationChans = append(locationChans, locationChan)
+		defer func() {
+			locationChans = slices.DeleteFunc(locationChans,
+				func(item chan models.Location) bool {
+					return item == locationChan
+				})
+			close(locationChan)
+		}()
 
 		go func() {
 			for {
@@ -208,7 +231,7 @@ func clustersWs(db *gorm.DB) http.Handler {
 					}
 				}
 
-			case location := <-clusters.LocationChannel:
+			case location := <-locationChan:
 				campusID := findCampusIDForCluster(wantedClusterID)
 				if location.CampusID == campusID {
 					// Respond with user information if the location's campus
