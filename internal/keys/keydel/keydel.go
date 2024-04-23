@@ -23,15 +23,13 @@ func main() {
 	phyDB, _ := db.DB()
 	defer phyDB.Close()
 
-	session, err := api.NewSession(db)
+	api.DefaultKeysManager, err = api.NewKeysManager(db)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error creating API session:", err)
+		fmt.Fprintln(os.Stderr, "error creating a key manager:", err)
 		return
 	}
-
-	err = session.DeleteAllApplications()
+	err = api.DefaultKeysManager.DeleteAllKeys()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error deleting applications:", err)
-		return
+		fmt.Fprintln(os.Stderr, "error deleting API keys:", err)
 	}
 }

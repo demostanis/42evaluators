@@ -129,6 +129,11 @@ func (apiReq *APIRequest) OutputHeadersIn(output **http.Header) *APIRequest {
 	return apiReq
 }
 
+func shouldRegenerateKey(resp *http.Response) bool {
+	return resp.StatusCode == http.StatusTooManyRequests ||
+		resp.StatusCode == http.StatusUnauthorized
+}
+
 func Do[T any](apiReq *APIRequest) (*T, error) {
 	var client *RLHTTPClient
 
@@ -183,11 +188,11 @@ func Do[T any](apiReq *APIRequest) (*T, error) {
 
 	DebugRequest(req)
 	resp, err := client.Do(req)
-	if resp.StatusCode == http.StatusTooManyRequests {
+	if shouldRegenerateKey(resp) {
 		time.Sleep(time.Second * 1)
 
 		resp, err = client.Do(req)
-		if resp.StatusCode == http.StatusTooManyRequests {
+		if shouldRegenerateKey(resp) {
 			fmt.Println("generating new API key...")
 
 			oldAPIKey := client.apiKey

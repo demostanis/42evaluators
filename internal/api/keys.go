@@ -273,18 +273,23 @@ func (manager *KeysManager) fetchAPIKeysFromIntra() ([]string, error) {
 	return result, nil
 }
 
-func (manager *KeysManager) DeleteAllApplications() error {
-	// TODO: rewrite
+func (manager *KeysManager) DeleteAllKeys() error {
 	keys, err := manager.fetchAPIKeysFromIntra()
 	if err != nil {
 		return err
 	}
 
+	fmt.Printf("deleting %d keys...\n", len(keys))
+
 	sem := semaphore.NewWeighted(concurrentFetches)
 	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var errs []error
+
 	for i, key := range keys {
 		wg.Add(1)
 		err = sem.Acquire(manager.ctx, 1)
+
 		go func(i int, idRaw string) {
 			defer sem.Release(1)
 			defer wg.Done()
@@ -292,15 +297,16 @@ func (manager *KeysManager) DeleteAllApplications() error {
 			id, _ := strconv.Atoi(idRaw)
 			err = manager.DeleteOne(id)
 			if err != nil {
-				return
+				mu.Lock()
+				errs = append(errs, err)
+				mu.Unlock()
 			}
-			fmt.Printf("Delete API key %d/%d\n", i+1, len(keys))
 		}(i, key)
 	}
-	wg.Wait()
 
+	wg.Wait()
 	manager.db.Exec("DELETE FROM api_keys")
-	return nil
+	return errors.Join(errs...)
 }
 
 func (manager *KeysManager) DeleteOne(id int) error {
