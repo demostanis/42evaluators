@@ -23,7 +23,7 @@ templ UsefulLink(data UsefulLinkData) {
 templ Links() {
 	@header()
 
-	<div class="m-8">
+	<div class="m-8 flex flex-col  justify-center items-center h-[68vh]">
 		<p class="text-center text-8xl">Useful links</p>
 		@Section("Official links")
 		@UsefulLink(UsefulLinkData{
