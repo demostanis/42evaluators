@@ -7,7 +7,6 @@ import (
 
 	"github.com/demostanis/42evaluators/internal/api"
 	"github.com/demostanis/42evaluators/internal/database"
-	"github.com/demostanis/42evaluators/internal/models"
 	"github.com/demostanis/42evaluators/internal/projects"
 	"github.com/joho/godotenv"
 
@@ -60,16 +59,17 @@ func main() {
 
 	go web.Run(db)
 
-	var keys []models.APIKey
-	err = db.Model(&models.APIKey{}).Find(&keys).Error
+	api.DefaultKeysManager, err = api.NewKeysManager(db)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error querying API keys:", err)
+		fmt.Fprintln(os.Stderr, "error creating a key manager:", err)
 		return
 	}
-	if len(keys) == 0 {
-		fmt.Fprintln(os.Stderr, "no api keys available, please generate some with cmd/keygen.go")
+	keys, err := api.DefaultKeysManager.GetKeys()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error getting API keys:", err)
 		return
 	}
+
 	err = api.InitClients(keys)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error initializing clients:", err)

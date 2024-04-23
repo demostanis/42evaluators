@@ -110,9 +110,8 @@ func (c *RLHTTPClient) Do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	resp, err := c.client.Do(req)
-	c.setIsRateLimited(false)
-	return resp, err
+	defer c.setIsRateLimited(false)
+	return c.client.Do(req)
 }
 
 func findNonRateLimitedClientFor(target Target) *RLHTTPClient {

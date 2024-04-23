@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"golang.org/x/sync/semaphore"
 
@@ -27,25 +26,22 @@ import (
 )
 
 const (
-	host            = "profile.intra.42.fr"
-	ConcurrentFetch = int64(42)
+	host               = "profile.intra.42.fr"
+	concurrentFetches  = int64(42)
+	defaultRedirectURI = "http://localhost:8080"
+	defaultUserAgent   = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+	defaultAppName     = "42evaluators"
+	keysToGenerate     = 400
 )
 
-var (
-	DefaultSleepDelay  = 2 * time.Second
-	DefaultRedirectURI = "http://localhost:8080"
-
-	ErrNoIntraSession = errors.New("no INTRA_SESSION_TOKEN found in .env file")
-	ErrNoUserIDToken  = errors.New("no USER_ID_TOKEN found in .env file")
-)
-
-type Session struct {
-	authToken    string
-	intraSession string
-	userIDToken  string
-	redirectURI  string
-	client       tls_client.HttpClient
-	db           *gorm.DB
+type KeysManager struct {
+	ctx               context.Context
+	authToken         string
+	intraSessionToken string
+	userIDToken       string
+	redirectURI       string
+	client            tls_client.HttpClient
+	db                *gorm.DB
 }
 
 type APIResult struct {
@@ -55,109 +51,17 @@ type APIResult struct {
 	Secret string
 }
 
-// Beware that you must set your auth tokens in your local .env file.
-// They can be found in your cookies storage in your intra.
-// AUTHENTICITY_TOKEN
-// INTRA_SESSION_TOKEN
-// USER_ID_TOKEN
+var DefaultKeysManager *KeysManager = nil
 
-// The x parameter is the amount of API keys you wish to create & redirectURI is the
-// URL you wish to have as redirection after an user authenticates through 42.
-func GetKeys(x int, db *gorm.DB) error {
-	if err := godotenv.Load(); err != nil {
-		return err
-	}
-
-	s, err := NewSession(db)
-	if err != nil {
-		return err
-	}
-
-	sem := semaphore.NewWeighted(ConcurrentFetch)
-	var wg sync.WaitGroup
-	for i := 0; i < x; i++ {
-		wg.Add(1)
-		err = sem.Acquire(context.TODO(), 1)
-		if err != nil {
-			return err
-		}
-		go func(i int) {
-			defer sem.Release(1)
-			defer wg.Done()
-			err = s.createAPIKey()
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				return
-			}
-			fmt.Printf("Created API key %d/%d\n", i+1, x)
-		}(i)
-	}
-
-	wg.Wait()
-	return nil
-}
-
-func (s *Session) PullAuthenticityToken() error {
-	intraSess, ok := os.LookupEnv("INTRA_SESSION_TOKEN")
+func NewKeysManager(db *gorm.DB) (*KeysManager, error) {
+	intraSessionToken, ok := os.LookupEnv("INTRA_SESSION_TOKEN")
 	if !ok {
-		return ErrNoIntraSession
-	}
-
-	userID, ok := os.LookupEnv("USER_ID_TOKEN")
-	if !ok {
-		return ErrNoUserIDToken
-	}
-
-	req := &http.Request{
-		Method: http.MethodGet,
-		URL:    &url.URL{Scheme: "https", Host: host, Path: "/oauth/applications"},
-		Header: http.Header{
-			"authority":  {"profile.intra.42.fr"},
-			"cookie":     {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", userID, intraSess)},
-			"referer":    {"https://profile.intra.42.fr/languages"},
-			"User-Agent": {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"},
-			"accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"},
-		},
-	}
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("PullAuthenticityToken: unexpected status result, got %s", resp.Status)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
-	if err != nil {
-		return err
-	}
-
-	s.authToken, ok = doc.Find("meta[name=csrf-token]").Attr("content")
-	if !ok {
-		return fmt.Errorf("PullAuthenticityToken: unable to get csrf")
-	}
-
-	return nil
-}
-
-// newSession creates an instance of Session & looks up for
-// authentication tokens in your .env file.
-func NewSession(db *gorm.DB) (*Session, error) {
-	intraSession, ok := os.LookupEnv("INTRA_SESSION_TOKEN")
-	if !ok {
-		return nil, ErrNoIntraSession
+		return nil, errors.New("no INTRA_SESSION_TOKEN found in .env file")
 	}
 
 	userIDToken, ok := os.LookupEnv("USER_ID_TOKEN")
 	if !ok {
-		return nil, ErrNoUserIDToken
+		return nil, errors.New("no USER_ID_TOKEN found in .env file")
 	}
 
 	client, err := tls_client.NewHttpClient(
@@ -172,16 +76,17 @@ func NewSession(db *gorm.DB) (*Session, error) {
 
 	redirectURI, ok := os.LookupEnv("REDIRECT_URI")
 	if !ok {
-		redirectURI = DefaultRedirectURI
+		redirectURI = defaultRedirectURI
 	}
-	session := Session{
-		redirectURI:  redirectURI,
-		intraSession: intraSession,
-		userIDToken:  userIDToken,
-		client:       client,
-		db:           db,
+	session := KeysManager{
+		ctx:               context.Background(),
+		redirectURI:       redirectURI,
+		intraSessionToken: intraSessionToken,
+		userIDToken:       userIDToken,
+		client:            client,
+		db:                db,
 	}
-	err = session.PullAuthenticityToken()
+	err = session.pullAuthenticityToken()
 	if err != nil {
 		return nil, err
 	}
@@ -189,35 +94,161 @@ func NewSession(db *gorm.DB) (*Session, error) {
 	return &session, nil
 }
 
-func (s *Session) fetchAPIKeysFromIntra() ([]string, error) {
-	req := &http.Request{
-		Method: http.MethodGet,
-		URL:    &url.URL{Scheme: "https", Host: host, Path: "/oauth/applications/"},
-		Header: http.Header{
-			"authority":  {"profile.intra.42.fr"},
-			"cookie":     {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIDToken, s.intraSession)},
-			"origin":     {"https://profile.intra.42.fr"},
-			"referer":    {"https://profile.intra.42.fr/oauth/applications/new"},
-			"user-agent": {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
-		},
+func (manager *KeysManager) GetKeys() ([]models.APIKey, error) {
+	var keys []models.APIKey
+
+	err := manager.db.Model(&models.APIKey{}).Find(&keys).Error
+	if err != nil {
+		return keys, fmt.Errorf("error querying API keys: %w", err)
+	}
+	if len(keys) == 0 {
+		keys, err = manager.createMany(keysToGenerate)
+		if err != nil {
+			return keys, err
+		}
+	}
+	return keys, nil
+}
+
+func (manager *KeysManager) CreateOne() (*models.APIKey, error) {
+	if err := godotenv.Load(); err != nil {
+		return nil, err
 	}
 
-	resp, err := s.client.Do(req)
+	buf, writer, err := manager.buildForm(defaultAppName)
+	if err != nil {
+		return nil, err
+	}
+
+	req, _ := http.NewRequest("POST",
+		fmt.Sprintf("https://%s/oauth/applications", host),
+		io.NopCloser(buf))
+	req.Header = http.Header{
+		"Cookie": {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s",
+			manager.userIDToken, manager.intraSessionToken)},
+		"Origin":       {"https://profile.intra.42.fr"},
+		"Referer":      {"https://profile.intra.42.fr/oauth/applications/new"},
+		"User-Agent":   {defaultUserAgent},
+		"Content-Type": {writer.FormDataContentType()},
+	}
+
+	resp, err := manager.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected response status fetching API key data, got %s", resp.Status)
-	}
-
-	body, err := io.ReadAll(resp.Body)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
+	apiKey := &models.APIKey{Name: defaultAppName}
+	elems := strings.Split(doc.Find("a[href^='/oauth/applications/']").AttrOr("href", ""), "/")
+	if len(elems) < 4 {
+		return nil, errors.New("invalid response, the authenticity token is wrong?")
+	}
+	appIDraw := elems[3]
+	if appIDraw == "" {
+		return nil, errors.New("error could not find the application ID in html body")
+	}
+	appID, err := strconv.Atoi(appIDraw)
+	if err != nil {
+		return nil, err
+	}
+	apiKey.AppID = appID
+
+	if err = manager.fetchAPIData(apiKey); err != nil {
+		return nil, err
+	}
+	return apiKey, manager.db.Create(apiKey).Error
+}
+
+func (manager *KeysManager) createMany(n int) ([]models.APIKey, error) {
+	var mu sync.Mutex
+	var errs []error
+	keys := make([]models.APIKey, 0, n)
+
+	fmt.Printf("creating %d API keys...\n", n)
+
+	var wg sync.WaitGroup
+	sem := semaphore.NewWeighted(concurrentFetches)
+
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		err := sem.Acquire(manager.ctx, 1)
+		if err != nil {
+			return keys, err
+		}
+
+		go func(i int) {
+			defer sem.Release(1)
+			defer wg.Done()
+
+			key, err := manager.CreateOne()
+			mu.Lock()
+			defer mu.Unlock()
+
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				keys = append(keys, *key)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	return keys, errors.Join(errs...)
+}
+
+func (manager *KeysManager) pullAuthenticityToken() error {
+	req, _ := http.NewRequest("GET",
+		fmt.Sprintf("https://%s/oauth/applications", host), nil)
+	req.Header = http.Header{
+		"Cookie": {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s",
+			manager.userIDToken, manager.intraSessionToken)},
+		"Referer":    {"https://profile.intra.42.fr/languages"},
+		"User-Agent": {defaultUserAgent},
+	}
+
+	resp, err := manager.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var ok bool
+	manager.authToken, ok = doc.Find("meta[name=csrf-token]").Attr("content")
+	if !ok {
+		return fmt.Errorf("invalid response, expired credentials?")
+	}
+
+	return nil
+}
+
+func (manager *KeysManager) fetchAPIKeysFromIntra() ([]string, error) {
+	req, _ := http.NewRequest("GET",
+		fmt.Sprintf("https://%s/oauth/applications", host), nil)
+	req.Header = http.Header{
+		"Cookie": {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s",
+			manager.userIDToken, manager.intraSessionToken)},
+		"Origin":     {"https://profile.intra.42.fr"},
+		"Referer":    {"https://profile.intra.42.fr/oauth/applications/new"},
+		"User-Agent": {defaultUserAgent},
+	}
+
+	resp, err := manager.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +257,7 @@ func (s *Session) fetchAPIKeysFromIntra() ([]string, error) {
 
 	data, ok := doc.Find(".apps-root").First().Attr("data")
 	if !ok {
-		return nil, errors.New("no .apps_root")
+		return nil, errors.New("no .apps-root")
 	}
 
 	var apps []struct{ ID int }
@@ -242,21 +273,24 @@ func (s *Session) fetchAPIKeysFromIntra() ([]string, error) {
 	return result, nil
 }
 
-func (s *Session) DeleteAllApplications() error {
-	keys, err := s.fetchAPIKeysFromIntra()
+func (manager *KeysManager) DeleteAllApplications() error {
+	// TODO: rewrite
+	keys, err := manager.fetchAPIKeysFromIntra()
 	if err != nil {
 		return err
 	}
 
-	sem := semaphore.NewWeighted(ConcurrentFetch)
+	sem := semaphore.NewWeighted(concurrentFetches)
 	var wg sync.WaitGroup
 	for i, key := range keys {
 		wg.Add(1)
-		err = sem.Acquire(context.TODO(), 1)
-		go func(i int, key string) {
+		err = sem.Acquire(manager.ctx, 1)
+		go func(i int, idRaw string) {
 			defer sem.Release(1)
 			defer wg.Done()
-			err = s.DeleteApplication(key)
+
+			id, _ := strconv.Atoi(idRaw)
+			err = manager.DeleteOne(id)
 			if err != nil {
 				return
 			}
@@ -265,139 +299,57 @@ func (s *Session) DeleteAllApplications() error {
 	}
 	wg.Wait()
 
-	s.db.Exec("DELETE FROM api_keys")
+	manager.db.Exec("DELETE FROM api_keys")
 	return nil
 }
 
-func (s *Session) DeleteApplication(id string) error {
-	req := &http.Request{
-		Method: http.MethodPost,
-		URL: &url.URL{
-			Scheme: "https", Host: host,
-			Path: fmt.Sprintf("/oauth/applications/%s", id),
-		},
-		Host: host,
-		Body: io.NopCloser(
+func (manager *KeysManager) DeleteOne(id int) error {
+	req, _ := http.NewRequest("POST",
+		fmt.Sprintf("https://%s/oauth/applications/%d", host, id),
+		io.NopCloser(
 			bytes.NewReader(
-				[]byte("_method=delete&authenticity_token=" +
-					url.QueryEscape(s.authToken)))),
-		Header: http.Header{
-			"authority":    {"profile.intra.42.fr"},
-			"cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIDToken, s.intraSession)},
-			"origin":       {"https://profile.intra.42.fr"},
-			"referer":      {fmt.Sprintf("https://profile.intra.42.fr/oauth/applications/%s", id)},
-			"User-Agent":   {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
-			"accept":       {"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
-			"content-type": {"application/x-www-form-urlencoded"},
-		},
+				[]byte("_method=delete&authenticity_token="+
+					url.QueryEscape(manager.authToken)))))
+
+	req.Header = http.Header{
+		"Cookie": {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s",
+			manager.userIDToken, manager.intraSessionToken)},
+		"Origin":       {"https://profile.intra.42.fr"},
+		"Referer":      {fmt.Sprintf("https://profile.intra.42.fr/oauth/applications/%d", id)},
+		"User-Agent":   {defaultUserAgent},
+		"Accept":       {"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
+		"Content-Type": {"application/x-www-form-urlencoded"},
 	}
 
-	resp, err := s.client.Do(req)
+	resp, err := manager.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("DeleteApplication client error: %w", err)
+		return fmt.Errorf("failed to delete application: %w", err)
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusFound && resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected response status, got %s", resp.Status)
-	}
-
-	return s.db.
+	return manager.db.
 		Where("id = ?", id).
 		Delete(&models.APIKey{}).Error
 }
 
-func (s *Session) createAPIKey() error {
-	appName := "42evaluators"
-	buf, writer, err := s.buildForm(appName)
+func (manager *KeysManager) fetchAPIData(api *models.APIKey) error {
+	req, _ := http.NewRequest("GET",
+		fmt.Sprintf("https://%s/oauth/applications/%d", host, api.AppID), nil)
+	req.Header = http.Header{
+		"Cookie": {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s",
+			manager.userIDToken, manager.intraSessionToken)},
+		"Origin":     {"https://profile.intra.42.fr"},
+		"Referer":    {"https://profile.intra.42.fr/oauth/applications/new"},
+		"User-Agent": {defaultUserAgent},
+	}
+
+	resp, err := manager.client.Do(req)
 	if err != nil {
 		return err
 	}
-
-	req := &http.Request{
-		Method: http.MethodPost,
-		URL:    &url.URL{Scheme: "https", Host: host, Path: "/oauth/applications"},
-		Body:   io.NopCloser(buf),
-		Host:   host,
-		Header: http.Header{
-			"Cookie":       {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIDToken, s.intraSession)},
-			"Origin":       {"https://profile.intra.42.fr"},
-			"Referer":      {"https://profile.intra.42.fr/oauth/applications/new"},
-			"User-Agent":   {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
-			"Content-Type": {writer.FormDataContentType()},
-		},
-	}
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("CreateAPIKey client error: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusFound && resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected response status, got %s", resp.Status)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
-	if err != nil {
-		return err
-	}
-
-	apiKey := &models.APIKey{Name: appName}
-	elems := strings.Split(doc.Find("a[href^='/oauth/applications/']").AttrOr("href", ""), "/")
-	if len(elems) < 4 {
-		return errors.New("invalid response, did you pass the right authenticity token?")
-	}
-	appIDraw := elems[3]
-	if appIDraw == "" {
-		return errors.New("error could not find the application ID in html body")
-	}
-	appID, err := strconv.Atoi(appIDraw)
-	if err != nil {
-		return err
-	}
-	apiKey.AppID = appID
-
-	if err = s.fetchAPIData(apiKey); err != nil {
-		return err
-	}
-	return s.db.Create(apiKey).Error
-}
-
-// fetchAPIData fetches the API Key from the html page.
-func (s *Session) fetchAPIData(api *models.APIKey) error {
-	req := &http.Request{
-		Method: http.MethodGet,
-		URL:    &url.URL{Scheme: "https", Host: host, Path: fmt.Sprintf("/oauth/applications/%d", api.AppID)},
-		Header: http.Header{
-			"authority":  {"profile.intra.42.fr"},
-			"cookie":     {fmt.Sprintf("user.id=%s; _intra_42_session_production=%s", s.userIDToken, s.intraSession)},
-			"origin":     {"https://profile.intra.42.fr"},
-			"referer":    {"https://profile.intra.42.fr/oauth/applications/new"},
-			"user-agent": {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
-		},
-	}
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected response status fetching API key data, got %s", resp.Status)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -416,12 +368,12 @@ func (s *Session) fetchAPIData(api *models.APIKey) error {
 	return nil
 }
 
-func (s *Session) buildForm(appName string) (*bytes.Buffer, *multipart.Writer, error) {
+func (manager *KeysManager) buildForm(appName string) (*bytes.Buffer, *multipart.Writer, error) {
 	buf := &bytes.Buffer{}
 
 	writer := multipart.NewWriter(buf)
 	_ = writer.WriteField("utf8", "✓")
-	_ = writer.WriteField("authenticity_token", s.authToken)
+	_ = writer.WriteField("authenticity_token", manager.authToken)
 	_ = writer.WriteField("doorkeeper_application[name]", appName)
 	_ = writer.WriteField("doorkeeper_application[image_cache]", "")
 
@@ -439,7 +391,7 @@ func (s *Session) buildForm(appName string) (*bytes.Buffer, *multipart.Writer, e
 	_ = writer.WriteField("doorkeeper_application[website]", "")
 	_ = writer.WriteField("doorkeeper_application[public]", "0")
 	_ = writer.WriteField("doorkeeper_application[scopes]", "")
-	_ = writer.WriteField("doorkeeper_application[redirect_uri]", s.redirectURI)
+	_ = writer.WriteField("doorkeeper_application[redirect_uri]", manager.redirectURI)
 	_ = writer.WriteField("commit", "Submit")
 
 	err = writer.Close()

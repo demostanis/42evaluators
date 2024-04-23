@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -184,6 +183,38 @@ func Do[T any](apiReq *APIRequest) (*T, error) {
 
 	DebugRequest(req)
 	resp, err := client.Do(req)
+	if resp.StatusCode == http.StatusTooManyRequests {
+		time.Sleep(time.Second * 1)
+
+		resp, err = client.Do(req)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			fmt.Println("generating new API key...")
+
+			oldAPIKey := client.apiKey
+
+			apiKey, err := DefaultKeysManager.CreateOne()
+			if err != nil { // Damn, that'd suck.
+				return nil, err
+			}
+			client.apiKey = *apiKey
+			client.accessToken, err = OauthToken(client.apiKey, "", "")
+			if err != nil {
+				return nil, err
+			}
+
+			_ = DefaultKeysManager.DeleteOne(oldAPIKey.ID)
+
+			req.Header.Del("Authorization")
+			req.Header.Add("Authorization", "Bearer "+client.accessToken)
+
+			resp, err = client.Do(req)
+			// that probably shouldn't be needed since
+			// it's handled below, but I get linter errors...
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -202,10 +233,6 @@ func Do[T any](apiReq *APIRequest) (*T, error) {
 	var result T
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		if bytes.HasPrefix(body, []byte("429")) {
-			time.Sleep(1 * time.Second)
-			return Do[T](apiReq)
-		}
 		return nil, &ParseError{err, body}
 	}
 	return &result, nil
