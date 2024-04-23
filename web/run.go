@@ -45,6 +45,7 @@ func Run(db *gorm.DB) {
 	http.Handle("/clusters.live", withURL(loggedInUsersOnly(clustersWs(db))))
 	http.Handle("/stats", withURL(loggedInUsersOnly(templ.Handler(templates.Stats(&api.APIStats)))))
 	http.Handle("/stats.live", withURL(loggedInUsersOnly(statsWs(db))))
+	http.Handle("/useful-links", withURL(loggedInUsersOnly(templ.Handler(templates.Links()))))
 
 	http.Handle("/static/", handleStatic())
 
