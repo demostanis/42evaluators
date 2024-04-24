@@ -36,16 +36,16 @@ func withURL(handler http.Handler) http.Handler {
 
 func Run(db *gorm.DB) {
 	http.Handle("/", withURL(handleIndex(db)))
-	http.Handle("/leaderboard", withURL(loggedInUsersOnly(handleLeaderboard(db))))
-	http.Handle("/peerfinder", withURL(loggedInUsersOnly(handlePeerFinder(db))))
-	http.Handle("/calculator", withURL(loggedInUsersOnly(handleCalculator(db))))
-	http.Handle("/blackhole", withURL(loggedInUsersOnly(handleBlackhole(db))))
+	http.Handle("/leaderboard/", withURL(loggedInUsersOnly(handleLeaderboard(db))))
+	http.Handle("/peerfinder/", withURL(loggedInUsersOnly(handlePeerFinder(db))))
+	http.Handle("/calculator/", withURL(loggedInUsersOnly(handleCalculator(db))))
+	http.Handle("/blackhole/", withURL(loggedInUsersOnly(handleBlackhole(db))))
 	http.Handle("/blackhole.json", withURL(loggedInUsersOnly(blackholeMap(db))))
-	http.Handle("/clusters", withURL(loggedInUsersOnly(handleClusters())))
+	http.Handle("/clusters/", withURL(loggedInUsersOnly(handleClusters())))
 	http.Handle("/clusters.live", withURL(loggedInUsersOnly(clustersWs(db))))
-	http.Handle("/stats", withURL(loggedInUsersOnly(templ.Handler(templates.Stats(&api.APIStats)))))
+	http.Handle("/stats/", withURL(loggedInUsersOnly(templ.Handler(templates.Stats(&api.APIStats)))))
 	http.Handle("/stats.live", withURL(loggedInUsersOnly(statsWs(db))))
-	http.Handle("/useful-links", withURL(loggedInUsersOnly(templ.Handler(templates.Links()))))
+	http.Handle("/useful-links/", withURL(loggedInUsersOnly(templ.Handler(templates.Links()))))
 
 	http.Handle("/static/", handleStatic())
 
