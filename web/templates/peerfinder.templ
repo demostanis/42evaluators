@@ -100,11 +100,27 @@ script statusSelectHandler() {
 	statusSelect.addEventListener("change", handle);
 }
 
+script campusSelectHandler() {
+	function updateCampus(e) {
+		const params = new URLSearchParams(window.location.search);
+		const selected = e.target.selectedOptions[0];
+
+		params.delete("campus");
+		params.append("campus", selected.value);
+		window.location.search = params;
+	}
+
+	document.querySelector(".campus-selector")
+		.addEventListener("change", updateCampus)
+}
+
 templ PeerFinder(
 	subjects []models.Subject,
 	projects map[int][]models.Project,
 	checkedSubjects map[string]bool,
 	currentStatus string,
+	campuses []models.Campus,
+	activeCampus int,
 ) {
 	@header()
 	<style>html,body{overflow-x:hidden;}</style>
@@ -137,6 +153,23 @@ templ PeerFinder(
 					selected
 				}
 			>waiting for corrections</option>
+		</select>
+		<p>in</p>
+		<select class="select select-bordered campus-selector">
+			<option
+				if activeCampus == -1 {
+					selected
+				}
+				value="any"
+			>Any campus</option>
+			for _, campus := range campuses {
+				<option
+					if activeCampus == campus.ID {
+						selected
+					}
+					value={ strconv.Itoa(campus.ID) }
+				>{ campus.Name } campus</option>
+			}
 		</select>
 		<label for="projects-settings" class="btn">Show projects...</label>
 	</div>
@@ -178,6 +211,8 @@ templ PeerFinder(
 		</form>
 		<label class="modal-backdrop" for="projects-settings"></label>
 	</div>
+
+	@campusSelectHandler()
 	@statusSelectHandler()
 	@projectsSettingsHandler()
 	@deselectAllHandler()

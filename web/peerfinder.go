@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -38,9 +39,21 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 			return
 		}
 
-		campusId, err := strconv.Atoi(r.URL.Query().Get("campus"))
+		campuses, err := getAllCampuses(db)
 		if err != nil {
-			campusId = getLoggedInUser(r).them.CampusID
+			internalServerError(w, err)
+			return
+		}
+
+		var campusID int
+		campusIDRaw := r.URL.Query().Get("campus")
+		if campusIDRaw == "any" {
+			campusID = -1
+		} else {
+			campusID, err = strconv.Atoi(campusIDRaw)
+			if err != nil {
+				campusID = getLoggedInUser(r).them.CampusID
+			}
 		}
 
 		status := r.URL.Query().Get("status")
@@ -88,11 +101,16 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 
 		projectsMap := make(map[int][]models.Project)
 
+		preloadCondition := ""
+		if campusID != -1 {
+			preloadCondition += fmt.Sprintf("campus_id = %d AND ", campusID)
+		}
+		preloadCondition += database.OnlyRealUsersCondition
+
 		var projects []models.Project
 		db.
 			Preload("Teams.Users.User",
-				"campus_id = ? AND "+database.OnlyRealUsersCondition,
-				campusId).
+				preloadCondition).
 			Preload("Subject", "name IN ? AND "+database.UnwantedSubjectsCondition,
 				wantedSubjects).
 			Scopes(withStatus(status)).
@@ -111,7 +129,8 @@ func handlePeerFinder(db *gorm.DB) http.Handler {
 				})
 
 		_ = templates.PeerFinder(
-			subjects, projectsMap, checkedSubjects, status,
+			subjects, projectsMap, checkedSubjects,
+			status, campuses, campusID,
 		).Render(r.Context(), w)
 	})
 }
