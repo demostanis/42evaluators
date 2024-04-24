@@ -713,7 +713,7 @@
   {
     "id": 106,
     "name": "k2",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/106/map-k2.svg",
+    "cdn_link": "https://cdn.intra.42.fr/cluster/image/106/k2.svg",
     "campus": {
       "id": 48,
       "name": "Mulhouse"
@@ -722,7 +722,7 @@
   {
     "id": 105,
     "name": "k1",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/105/map-k1.svg",
+    "cdn_link": "https://cdn.intra.42.fr/cluster/image/105/k1.svg",
     "campus": {
       "id": 48,
       "name": "Mulhouse"
@@ -731,7 +731,7 @@
   {
     "id": 104,
     "name": "k0",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/104/map-k0.svg",
+    "cdn_link": "https://cdn.intra.42.fr/cluster/image/104/k0.svg",
     "campus": {
       "id": 48,
       "name": "Mulhouse"
