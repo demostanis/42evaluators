@@ -123,7 +123,7 @@ script xpCalculator(
 		});
 		subjectSelect.addEventListener("change", () => {
 			for (const subject of subjects) {
-				if (subject.name == subjectSelect.selectedOptions[0].value) {
+				if (subject.name.trim() == subjectSelect.selectedOptions[0].value.trim()) {
 					xpSelect.value = subject.XP;
 					reason = subject.name;
 					updateLevel();
