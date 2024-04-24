@@ -5,13 +5,15 @@ import (
 	"github.com/demostanis/42evaluators/internal/clusters"
 )
 
-script cropToContent() {
+script cropToContent(campusID int) {
 	// TODO: this doesn't work properly on
 	// some clusters such as C4 - VOID
-	const s = document.querySelector("svg");
-	const r = s.getBBox({ stroke: true });
-	const navbarHeight = document.querySelector(".navbar").getBoundingClientRect().height;
-	s.setAttribute("viewBox", `${r.x} ${r.y} ${r.width} ${r.height}`);
+	if ((campusID < 161 || campusID > 163) && campusID != 198) {
+		const s = document.querySelector("svg");
+		const r = s.getBBox({ stroke: true });
+		const navbarHeight = document.querySelector(".navbar").getBoundingClientRect().height;
+		s.setAttribute("viewBox", `${r.x} ${r.y} ${r.width} ${r.height}`);
+	}
 }
 
 script selectHandler() {
@@ -46,7 +48,7 @@ templ ClustersMap(allClusters []clusters.Cluster, selectedCluster clusters.Clust
 				>{ cluster.DisplayName }</option>
 			}
 		</select>
-		@cropToContent()
+		@cropToContent(selectedCluster.ID)
 		@selectHandler()
 	</div>
 	@footer()

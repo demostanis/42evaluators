@@ -1091,7 +1091,7 @@
   {
     "id": 43,
     "name": "c5",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/43/c5_seoul.svg",
+    "cdn_link": "web/static/clusters/c5_seoul.svg",
     "campus": {
       "id": 29,
       "name": "Seoul"
@@ -1109,7 +1109,7 @@
   {
     "id": 41,
     "name": "c3",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/41/c3_seoul.svg",
+    "cdn_link": "web/static/clusters/c3_seoul.svg",
     "campus": {
       "id": 29,
       "name": "Seoul"
@@ -1127,7 +1127,7 @@
   {
     "id": 39,
     "name": "c1",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/39/c1_seoul.svg",
+    "cdn_link": "web/static/clusters/c1_seoul.svg",
     "campus": {
       "id": 29,
       "name": "Seoul"
@@ -1163,7 +1163,7 @@
   {
     "id": 35,
     "name": "Nave 7a",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/35/7a.svg",
+    "cdn_link": "web/static/clusters/7a.svg",
     "campus": {
       "id": 20,
       "name": "São-Paulo"
@@ -1172,7 +1172,7 @@
   {
     "id": 34,
     "name": "Nave 7b",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/34/7b.svg",
+    "cdn_link": "web/static/clusters/7b.svg",
     "campus": {
       "id": 20,
       "name": "São-Paulo"
@@ -1217,7 +1217,7 @@
   {
     "id": 27,
     "name": "Nave 8a ",
-    "cdn_link": "https://cdn.intra.42.fr/cluster/image/27/cluster-8a.svg",
+    "cdn_link": "web/static/clusters/cluster-8a.svg",
     "campus": {
       "id": 20,
       "name": "São-Paulo"
