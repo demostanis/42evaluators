@@ -59,7 +59,7 @@ const handleNewImages = () => {
 	});
 }
 
-const secure = window.location.protocol == "https";
+const secure = window.location.protocol == "https:";
 const ws = new WebSocket((secure ? "wss://" : "ws://")
 	+ window.location.host
 	+ window.location.pathname
